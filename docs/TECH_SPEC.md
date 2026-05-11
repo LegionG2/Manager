@@ -22,7 +22,9 @@
 
 Repozytorium jest male i skupione wokol jednego pliku aplikacji:
 
-- `main.py` zawiera aplikacje Tkinter, obsluge SQLite, ustawienia, logike rekordow, archiwum, eksport CSV i backup.
+- `main.py` zawiera punkt wejscia, aplikacje Tkinter, ustawienia, logike UI, archiwum i backup.
+- `data/database.py` zawiera obsluge SQLite, obecny model tabeli `orders`, operacje CRUD, statystyki i eksport CSV.
+- `data/__init__.py` oznacza `data` jako pakiet warstwy danych.
 - `build_exe.bat` zawiera prosty proces budowy pliku EXE przez PyInstaller.
 - `README.md` opisuje obecna aplikacje i sposob uruchamiania.
 - `docs/` zawiera dokumentacje projektu.
@@ -64,7 +66,7 @@ This means the UI layer is tightly coupled to the current data model.
 
 ### Database logic
 
-Database logic currently lives in `main.py`, mainly inside `Database`.
+Database logic currently lives in `data/database.py`, inside `Database`.
 
 `Database` is responsible for:
 
@@ -75,7 +77,7 @@ Database logic currently lives in `main.py`, mainly inside `Database`.
 - calculating dashboard statistics,
 - exporting rows to CSV.
 
-This is a useful starting point, but it is not yet a separated data access layer. The class still exposes the current business-specific table shape directly to the UI.
+This is the first separated data access module. The class still exposes the current business-specific table shape directly to the UI.
 
 ### Configuration and state
 
@@ -97,6 +99,7 @@ The code is tightly coupled rather than modular:
 - Sorting and filtering know current business fields.
 - Export and backup are triggered by UI methods and implemented near current database assumptions.
 - The current model is still based on `orders`, not generic records.
+- Backup in `main.py` still reaches into `self.db.conn`.
 
 This is expected for the current stage, but it should be treated as refactor risk.
 
@@ -113,6 +116,35 @@ Future MVPs should separate responsibilities gradually:
 - archive behavior.
 
 Each separation should preserve current behavior first. Generic record types and configurable fields should come after the current responsibilities are clearer.
+
+## MVP-003 data layer extraction
+
+MVP-003 added a small `data` package:
+
+- `data/database.py`,
+- `data/__init__.py`.
+
+Moved from `main.py` to `data/database.py`:
+
+- SQLite connection setup,
+- `orders` table creation,
+- existing column migration logic,
+- add/update/delete/fetch operations,
+- current stats queries,
+- CSV export.
+
+Still in `main.py`:
+
+- Tkinter application and UI layout,
+- Tkinter state variables,
+- form validation and data mapping,
+- search and sort behavior,
+- archive button behavior,
+- backup file dialog and copy operation,
+- app data path helpers,
+- JSON settings manager.
+
+No schema changes were made. The `orders` table, column names, status values and public `Database` method names remain compatible with the previous code.
 
 ## Zasady techniczne
 

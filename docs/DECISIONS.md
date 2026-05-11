@@ -121,3 +121,21 @@ Konsekwencje:
 - Model biznesowy/domenowy oddzielamy od konkretnych nazw warsztatowych stopniowo.
 - Warstwe konfiguracji projektujemy osobno, zanim dodamy konfigurowalne typy rekordow i pola.
 - Kazdy etap musi byc maly, odwracalny i mozliwy do sprawdzenia recznie.
+
+## 2026-05-11 - Warstwa danych zaczyna sie w `data/database.py`
+
+Decyzja:
+
+Kod SQLite i klasa `Database` zostaly przeniesione z `main.py` do `data/database.py`.
+
+Kontekst:
+
+MVP-003 ma byc malym refaktorem bez zmiany dzialania aplikacji. Celem bylo oddzielenie najbardziej oczywistej warstwy danych bez zmiany schematu bazy, UI ani publicznych metod uzywanych przez `WorkshopApp`.
+
+Konsekwencje:
+
+- `main.py` importuje `Database` z `data.database`.
+- Tabela `orders`, migracje i zapytania SQL pozostaja bez zmiany funkcjonalnej.
+- UI nadal jest powiazane z obecnym modelem danych, ale kod SQLite ma juz osobny modul.
+- Backup nadal wymaga dalszego uporzadkowania, bo `main.py` uzywa `self.db.conn`.
+- Nastepne kroki powinny byc rownie male: metoda backupu w warstwie danych, potem konfiguracja/sciezki, potem UI.

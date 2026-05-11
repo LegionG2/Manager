@@ -15,7 +15,7 @@ Cel:
 
 ### MVP-002 - Przeglad struktury repozytorium i kodu
 
-Status: w toku
+Status: wykonane
 
 Cel:
 
@@ -32,7 +32,7 @@ Zakres:
 
 ### MVP-003 - Extract database/data access helpers
 
-Status: planowane
+Status: wykonane
 
 Cel:
 
@@ -47,6 +47,20 @@ Kandydaci prac:
 - nie zmieniac migracji ani danych,
 - dodac reczne scenariusze testowe dla zapisu, edycji, usuwania, archiwum i eksportu.
 
+Wynik MVP-003:
+
+- dodano `data/database.py`,
+- dodano `data/__init__.py`,
+- przeniesiono klase `Database` z `main.py`,
+- zachowano dotychczasowy schemat `orders`,
+- zachowano dotychczasowe metody uzywane przez UI.
+
+Pozostale ryzyka:
+
+- `main.py` nadal zawiera UI, stan formularzy, mapowanie danych i backup,
+- `main.py` nadal korzysta z `self.db.conn` przy backupie,
+- model danych nadal jest oparty o `orders`.
+
 ### MVP-004 - Extract UI layout/components
 
 Status: planowane
@@ -59,6 +73,8 @@ Cel:
 
 Kandydaci prac:
 
+- przed wydzielaniem UI przeniesc backup bazy do bezpiecznej metody w warstwie danych,
+- rozwazyc wydzielenie ustawien i sciezek danych do osobnego modulu,
 - wydzielic budowanie zakladek i formularza,
 - pozostawic te same etykiety, rozmiary i akcje,
 - nie zmieniac zachowania przyciskow,

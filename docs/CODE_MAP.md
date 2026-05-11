@@ -15,6 +15,9 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |-- AGENTS.md
 |-- README.md
 |-- build_exe.bat
+|-- data/
+|   |-- __init__.py
+|   `-- database.py
 |-- main.py
 `-- docs/
     |-- BACKLOG.md
@@ -29,7 +32,7 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 
 ### `main.py`
 
-Kategoria: UI, dane, logika aplikacji, konfiguracja.
+Kategoria: punkt wejscia, UI, logika aplikacji, konfiguracja.
 
 Co prawdopodobnie robi:
 
@@ -38,8 +41,7 @@ Co prawdopodobnie robi:
 - definiuje obecne statusy i priorytety,
 - definiuje motywy jasny i ciemny,
 - zarzadza ustawieniami lokalnymi przez JSON,
-- tworzy i migruje tabele SQLite `orders`,
-- dodaje, aktualizuje, usuwa, pobiera i eksportuje rekordy,
+- importuje `Database` z `data.database`,
 - buduje glowne okno aplikacji,
 - buduje zakladki aktywnych rekordow i archiwum,
 - obsluguje formularz, tabele, wyszukiwanie, filtrowanie, sortowanie, archiwum, backup i eksport CSV.
@@ -49,17 +51,52 @@ Znane elementy:
 - `get_app_data_dir()` wybiera lokalny katalog danych uzytkownika.
 - `resource_path()` buduje sciezki do plikow danych.
 - `SettingsManager` obsluguje plik ustawien JSON.
-- `Database` obsluguje SQLite i aktualny model tabeli `orders`.
+- `Database` jest importowana z `data.database`.
 - `WorkshopApp` laczy UI Tkinter z logika aplikacji.
 
 Ryzyka i niejasne obszary:
 
 - Plik laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
 - Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
-- Schemat `orders` nie jest jeszcze generycznym modelem rekordow.
-- Migracje bazy sa wykonywane w kodzie aplikacji; wymagaja ostroznosci.
+- UI nadal zna konkretne kolumny aktualnego modelu danych.
+- Backup nadal korzysta bezposrednio z `self.db.conn`.
 - Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
 - Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
+
+### `data/__init__.py`
+
+Kategoria: dane.
+
+Co robi:
+
+- oznacza `data` jako pakiet Pythona dla warstwy danych.
+
+Ryzyka i niejasne obszary:
+
+- Na ten moment nie zawiera logiki.
+
+### `data/database.py`
+
+Kategoria: dane, SQLite, eksport CSV.
+
+Co robi:
+
+- zawiera klase `Database` przeniesiona z `main.py`,
+- otwiera polaczenie SQLite,
+- ustawia `sqlite3.Row`,
+- tworzy tabele `orders`,
+- wykonuje dotychczasowe migracje kolumn,
+- dodaje, aktualizuje, usuwa i pobiera rekordy,
+- liczy statystyki dla obecnego UI,
+- eksportuje dane z `orders` do CSV.
+
+Ryzyka i niejasne obszary:
+
+- Schemat `orders` nie jest jeszcze generycznym modelem rekordow.
+- Zapytania nadal zawieraja obecne statusy i zalozenia starego modelu.
+- Eksport CSV nadal jest czescia klasy `Database`; w przyszlosci moze zostac wydzielony.
+- `Database.conn` nadal jest uzywane w `main.py` przy backupie.
+- Nie zmieniono schematu bazy ani zachowania migracji.
 
 ### `build_exe.bat`
 
@@ -204,7 +241,7 @@ Obecne ryzyka:
 
 ### Kod zwiazany z baza danych
 
-Kod bazy danych znajduje sie glownie w klasie `Database`.
+Kod bazy danych znajduje sie w `data/database.py`, w klasie `Database`.
 
 Znane metody:
 
@@ -224,7 +261,7 @@ Ryzyka:
 - Model tabeli `orders` jest branzowy i nie jest jeszcze generycznym modelem rekordow.
 - Zapytania SQL, wyszukiwanie, sortowanie i statystyki znaja konkretne kolumny.
 - `migrate_tables()` wykonuje migracje przy starcie aplikacji.
-- `Database` jest uzywana bezposrednio przez `WorkshopApp`, wiec UI i dane sa mocno polaczone.
+- `Database` jest importowana i uzywana bezposrednio przez `WorkshopApp`, wiec UI i dane nadal sa mocno polaczone.
 - `export_csv()` jest w warstwie bazy, ale dotyka formatu eksportu, czyli przyszlej osobnej odpowiedzialnosci.
 
 Obszary niejasne:
@@ -296,7 +333,39 @@ Nie nalezy usuwac ani zmieniac tych elementow bez osobnego etapu migracji, bo mo
 ### Bezpieczna kolejnosc przyszlego refaktoru
 
 1. Najpierw opisac scenariusze testow recznych dla obecnego zachowania.
-2. Wydzielic pomocnicze funkcje dostepu do danych bez zmiany schematu.
+2. Wydzielic dalsze pomocnicze funkcje dostepu do danych bez zmiany schematu.
 3. Wydzielic konfiguracje stalych i ustawien bez zmiany wartosci.
 4. Wydzielic fragmenty UI do mniejszych funkcji lub modulow bez zmiany wygladu.
 5. Dopiero pozniej projektowac generyczny model typow rekordow i pol.
+
+## MVP-003 - Wydzielenie warstwy danych
+
+Dodano pakiet `data` i modul `data/database.py`.
+
+Przeniesiono z `main.py`:
+
+- importy `csv`, `sqlite3` i `datetime` potrzebne klasie bazy,
+- klase `Database`,
+- tworzenie tabeli `orders`,
+- migracje obecnych kolumn,
+- operacje `add_order`, `update_order`, `delete_order`, `fetch_orders`, `fetch_order`,
+- statystyki,
+- eksport CSV.
+
+Zostalo w `main.py`:
+
+- punkt wejscia aplikacji,
+- stale aplikacji,
+- sciezki do lokalnych danych,
+- `SettingsManager`,
+- cala warstwa UI `WorkshopApp`,
+- stan formularza i filtrow,
+- akcje uzytkownika,
+- backup pliku bazy danych.
+
+Kolejne bezpieczne kroki:
+
+- usunac bezposrednie uzycie `self.db.conn` z `main.py` przez metode backupu w warstwie danych,
+- wydzielic `SettingsManager` i sciezki danych do osobnego modulu konfiguracji,
+- dopiero potem zaczac rozbijac UI,
+- nie zmieniac schematu `orders` przed osobna decyzja migracyjna.
