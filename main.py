@@ -1,0 +1,1076 @@
+import csv
+import json
+import os
+import sqlite3
+import tkinter as tk
+from tkinter import ttk, messagebox, filedialog
+from datetime import datetime, date
+
+APP_TITLE = "Warsztat Manager Premium"
+DB_NAME = "warsztat_manager.db"
+SETTINGS_NAME = "settings.json"
+STATUSES = [
+    "Nowe",
+    "Diagnoza",
+    "Oczekuje na części",
+    "W trakcie",
+    "Gotowe do odbioru",
+    "Odebrane",
+]
+PRIORITIES = ["Niska", "Normalna", "Wysoka", "Pilne"]
+
+THEMES = {
+    "light": {
+        "window_bg": "#efefef",
+        "panel_bg": "#f6f6f6",
+        "group_bg": "#f4f4f4",
+        "text": "#111111",
+        "muted": "#555555",
+        "entry_bg": "#ffffff",
+        "header_bg": "#dcdcdc",
+        "header_text": "#111111",
+        "selected": "#316ac5",
+        "selected_text": "#ffffff",
+        "button_bg": "#e8e8e8",
+        "button_active": "#dcdcdc",
+        "accent": "#0a64ad",
+        "danger": "#a62020",
+        "tree_bg": "#ffffff",
+        "alt_tree_bg": "#f8f8f8",
+        "summary_bg": "#ffffff",
+    },
+    "dark": {
+        "window_bg": "#1a1c20",
+        "panel_bg": "#24272d",
+        "group_bg": "#2b2f36",
+        "text": "#f5f7fa",
+        "muted": "#cfd5dc",
+        "entry_bg": "#14161a",
+        "header_bg": "#353a43",
+        "header_text": "#f5f7fa",
+        "selected": "#4d79c7",
+        "selected_text": "#ffffff",
+        "button_bg": "#343943",
+        "button_active": "#424955",
+        "accent": "#a7c7ff",
+        "danger": "#ffaaaa",
+        "tree_bg": "#1f2227",
+        "alt_tree_bg": "#262a31",
+        "summary_bg": "#20242a",
+    },
+}
+
+PRIORITY_TAGS = {
+    "Pilne": "prio_pilne",
+    "Wysoka": "prio_wysoka",
+    "Normalna": "prio_normalna",
+    "Niska": "prio_niska",
+}
+
+
+def get_app_data_dir() -> str:
+    app_dir = os.path.join(os.path.expanduser("~"), "AppData", "Local", "WarsztatManagerPremium")
+    os.makedirs(app_dir, exist_ok=True)
+    return app_dir
+
+
+def resource_path(filename: str) -> str:
+    return os.path.join(get_app_data_dir(), filename)
+
+
+class SettingsManager:
+    def __init__(self, path: str):
+        self.path = path
+        self.data = {"theme": "light"}
+        self.load()
+
+    def load(self):
+        if os.path.exists(self.path):
+            try:
+                with open(self.path, "r", encoding="utf-8") as f:
+                    raw = json.load(f)
+                    if isinstance(raw, dict):
+                        self.data.update(raw)
+            except Exception:
+                pass
+
+    def save(self):
+        with open(self.path, "w", encoding="utf-8") as f:
+            json.dump(self.data, f, ensure_ascii=False, indent=2)
+
+    def get(self, key: str, default=None):
+        return self.data.get(key, default)
+
+    def set(self, key: str, value):
+        self.data[key] = value
+        self.save()
+
+
+class Database:
+    def __init__(self, db_path: str):
+        self.conn = sqlite3.connect(db_path)
+        self.conn.row_factory = sqlite3.Row
+        self.create_tables()
+        self.migrate_tables()
+
+    def create_tables(self):
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_no TEXT,
+                client_name TEXT NOT NULL,
+                client_phone TEXT,
+                car_make TEXT,
+                car_model TEXT,
+                reg_no TEXT,
+                vin TEXT,
+                parking_spot TEXT,
+                status TEXT,
+                intake_date TEXT,
+                due_date TEXT,
+                issue_description TEXT,
+                replaced_parts TEXT,
+                parts_cost REAL DEFAULT 0,
+                labor_cost REAL DEFAULT 0,
+                is_paid INTEGER DEFAULT 0,
+                notes TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        self.conn.commit()
+
+    def migrate_tables(self):
+        columns = {row[1] for row in self.conn.execute("PRAGMA table_info(orders)").fetchall()}
+        extra_columns = {
+            "priority": "TEXT DEFAULT 'Normalna'",
+            "assigned_mechanic": "TEXT",
+            "parts_ordered": "TEXT",
+            "customer_price": "REAL DEFAULT 0",
+            "paid_amount": "REAL DEFAULT 0",
+            "is_archived": "INTEGER DEFAULT 0",
+            "last_contact_date": "TEXT",
+        }
+        for name, sql_type in extra_columns.items():
+            if name not in columns:
+                self.conn.execute(f"ALTER TABLE orders ADD COLUMN {name} {sql_type}")
+        self.conn.commit()
+
+    def generate_next_order_no(self):
+        year = datetime.now().strftime("%Y")
+        like = f"WM/{year}/%"
+        rows = self.conn.execute(
+            "SELECT order_no FROM orders WHERE order_no LIKE ? ORDER BY id DESC LIMIT 200", (like,)
+        ).fetchall()
+        max_num = 0
+        for row in rows:
+            order_no = row["order_no"] or ""
+            parts = order_no.split("/")
+            if len(parts) == 3 and parts[0] == "WM" and parts[1] == year:
+                try:
+                    max_num = max(max_num, int(parts[2]))
+                except ValueError:
+                    pass
+        return f"WM/{year}/{max_num + 1:04d}"
+
+    def add_order(self, data: dict):
+        keys = ", ".join(data.keys())
+        placeholders = ", ".join(["?"] * len(data))
+        values = list(data.values())
+        self.conn.execute(f"INSERT INTO orders ({keys}) VALUES ({placeholders})", values)
+        self.conn.commit()
+
+    def update_order(self, order_id: int, data: dict):
+        set_clause = ", ".join([f"{k} = ?" for k in data.keys()])
+        values = list(data.values()) + [order_id]
+        self.conn.execute(
+            f"UPDATE orders SET {set_clause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            values,
+        )
+        self.conn.commit()
+
+    def delete_order(self, order_id: int):
+        self.conn.execute("DELETE FROM orders WHERE id = ?", (order_id,))
+        self.conn.commit()
+
+    def fetch_orders(self, search_text: str = "", status: str = "Wszystkie", archived: int = 0):
+        query = "SELECT * FROM orders WHERE is_archived = ?"
+        params = [archived]
+        if search_text:
+            query += (
+                " AND (order_no LIKE ? OR client_name LIKE ? OR client_phone LIKE ? OR assigned_mechanic LIKE ? OR "
+                "car_make LIKE ? OR car_model LIKE ? OR reg_no LIKE ? OR vin LIKE ? OR issue_description LIKE ? OR notes LIKE ?)"
+            )
+            like = f"%{search_text}%"
+            params.extend([like] * 10)
+        if status != "Wszystkie":
+            query += " AND status = ?"
+            params.append(status)
+        query += (
+            " ORDER BY "
+            "CASE priority WHEN 'Pilne' THEN 1 WHEN 'Wysoka' THEN 2 WHEN 'Normalna' THEN 3 ELSE 4 END, "
+            "CASE status WHEN 'W trakcie' THEN 1 WHEN 'Diagnoza' THEN 2 WHEN 'Oczekuje na części' THEN 3 "
+            "WHEN 'Nowe' THEN 4 WHEN 'Gotowe do odbioru' THEN 5 WHEN 'Odebrane' THEN 6 ELSE 7 END, "
+            "COALESCE(due_date, ''), id DESC"
+        )
+        return self.conn.execute(query, params).fetchall()
+
+    def fetch_order(self, order_id: int):
+        return self.conn.execute("SELECT * FROM orders WHERE id = ?", (order_id,)).fetchone()
+
+    def stats(self):
+        total = self.conn.execute("SELECT COUNT(*) FROM orders WHERE is_archived = 0 AND status != 'Odebrane'").fetchone()[0]
+        waiting_parts = self.conn.execute("SELECT COUNT(*) FROM orders WHERE is_archived = 0 AND status = 'Oczekuje na części'").fetchone()[0]
+        in_progress = self.conn.execute("SELECT COUNT(*) FROM orders WHERE is_archived = 0 AND status = 'W trakcie'").fetchone()[0]
+        diagnosis = self.conn.execute("SELECT COUNT(*) FROM orders WHERE is_archived = 0 AND status = 'Diagnoza'").fetchone()[0]
+        ready = self.conn.execute("SELECT COUNT(*) FROM orders WHERE is_archived = 0 AND status = 'Gotowe do odbioru'").fetchone()[0]
+        unpaid_sum = self.conn.execute(
+            "SELECT COALESCE(SUM((CASE WHEN customer_price > 0 THEN customer_price ELSE (parts_cost + labor_cost) END) - paid_amount), 0) "
+            "FROM orders WHERE is_archived = 0 AND ((CASE WHEN customer_price > 0 THEN customer_price ELSE (parts_cost + labor_cost) END) - paid_amount) > 0"
+        ).fetchone()[0]
+        archived = self.conn.execute("SELECT COUNT(*) FROM orders WHERE is_archived = 1").fetchone()[0]
+        return {
+            "total": total,
+            "waiting_parts": waiting_parts,
+            "in_progress": in_progress,
+            "diagnosis": diagnosis,
+            "ready": ready,
+            "unpaid_sum": unpaid_sum,
+            "archived": archived,
+        }
+
+    def export_csv(self, filepath: str):
+        rows = self.conn.execute("SELECT * FROM orders ORDER BY id DESC").fetchall()
+        if not rows:
+            return 0
+        headers = rows[0].keys()
+        with open(filepath, "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.writer(f, delimiter=";")
+            writer.writerow(headers)
+            for row in rows:
+                writer.writerow([row[h] for h in headers])
+        return len(rows)
+
+
+
+class WorkshopApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title(APP_TITLE)
+        self.geometry("1366x820")
+        self.minsize(1024, 640)
+        try:
+            self.tk.call("tk", "scaling", 1.0)
+        except Exception:
+            pass
+
+        self.settings_mgr = SettingsManager(resource_path(SETTINGS_NAME))
+        self.current_theme = self.settings_mgr.get("theme", "light")
+        self.colors = THEMES[self.current_theme]
+        self.configure(bg=self.colors["window_bg"])
+        self.style = ttk.Style(self)
+        self.db = Database(resource_path(DB_NAME))
+        self.selected_order_id = None
+        self.form_min_width = 660
+
+        self.search_var = tk.StringVar()
+        self.archive_search_var = tk.StringVar()
+        self.status_filter_var = tk.StringVar(value="Wszystkie")
+        self.priority_filter_var = tk.StringVar(value="Wszystkie")
+        self.search_mode_var = tk.StringVar(value="Nr zlecenia")
+        self.show_overdue_only_var = tk.IntVar(value=0)
+        self.archive_status_filter_var = tk.StringVar(value="Wszystkie")
+        self.theme_var = tk.BooleanVar(value=self.current_theme == "dark")
+        self.sort_field_var = tk.StringVar(value=self.settings_mgr.get("sort_field", "Priorytet"))
+        self.sort_desc = self.settings_mgr.get("sort_desc", True)
+
+        self.form_vars = {
+            "order_no": tk.StringVar(value=self.db.generate_next_order_no()),
+            "client_name": tk.StringVar(),
+            "client_phone": tk.StringVar(),
+            "car_make": tk.StringVar(),
+            "car_model": tk.StringVar(),
+            "reg_no": tk.StringVar(),
+            "vin": tk.StringVar(),
+            "parking_spot": tk.StringVar(),
+            "status": tk.StringVar(value="Nowe"),
+            "priority": tk.StringVar(value="Normalna"),
+            "assigned_mechanic": tk.StringVar(),
+            "intake_date": tk.StringVar(value=datetime.now().strftime("%Y-%m-%d")),
+            "due_date": tk.StringVar(),
+            "last_contact_date": tk.StringVar(),
+            "parts_cost": tk.StringVar(value="0"),
+            "labor_cost": tk.StringVar(value="0"),
+            "customer_price": tk.StringVar(value="0"),
+            "paid_amount": tk.StringVar(value="0"),
+            "is_paid": tk.IntVar(value=0),
+        }
+
+        self.build_ui()
+        self.bind_shortcuts()
+        self.apply_theme(self.current_theme, initial=True)
+        self.refresh_all_tables()
+
+    def configure_style(self):
+        try:
+            self.style.theme_use("clam")
+        except Exception:
+            pass
+        c = self.colors
+        self.option_add("*Font", "Tahoma 9")
+        self.style.configure("TFrame", background=c["window_bg"])
+        self.style.configure("Panel.TFrame", background=c["panel_bg"], relief="solid", borderwidth=1)
+        self.style.configure("Group.TLabelframe", background=c["group_bg"], relief="groove", borderwidth=2)
+        self.style.configure("Group.TLabelframe.Label", background=c["group_bg"], foreground=c["text"], font=("Tahoma", 9, "bold"))
+        self.style.configure("TLabel", background=c["window_bg"], foreground=c["text"], font=("Tahoma", 9))
+        self.style.configure("Panel.TLabel", background=c["panel_bg"], foreground=c["text"], font=("Tahoma", 9))
+        self.style.configure("Summary.TLabel", background=c["summary_bg"], foreground=c["text"], font=("Tahoma", 9, "bold"), anchor="center", relief="solid")
+        self.style.configure("Title.TLabel", background=c["window_bg"], foreground=c["text"], font=("Tahoma", 14, "bold"))
+        self.style.configure("Sub.TLabel", background=c["window_bg"], foreground=c["muted"], font=("Tahoma", 9))
+        self.style.configure("TButton", background=c["button_bg"], foreground=c["text"], padding=(6, 4), relief="raised", borderwidth=1)
+        self.style.map("TButton", background=[("active", c["button_active"]), ("pressed", c["button_active"])])
+        self.style.configure("Primary.TButton", background=c["button_bg"], foreground=c["accent"], font=("Tahoma", 9, "bold"))
+        self.style.configure("Danger.TButton", background=c["button_bg"], foreground=c["danger"], font=("Tahoma", 9, "bold"))
+        self.style.configure("TCheckbutton", background=c["window_bg"], foreground=c["text"])
+        self.style.map("TCheckbutton", background=[("active", c["window_bg"])], foreground=[("active", c["text"])])
+        self.style.configure("TNotebook", background=c["window_bg"], borderwidth=0)
+        self.style.configure("TNotebook.Tab", background=c["header_bg"], foreground=c["header_text"], padding=(10, 4), font=("Tahoma", 9, "bold"))
+        self.style.map("TNotebook.Tab", background=[("selected", c["panel_bg"]), ("active", c["button_active"])])
+        self.style.configure("Treeview", background=c["tree_bg"], fieldbackground=c["tree_bg"], foreground=c["text"], rowheight=24, font=("Tahoma", 9), borderwidth=1)
+        self.style.configure("Treeview.Heading", background=c["header_bg"], foreground=c["header_text"], font=("Tahoma", 9, "bold"), relief="raised")
+        self.style.map("Treeview", background=[("selected", c["selected"])], foreground=[("selected", c["selected_text"])])
+        self.style.configure("TCombobox", fieldbackground=c["entry_bg"], background=c["entry_bg"], foreground=c["text"], arrowsize=14)
+        self.style.configure("TEntry", fieldbackground=c["entry_bg"], foreground=c["text"])
+        self.option_add("*TCombobox*Listbox.background", c["entry_bg"])
+        self.option_add("*TCombobox*Listbox.foreground", c["text"])
+
+    def build_ui(self):
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+
+        top = ttk.Frame(self, padding=8)
+        top.grid(row=0, column=0, sticky="ew")
+        top.columnconfigure(1, weight=1)
+        ttk.Label(top, text="Warsztat Manager Premium", style="Title.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Label(top, text="Prosty program warsztatowy z lokalnym zapisem danych", style="Sub.TLabel").grid(row=0, column=1, sticky="w", padx=(10, 0))
+        ttk.Checkbutton(top, text="Tryb ciemny", variable=self.theme_var, command=self.toggle_theme).grid(row=0, column=2, sticky="e")
+
+        self.summary_frame = ttk.Frame(self, padding=(8, 0, 8, 8))
+        self.summary_frame.grid(row=1, column=0, sticky="ew")
+        self.summary_labels = {}
+        summary_items = [
+            ("total", "Na placu"),
+            ("diagnosis", "Diagnoza"),
+            ("in_progress", "W trakcie"),
+            ("waiting_parts", "Czeka na części"),
+            ("ready", "Gotowe"),
+            ("unpaid_sum", "Do zapłaty"),
+            ("archived", "Archiwum"),
+        ]
+        for idx, (key, title) in enumerate(summary_items):
+            self.summary_frame.columnconfigure(idx, weight=1, uniform="summary")
+            label = ttk.Label(self.summary_frame, text=f"{title}: 0", style="Summary.TLabel", padding=8, anchor="center")
+            label.grid(row=0, column=idx, sticky="ew", padx=(0, 6 if idx < len(summary_items)-1 else 0))
+            self.summary_labels[key] = label
+
+        self.notebook = ttk.Notebook(self)
+        self.notebook.grid(row=2, column=0, sticky="nsew", padx=8, pady=(0, 8))
+
+        self.orders_tab = ttk.Frame(self.notebook)
+        self.archive_tab = ttk.Frame(self.notebook)
+        self.notebook.add(self.orders_tab, text="Aktywne zlecenia")
+        self.notebook.add(self.archive_tab, text="Archiwum")
+
+        self.build_orders_tab()
+        self.build_archive_tab()
+
+    def build_orders_tab(self):
+        main = ttk.Frame(self.orders_tab, padding=8)
+        main.pack(fill="both", expand=True)
+        main.rowconfigure(0, weight=1)
+        main.columnconfigure(0, weight=1)
+
+        paned = ttk.Panedwindow(main, orient="horizontal")
+        paned.grid(row=0, column=0, sticky="nsew")
+
+        left = ttk.Frame(paned, style="Panel.TFrame", padding=8)
+        left.rowconfigure(1, weight=1)
+        left.columnconfigure(0, weight=1)
+        paned.add(left, weight=3)
+
+        right = ttk.Frame(paned, style="Panel.TFrame", padding=8)
+        right.rowconfigure(0, weight=1)
+        right.columnconfigure(0, weight=1)
+        paned.add(right, weight=2)
+
+        toolbar = ttk.Frame(left)
+        toolbar.grid(row=0, column=0, sticky="ew", pady=(0, 8))
+        for idx in range(12):
+            toolbar.columnconfigure(idx, weight=0)
+        toolbar.columnconfigure(11, weight=1)
+
+        ttk.Label(toolbar, text="Szukaj:").grid(row=0, column=0, sticky="w")
+        search_entry = ttk.Entry(toolbar, textvariable=self.search_var, width=20)
+        search_entry.grid(row=0, column=1, padx=(4, 6), sticky="w")
+        search_entry.bind("<KeyRelease>", lambda e: self.refresh_table())
+        search_entry.focus_set()
+
+        search_mode = ttk.Combobox(toolbar, textvariable=self.search_mode_var, values=["Nr zlecenia", "Wszystko"], state="readonly", width=12)
+        search_mode.grid(row=0, column=2, padx=(0, 10), sticky="w")
+        search_mode.bind("<<ComboboxSelected>>", lambda e: self.refresh_table())
+
+        ttk.Label(toolbar, text="Status:").grid(row=0, column=3, sticky="w")
+        status_combo = ttk.Combobox(toolbar, textvariable=self.status_filter_var, values=["Wszystkie"] + STATUSES, state="readonly", width=16)
+        status_combo.grid(row=0, column=4, padx=(4, 8), sticky="w")
+        status_combo.bind("<<ComboboxSelected>>", lambda e: self.refresh_table())
+
+        ttk.Label(toolbar, text="Priorytet:").grid(row=0, column=5, sticky="w")
+        priority_combo = ttk.Combobox(toolbar, textvariable=self.priority_filter_var, values=["Wszystkie"] + PRIORITIES, state="readonly", width=12)
+        priority_combo.grid(row=0, column=6, padx=(4, 8), sticky="w")
+        priority_combo.bind("<<ComboboxSelected>>", lambda e: self.refresh_table())
+
+        ttk.Checkbutton(toolbar, text="Tylko pilne terminy", variable=self.show_overdue_only_var, command=self.refresh_table).grid(row=0, column=7, padx=(0, 10), sticky="w")
+        ttk.Label(toolbar, text="Sortuj:").grid(row=0, column=8, padx=(0, 4), sticky="w")
+        sort_combo = ttk.Combobox(toolbar, textvariable=self.sort_field_var, values=["Priorytet", "ID", "Nr zlecenia", "Data dodania", "Termin"], width=14, state="readonly")
+        sort_combo.grid(row=0, column=9, padx=(0, 4), sticky="w")
+        sort_combo.bind("<<ComboboxSelected>>", lambda e: self.on_sort_changed())
+        ttk.Button(toolbar, text="Kolejność ▲▼", command=self.toggle_sort_direction).grid(row=0, column=10, padx=(0, 6))
+        ttk.Button(toolbar, text="Backup", command=self.backup_database).grid(row=0, column=11, padx=(0, 6))
+        ttk.Button(toolbar, text="Eksport CSV", command=self.export_csv).grid(row=0, column=12, padx=(0, 6))
+        ttk.Button(toolbar, text="Archiwizuj", command=self.archive_order).grid(row=0, column=13, sticky="w")
+
+        table_wrap = ttk.Frame(left)
+        table_wrap.grid(row=1, column=0, sticky="nsew")
+        table_wrap.rowconfigure(0, weight=1)
+        table_wrap.columnconfigure(0, weight=1)
+
+        columns = (
+            "id", "order_no", "priority", "client_name", "car", "reg_no", "assigned_mechanic",
+            "parking_spot", "status", "due_date", "created_at", "total", "balance"
+        )
+        self.tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="browse")
+        headings = {
+            "id": "ID", "order_no": "Nr zlecenia", "priority": "Priorytet", "client_name": "Klient",
+            "car": "Auto", "reg_no": "Rej.", "assigned_mechanic": "Mechanik", "parking_spot": "Miejsce",
+            "status": "Status", "due_date": "Termin", "created_at": "Dodano", "total": "Suma", "balance": "Do zapłaty",
+        }
+        widths = {
+            "id": 55, "order_no": 125, "priority": 90, "client_name": 170, "car": 210, "reg_no": 90,
+            "assigned_mechanic": 120, "parking_spot": 80, "status": 150, "due_date": 120, "created_at": 145, "total": 90, "balance": 95,
+        }
+        anchors = {
+            "id": "center", "order_no": "center", "priority": "center", "client_name": "w", "car": "w",
+            "reg_no": "center", "assigned_mechanic": "w", "parking_spot": "center", "status": "center", "due_date": "center",
+            "created_at": "center", "total": "e", "balance": "e",
+        }
+        heading_commands = {
+            "priority": lambda: self.set_sort_field("Priorytet"),
+            "id": lambda: self.set_sort_field("ID"),
+            "order_no": lambda: self.set_sort_field("Nr zlecenia"),
+            "created_at": lambda: self.set_sort_field("Data dodania"),
+            "due_date": lambda: self.set_sort_field("Termin"),
+        }
+        for col in columns:
+            if col in heading_commands:
+                self.tree.heading(col, text=headings[col], command=heading_commands[col])
+            else:
+                self.tree.heading(col, text=headings[col])
+            self.tree.column(col, width=widths[col], minwidth=max(70, widths[col] - 40), stretch=False, anchor=anchors[col])
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        self.tree.bind("<<TreeviewSelect>>", self.on_tree_select)
+        vsb = ttk.Scrollbar(table_wrap, orient="vertical", command=self.tree.yview)
+        hsb = ttk.Scrollbar(table_wrap, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+
+        self.build_form_area(right)
+
+    def build_form_area(self, parent):
+        form_canvas_wrap = ttk.Frame(parent)
+        form_canvas_wrap.grid(row=0, column=0, sticky="nsew")
+        form_canvas_wrap.rowconfigure(0, weight=1)
+        form_canvas_wrap.columnconfigure(0, weight=1)
+
+        self.form_canvas = tk.Canvas(form_canvas_wrap, highlightthickness=0)
+        self.form_canvas.grid(row=0, column=0, sticky="nsew")
+        form_vscroll = ttk.Scrollbar(form_canvas_wrap, orient="vertical", command=self.form_canvas.yview)
+        form_hscroll = ttk.Scrollbar(form_canvas_wrap, orient="horizontal", command=self.form_canvas.xview)
+        form_vscroll.grid(row=0, column=1, sticky="ns")
+        form_hscroll.grid(row=1, column=0, sticky="ew")
+        self.form_canvas.configure(yscrollcommand=form_vscroll.set, xscrollcommand=form_hscroll.set)
+
+        self.form_inner = ttk.Frame(self.form_canvas)
+        self.form_window = self.form_canvas.create_window((0, 0), window=self.form_inner, anchor="nw")
+        self.form_inner.bind("<Configure>", self.on_form_configure)
+        self.form_canvas.bind("<Configure>", self.on_canvas_configure)
+
+        self.build_form(self.form_inner)
+
+    def build_form(self, parent):
+        basic = ttk.LabelFrame(parent, text="Dane podstawowe", style="Group.TLabelframe", padding=8)
+        basic.pack(fill="x", pady=(0, 8))
+        basic.columnconfigure(1, weight=1)
+
+        self.add_form_row(basic, 0, "Nr zlecenia", "order_no")
+        self.add_form_row(basic, 1, "Klient", "client_name")
+        self.add_form_row(basic, 2, "Telefon", "client_phone")
+        self.add_form_row(basic, 3, "Mechanik", "assigned_mechanic")
+        self.add_form_row(basic, 4, "Marka", "car_make")
+        self.add_form_row(basic, 5, "Model", "car_model")
+        self.add_form_row(basic, 6, "Rejestracja", "reg_no")
+        self.add_form_row(basic, 7, "VIN", "vin")
+        self.add_form_row(basic, 8, "Miejsce", "parking_spot")
+
+        ops = ttk.LabelFrame(parent, text="Obsługa zlecenia", style="Group.TLabelframe", padding=8)
+        ops.pack(fill="x", pady=(0, 8))
+        ops.columnconfigure(1, weight=1)
+        self.add_combo_row(ops, 0, "Status", "status", STATUSES)
+        self.add_combo_row(ops, 1, "Priorytet", "priority", PRIORITIES)
+        self.add_form_row(ops, 2, "Przyjęcie", "intake_date")
+        self.add_form_row(ops, 3, "Termin", "due_date")
+        self.add_form_row(ops, 4, "Kontakt z klientem", "last_contact_date")
+
+        money = ttk.LabelFrame(parent, text="Koszty i płatności", style="Group.TLabelframe", padding=8)
+        money.pack(fill="x", pady=(0, 8))
+        money.columnconfigure(1, weight=1)
+        self.add_form_row(money, 0, "Koszt części", "parts_cost")
+        self.add_form_row(money, 1, "Robocizna", "labor_cost")
+        self.add_form_row(money, 2, "Cena dla klienta", "customer_price")
+        self.add_form_row(money, 3, "Wpłacono", "paid_amount")
+        ttk.Checkbutton(money, text="Opłacone w całości", variable=self.form_vars["is_paid"], command=self.sync_payment_checkbox).grid(row=4, column=0, columnspan=2, sticky="w", pady=(8, 0))
+
+        notes_group = ttk.LabelFrame(parent, text="Opis i części", style="Group.TLabelframe", padding=8)
+        notes_group.pack(fill="both", expand=True, pady=(0, 8))
+        self.issue_text = self.create_text_block(notes_group, "Opis usterki / zakres prac")
+        self.parts_text = self.create_text_block(notes_group, "Wymienione części")
+        self.parts_ordered_text = self.create_text_block(notes_group, "Części do zamówienia / brakujące")
+        self.notes_text = self.create_text_block(notes_group, "Notatki wewnętrzne")
+
+        actions = ttk.Frame(parent)
+        actions.pack(fill="x", pady=(0, 8))
+        ttk.Button(actions, text="Nowe zlecenie", command=self.clear_form).pack(side="left")
+        ttk.Button(actions, text="Duplikuj", command=self.duplicate_order).pack(side="left", padx=(6, 0))
+        ttk.Button(actions, text="Zapisz / Aktualizuj", style="Primary.TButton", command=self.save_order).pack(side="left", padx=6)
+        ttk.Button(actions, text="Usuń", style="Danger.TButton", command=self.delete_order).pack(side="left")
+        ttk.Button(actions, text="W trakcie", command=lambda: self.quick_status("W trakcie")).pack(side="right")
+        ttk.Button(actions, text="Gotowe", command=lambda: self.quick_status("Gotowe do odbioru")).pack(side="right", padx=6)
+        ttk.Button(actions, text="Czeka na części", command=lambda: self.quick_status("Oczekuje na części")).pack(side="right")
+
+    def build_archive_tab(self):
+        root = ttk.Frame(self.archive_tab, padding=8)
+        root.pack(fill="both", expand=True)
+        root.rowconfigure(1, weight=1)
+        root.columnconfigure(0, weight=1)
+
+        top = ttk.Frame(root, style="Panel.TFrame", padding=8)
+        top.grid(row=0, column=0, sticky="ew", pady=(0, 8))
+        ttk.Label(top, text="Szukaj w archiwum:").pack(side="left")
+        archive_entry = ttk.Entry(top, textvariable=self.archive_search_var, width=30)
+        archive_entry.pack(side="left", padx=(4, 10))
+        archive_entry.bind("<KeyRelease>", lambda e: self.refresh_archive_table())
+        ttk.Label(top, text="Status:").pack(side="left")
+        archive_status = ttk.Combobox(top, textvariable=self.archive_status_filter_var, values=["Wszystkie"] + STATUSES, state="readonly", width=20)
+        archive_status.pack(side="left", padx=(4, 10))
+        archive_status.bind("<<ComboboxSelected>>", lambda e: self.refresh_archive_table())
+        ttk.Button(top, text="Odśwież", command=self.refresh_archive_table).pack(side="left")
+        ttk.Button(top, text="Przywróć do aktywnych", command=self.restore_archived_order).pack(side="right")
+
+        table_wrap = ttk.Frame(root, style="Panel.TFrame", padding=8)
+        table_wrap.grid(row=1, column=0, sticky="nsew")
+        table_wrap.rowconfigure(0, weight=1)
+        table_wrap.columnconfigure(0, weight=1)
+
+        columns = ("id", "order_no", "client_name", "car", "status", "due_date", "updated_at")
+        self.archive_tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="browse")
+        for col, title, width in [
+            ("id", "ID", 60), ("order_no", "Nr zlecenia", 140), ("client_name", "Klient", 220),
+            ("car", "Auto", 240), ("status", "Status", 180), ("due_date", "Termin", 120), ("updated_at", "Aktualizacja", 180),
+        ]:
+            self.archive_tree.heading(col, text=title)
+            self.archive_tree.column(col, width=width, minwidth=max(70, width - 40), stretch=False, anchor="center")
+        self.archive_tree.column("client_name", anchor="w")
+        self.archive_tree.column("car", anchor="w")
+        self.archive_tree.grid(row=0, column=0, sticky="nsew")
+        vsb = ttk.Scrollbar(table_wrap, orient="vertical", command=self.archive_tree.yview)
+        hsb = ttk.Scrollbar(table_wrap, orient="horizontal", command=self.archive_tree.xview)
+        self.archive_tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, sticky="ew")
+
+    def create_text_block(self, parent, title: str):
+        c = self.colors
+        ttk.Label(parent, text=title, style="Panel.TLabel").pack(anchor="w", pady=(8, 3))
+        txt = tk.Text(parent, height=4, relief="sunken", borderwidth=1, wrap="word", bg=c["entry_bg"], fg=c["text"], insertbackground=c["text"])
+        txt.pack(fill="x")
+        self.bind_tab_navigation(txt)
+        return txt
+
+    def add_form_row(self, parent, row: int, label: str, var_name: str):
+        ttk.Label(parent, text=label, style="Panel.TLabel").grid(row=row, column=0, sticky="w", padx=(0, 6), pady=3)
+        entry = ttk.Entry(parent, textvariable=self.form_vars[var_name])
+        entry.grid(row=row, column=1, sticky="ew", pady=3)
+        self.bind_tab_navigation(entry)
+        return entry
+
+    def add_combo_row(self, parent, row: int, label: str, var_name: str, values):
+        ttk.Label(parent, text=label, style="Panel.TLabel").grid(row=row, column=0, sticky="w", padx=(0, 6), pady=3)
+        combo = ttk.Combobox(parent, textvariable=self.form_vars[var_name], values=values, state="readonly")
+        combo.grid(row=row, column=1, sticky="ew", pady=3)
+        self.bind_tab_navigation(combo)
+        return combo
+
+    def on_form_configure(self, event=None):
+        req_w = max(self.form_inner.winfo_reqwidth(), self.form_min_width)
+        req_h = self.form_inner.winfo_reqheight()
+        self.form_canvas.configure(scrollregion=(0, 0, req_w, req_h))
+        self.form_canvas.itemconfigure(self.form_window, width=req_w)
+
+    def on_canvas_configure(self, event=None):
+        req_w = max(self.form_inner.winfo_reqwidth(), self.form_min_width, event.width)
+        self.form_canvas.itemconfigure(self.form_window, width=req_w)
+
+    def bind_shortcuts(self):
+        self.bind_all("<Control-s>", lambda e: self.save_order())
+        self.bind_all("<Control-n>", lambda e: self.clear_form())
+        self.bind_all("<F5>", lambda e: self.refresh_all_tables())
+
+    def bind_tab_navigation(self, widget):
+        widget.configure(takefocus=True)
+        widget.bind("<Tab>", self.focus_next_widget)
+        widget.bind("<Shift-Tab>", self.focus_prev_widget)
+
+    def focus_next_widget(self, event):
+        event.widget.tk_focusNext().focus_set()
+        return "break"
+
+    def focus_prev_widget(self, event):
+        event.widget.tk_focusPrev().focus_set()
+        return "break"
+
+    def configure_tree_tags(self):
+        c = self.colors
+        self.tree.tag_configure("alt", background=c["alt_tree_bg"])
+        self.tree.tag_configure("prio_pilne", background="#ffd2d2" if self.current_theme == "light" else "#5f2626", foreground=c["text"], font=("Tahoma", 9, "bold"))
+        self.tree.tag_configure("prio_wysoka", background="#ffe9c9" if self.current_theme == "light" else "#5f4821", foreground=c["text"])
+        self.tree.tag_configure("prio_normalna", background=c["tree_bg"], foreground=c["text"])
+        self.tree.tag_configure("prio_niska", background="#edf5e8" if self.current_theme == "light" else "#243626", foreground=c["text"])
+        self.tree.tag_configure("due_overdue", background="#ffcccc" if self.current_theme == "light" else "#6b2a2a", foreground=c["text"], font=("Tahoma", 9, "bold"))
+        self.tree.tag_configure("due_soon", background="#fff0b8" if self.current_theme == "light" else "#6a5820", foreground=c["text"])
+        self.tree.tag_configure("due_ok", background="#edf5e8" if self.current_theme == "light" else "#24402a", foreground=c["text"])
+
+    def calculate_due_state(self, due_date_value: str, status: str):
+        if not due_date_value or status in ("Gotowe do odbioru", "Odebrane"):
+            return None, due_date_value or "", None
+        try:
+            days_left = (datetime.strptime(due_date_value, "%Y-%m-%d").date() - date.today()).days
+        except ValueError:
+            return None, due_date_value, None
+        if days_left <= 3:
+            return "due_overdue", f"{due_date_value} ({days_left} d)", days_left
+        if days_left <= 10:
+            return "due_soon", f"{due_date_value} ({days_left} d)", days_left
+        return "due_ok", f"{due_date_value} ({days_left} d)", days_left
+
+    def on_sort_changed(self):
+        self.settings_mgr.set("sort_field", self.sort_field_var.get())
+        self.refresh_table()
+
+    def set_sort_field(self, field_name: str):
+        current = self.sort_field_var.get()
+        if current == field_name:
+            self.toggle_sort_direction()
+            return
+        self.sort_field_var.set(field_name)
+        self.on_sort_changed()
+
+    def toggle_sort_direction(self):
+        self.sort_desc = not bool(self.sort_desc)
+        self.settings_mgr.set("sort_desc", bool(self.sort_desc))
+        self.refresh_table()
+
+    def apply_theme(self, theme_name: str, initial: bool = False):
+        self.current_theme = theme_name
+        self.colors = THEMES[theme_name]
+        self.configure(bg=self.colors["window_bg"])
+        self.configure_style()
+        self.repaint_widgets(self)
+        self.configure_tree_tags()
+        self.update_idletasks()
+        if not initial:
+            self.refresh_all_tables()
+        self.settings_mgr.set("theme", theme_name)
+
+    def repaint_widgets(self, widget):
+        c = self.colors
+        if isinstance(widget, tk.Text):
+            widget.configure(bg=c["entry_bg"], fg=c["text"], insertbackground=c["text"])
+        elif isinstance(widget, tk.Canvas):
+            widget.configure(bg=c["panel_bg"])
+        for child in widget.winfo_children():
+            self.repaint_widgets(child)
+
+    def toggle_theme(self):
+        current_geometry = self.geometry()
+        self.apply_theme("dark" if self.theme_var.get() else "light")
+        self.geometry(current_geometry)
+
+    def refresh_stats(self):
+        stats = self.db.stats()
+        labels = {
+            "total": f"Na placu: {stats['total']}",
+            "diagnosis": f"Diagnoza: {stats['diagnosis']}",
+            "in_progress": f"W trakcie: {stats['in_progress']}",
+            "waiting_parts": f"Czeka na części: {stats['waiting_parts']}",
+            "ready": f"Gotowe: {stats['ready']}",
+            "unpaid_sum": f"Do zapłaty: {stats['unpaid_sum']:.2f} zł",
+            "archived": f"Archiwum: {stats['archived']}",
+        }
+        for key, text in labels.items():
+            self.summary_labels[key].configure(text=text)
+
+    def row_matches_search(self, row, search_text: str) -> bool:
+        if not search_text:
+            return True
+        st = search_text.lower()
+        if self.search_mode_var.get() == "Nr zlecenia":
+            return st in str(row["order_no"] or "").lower()
+        values = [
+            row["order_no"], row["client_name"], row["client_phone"], row["assigned_mechanic"], row["car_make"], row["car_model"],
+            row["reg_no"], row["vin"], row["issue_description"], row["notes"], row["parts_ordered"], row["replaced_parts"],
+        ]
+        return any(st in str(v or "").lower() for v in values)
+
+    def parse_order_no_for_sort(self, order_no: str):
+        if not order_no:
+            return ("", 0, 0)
+        parts = str(order_no).split("/")
+        if len(parts) == 3:
+            prefix, year, number = parts
+            try:
+                return (prefix, int(year), int(number))
+            except ValueError:
+                pass
+        digits = "".join(ch for ch in str(order_no) if ch.isdigit())
+        return (str(order_no), 0, int(digits) if digits else 0)
+
+    def apply_sort(self, rows):
+        priority_rank = {"Pilne": 4, "Wysoka": 3, "Normalna": 2, "Niska": 1}
+        field = self.sort_field_var.get()
+
+        def due_key(row):
+            return row["due_date"] or ("9999-99-99" if self.sort_desc else "0000-00-00")
+
+        if field == "ID":
+            return sorted(rows, key=lambda row: int(row["id"] or 0), reverse=bool(self.sort_desc))
+        if field == "Nr zlecenia":
+            return sorted(rows, key=lambda row: self.parse_order_no_for_sort(row["order_no"] or ""), reverse=bool(self.sort_desc))
+        if field == "Data dodania":
+            return sorted(rows, key=lambda row: ((row["created_at"] or ""), int(row["id"] or 0)), reverse=bool(self.sort_desc))
+        if field == "Termin":
+            return sorted(rows, key=lambda row: (due_key(row), int(row["id"] or 0)), reverse=bool(self.sort_desc))
+        return sorted(
+            rows,
+            key=lambda row: (priority_rank.get(row["priority"] or "", 0), row["due_date"] or "9999-99-99", int(row["id"] or 0)),
+            reverse=bool(self.sort_desc),
+        )
+
+    def refresh_table(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        rows = self.db.fetch_orders("", self.status_filter_var.get(), archived=0)
+        search_text = self.search_var.get().strip()
+        rows = [row for row in rows if self.row_matches_search(row, search_text)]
+        priority_filter = self.priority_filter_var.get()
+        if priority_filter != "Wszystkie":
+            rows = [row for row in rows if (row["priority"] or "") == priority_filter]
+        if self.show_overdue_only_var.get():
+            filtered = []
+            for row in rows:
+                _tag, _display, days_left = self.calculate_due_state(row["due_date"], row["status"])
+                if days_left is not None and days_left <= 10:
+                    filtered.append(row)
+            rows = filtered
+
+        rows = self.apply_sort(rows)
+        self.configure_tree_tags()
+        for idx, row in enumerate(rows):
+            total = self.calculate_total(row)
+            balance = self.calculate_balance(row)
+            car = f"{row['car_make'] or ''} {row['car_model'] or ''}".strip()
+            tags = []
+            due_tag, display_due, _days_left = self.calculate_due_state(row["due_date"], row["status"])
+            priority_tag = PRIORITY_TAGS.get(row["priority"] or "")
+            if due_tag:
+                tags.append(due_tag)
+            elif priority_tag:
+                tags.append(priority_tag)
+            elif idx % 2 == 1:
+                tags.append("alt")
+            self.tree.insert(
+                "",
+                "end",
+                iid=str(row["id"]),
+                tags=tuple(tags),
+                values=(
+                    row["id"], row["order_no"] or "", row["priority"] or "", row["client_name"] or "", car,
+                    row["reg_no"] or "", row["assigned_mechanic"] or "", row["parking_spot"] or "", row["status"] or "",
+                    display_due, (row["created_at"] or "")[:16].replace("T", " "), f"{total:.2f} zł", f"{balance:.2f} zł",
+                ),
+            )
+        self.refresh_stats()
+
+    def refresh_archive_table(self):
+        for item in self.archive_tree.get_children():
+            self.archive_tree.delete(item)
+        rows = self.db.fetch_orders(self.archive_search_var.get().strip(), self.archive_status_filter_var.get(), archived=1)
+        for row in rows:
+            car = f"{row['car_make'] or ''} {row['car_model'] or ''}".strip()
+            self.archive_tree.insert(
+                "", "end", iid=str(row["id"]),
+                values=(row["id"], row["order_no"] or "", row["client_name"] or "", car, row["status"] or "", row["due_date"] or "", row["updated_at"] or "")
+            )
+
+    def refresh_all_tables(self):
+        self.refresh_table()
+        self.refresh_archive_table()
+
+    def get_text(self, widget: tk.Text) -> str:
+        return widget.get("1.0", "end").strip()
+
+    def set_text(self, widget: tk.Text, text: str):
+        widget.delete("1.0", "end")
+        widget.insert("1.0", text or "")
+
+    def parse_money(self, value: str) -> float:
+        value = str(value).strip().replace(",", ".")
+        if not value:
+            return 0.0
+        return float(value)
+
+    def calculate_total(self, row) -> float:
+        customer_price = row["customer_price"] or 0
+        if customer_price > 0:
+            return float(customer_price)
+        return float((row["parts_cost"] or 0) + (row["labor_cost"] or 0))
+
+    def calculate_balance(self, row) -> float:
+        balance = self.calculate_total(row) - float(row["paid_amount"] or 0)
+        return max(balance, 0.0)
+
+    def sync_payment_checkbox(self):
+        try:
+            total = max(self.parse_money(self.form_vars["customer_price"].get()), 0.0)
+            if total <= 0:
+                total = max(self.parse_money(self.form_vars["parts_cost"].get()) + self.parse_money(self.form_vars["labor_cost"].get()), 0.0)
+            if self.form_vars["is_paid"].get():
+                self.form_vars["paid_amount"].set(f"{total:.2f}")
+        except Exception:
+            pass
+
+    def form_data(self):
+        try:
+            parts_cost = self.parse_money(self.form_vars["parts_cost"].get())
+            labor_cost = self.parse_money(self.form_vars["labor_cost"].get())
+            customer_price = self.parse_money(self.form_vars["customer_price"].get())
+            paid_amount = self.parse_money(self.form_vars["paid_amount"].get())
+        except ValueError:
+            raise ValueError("Koszty i płatności muszą być liczbami.")
+
+        client_name = self.form_vars["client_name"].get().strip()
+        if not client_name:
+            raise ValueError("Podaj imię i nazwisko klienta.")
+
+        order_no = self.form_vars["order_no"].get().strip() or self.db.generate_next_order_no()
+        effective_total = customer_price if customer_price > 0 else parts_cost + labor_cost
+        is_paid = int(self.form_vars["is_paid"].get())
+        if is_paid and paid_amount < effective_total:
+            paid_amount = effective_total
+        if paid_amount >= effective_total and effective_total > 0:
+            is_paid = 1
+
+        return {
+            "order_no": order_no,
+            "client_name": client_name,
+            "client_phone": self.form_vars["client_phone"].get().strip(),
+            "car_make": self.form_vars["car_make"].get().strip(),
+            "car_model": self.form_vars["car_model"].get().strip(),
+            "reg_no": self.form_vars["reg_no"].get().strip(),
+            "vin": self.form_vars["vin"].get().strip(),
+            "parking_spot": self.form_vars["parking_spot"].get().strip(),
+            "status": self.form_vars["status"].get().strip(),
+            "priority": self.form_vars["priority"].get().strip(),
+            "assigned_mechanic": self.form_vars["assigned_mechanic"].get().strip(),
+            "intake_date": self.form_vars["intake_date"].get().strip(),
+            "due_date": self.form_vars["due_date"].get().strip(),
+            "last_contact_date": self.form_vars["last_contact_date"].get().strip(),
+            "issue_description": self.get_text(self.issue_text),
+            "replaced_parts": self.get_text(self.parts_text),
+            "parts_ordered": self.get_text(self.parts_ordered_text),
+            "parts_cost": parts_cost,
+            "labor_cost": labor_cost,
+            "customer_price": customer_price,
+            "paid_amount": paid_amount,
+            "is_paid": is_paid,
+            "notes": self.get_text(self.notes_text),
+            "is_archived": 0,
+        }
+
+    def save_order(self):
+        try:
+            data = self.form_data()
+            if self.selected_order_id:
+                current = self.db.fetch_order(self.selected_order_id)
+                if current and current["is_archived"]:
+                    data["is_archived"] = 1
+                self.db.update_order(self.selected_order_id, data)
+                messagebox.showinfo(APP_TITLE, "Zlecenie zostało zaktualizowane.")
+            else:
+                self.db.add_order(data)
+                messagebox.showinfo(APP_TITLE, "Dodano nowe zlecenie.")
+            self.refresh_all_tables()
+            self.clear_form()
+        except ValueError as e:
+            messagebox.showerror(APP_TITLE, str(e))
+        except Exception as e:
+            messagebox.showerror(APP_TITLE, f"Nie udało się zapisać danych.\n\n{e}")
+
+    def on_tree_select(self, event=None):
+        selection = self.tree.selection()
+        if not selection:
+            return
+        order_id = int(selection[0])
+        self.load_order_to_form(order_id)
+
+    def load_order_to_form(self, order_id: int):
+        row = self.db.fetch_order(order_id)
+        if not row:
+            return
+        self.selected_order_id = order_id
+        for key, var in self.form_vars.items():
+            if key == "is_paid":
+                var.set(int(row[key] or 0))
+            else:
+                var.set("" if row[key] is None else str(row[key]))
+        self.set_text(self.issue_text, row["issue_description"])
+        self.set_text(self.parts_text, row["replaced_parts"])
+        self.set_text(self.parts_ordered_text, row["parts_ordered"])
+        self.set_text(self.notes_text, row["notes"])
+        self.notebook.select(self.orders_tab)
+
+    def clear_form(self):
+        self.selected_order_id = None
+        defaults = {
+            "order_no": self.db.generate_next_order_no(),
+            "status": "Nowe",
+            "priority": "Normalna",
+            "intake_date": datetime.now().strftime("%Y-%m-%d"),
+            "parts_cost": "0",
+            "labor_cost": "0",
+            "customer_price": "0",
+            "paid_amount": "0",
+            "is_paid": 0,
+        }
+        for key, var in self.form_vars.items():
+            var.set(defaults.get(key, ""))
+        self.set_text(self.issue_text, "")
+        self.set_text(self.parts_text, "")
+        self.set_text(self.parts_ordered_text, "")
+        self.set_text(self.notes_text, "")
+        for item in self.tree.selection():
+            self.tree.selection_remove(item)
+
+    def duplicate_order(self):
+        if not self.selected_order_id:
+            messagebox.showwarning(APP_TITLE, "Najpierw wybierz zlecenie z tabeli.")
+            return
+        source = self.db.fetch_order(self.selected_order_id)
+        if not source:
+            return
+        data = dict(source)
+        for key in ("id", "created_at", "updated_at"):
+            data.pop(key, None)
+        data["order_no"] = self.db.generate_next_order_no()
+        data["status"] = "Nowe"
+        data["is_archived"] = 0
+        self.db.add_order(data)
+        self.refresh_all_tables()
+        self.clear_form()
+        messagebox.showinfo(APP_TITLE, "Zlecenie zostało zduplikowane jako nowe.")
+
+    def delete_order(self):
+        if not self.selected_order_id:
+            messagebox.showwarning(APP_TITLE, "Najpierw wybierz zlecenie z tabeli.")
+            return
+        if not messagebox.askyesno(APP_TITLE, "Na pewno usunąć wybrane zlecenie?"):
+            return
+        self.db.delete_order(self.selected_order_id)
+        self.refresh_all_tables()
+        self.clear_form()
+
+    def quick_status(self, status: str):
+        if not self.selected_order_id:
+            messagebox.showwarning(APP_TITLE, "Najpierw wybierz zlecenie z tabeli.")
+            return
+        self.db.update_order(self.selected_order_id, {"status": status})
+        self.refresh_all_tables()
+        row = self.db.fetch_order(self.selected_order_id)
+        if row:
+            self.form_vars["status"].set(row["status"])
+
+    def archive_order(self):
+        if not self.selected_order_id:
+            messagebox.showwarning(APP_TITLE, "Najpierw wybierz zlecenie z tabeli.")
+            return
+        if not messagebox.askyesno(APP_TITLE, "Przenieść zlecenie do archiwum?"):
+            return
+        self.db.update_order(self.selected_order_id, {"is_archived": 1})
+        self.refresh_all_tables()
+        self.clear_form()
+
+    def restore_archived_order(self):
+        selection = self.archive_tree.selection()
+        if not selection:
+            messagebox.showwarning(APP_TITLE, "Wybierz zlecenie z archiwum.")
+            return
+        order_id = int(selection[0])
+        self.db.update_order(order_id, {"is_archived": 0})
+        self.refresh_all_tables()
+        self.load_order_to_form(order_id)
+
+    def export_csv(self):
+        filepath = filedialog.asksaveasfilename(
+            title="Zapisz eksport CSV",
+            defaultextension=".csv",
+            filetypes=[("CSV", "*.csv")],
+            initialfile=f"warsztat_export_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+        )
+        if not filepath:
+            return
+        count = self.db.export_csv(filepath)
+        messagebox.showinfo(APP_TITLE, f"Wyeksportowano {count} rekordów do pliku CSV.")
+
+    def backup_database(self):
+        target = filedialog.asksaveasfilename(
+            title="Zapisz kopię bazy danych",
+            defaultextension=".db",
+            filetypes=[("Baza danych SQLite", "*.db"), ("Wszystkie pliki", "*.*")],
+            initialfile=f"warsztat_backup_{datetime.now().strftime('%Y%m%d_%H%M')}.db",
+        )
+        if not target:
+            return
+        try:
+            self.db.conn.commit()
+            src = resource_path(DB_NAME)
+            with open(src, "rb") as fsrc, open(target, "wb") as fdst:
+                fdst.write(fsrc.read())
+            messagebox.showinfo(APP_TITLE, "Kopia zapasowa została zapisana.")
+        except Exception as e:
+            messagebox.showerror(APP_TITLE, f"Nie udało się wykonać kopii zapasowej.\n\n{e}")
+
+
+if __name__ == "__main__":
+    app = WorkshopApp()
+    app.mainloop()
