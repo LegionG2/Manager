@@ -171,3 +171,132 @@ Przy przyszlym rozwoju warto stopniowo wydzielac:
 - migracje danych.
 
 Nie nalezy robic tego jednym duzym refaktorem.
+
+## MVP-002 - Dokladniejsza mapa `main.py`
+
+### Punkt wejscia aplikacji
+
+Punkt wejscia znajduje sie na koncu `main.py`:
+
+- tworzona jest instancja `WorkshopApp`,
+- uruchamiany jest `app.mainloop()`.
+
+Oznacza to, ze `main.py` jest jednoczesnie plikiem startowym i glownym miejscem implementacji aplikacji.
+
+### Stale i zalozenia globalne
+
+Na gorze `main.py` znajduja sie stale:
+
+- `APP_TITLE`,
+- `DB_NAME`,
+- `SETTINGS_NAME`,
+- `STATUSES`,
+- `PRIORITIES`,
+- `THEMES`,
+- `PRIORITY_TAGS`.
+
+Obecne ryzyka:
+
+- `APP_TITLE`, `DB_NAME` i katalog danych zawieraja nazwy zwiazane ze stara aplikacja warsztatowa.
+- `STATUSES` i `PRIORITIES` sa hardcodowane w kodzie.
+- Statusy, priorytety, nazwy plikow i czesc etykiet UI nie sa jeszcze konfigurowalne.
+- Zmiana tych wartosci moze wplynac jednoczesnie na UI, sortowanie, filtry, dane i eksport.
+
+### Kod zwiazany z baza danych
+
+Kod bazy danych znajduje sie glownie w klasie `Database`.
+
+Znane metody:
+
+- `create_tables()` tworzy tabele `orders`.
+- `migrate_tables()` dodaje brakujace kolumny do `orders`.
+- `generate_next_order_no()` generuje numer rekordu w obecnym formacie.
+- `add_order()` dodaje rekord.
+- `update_order()` aktualizuje rekord.
+- `delete_order()` usuwa rekord.
+- `fetch_orders()` pobiera liste rekordow z wyszukiwaniem, filtrem statusu i archiwum.
+- `fetch_order()` pobiera jeden rekord.
+- `stats()` liczy podsumowania dla panelu statystyk.
+- `export_csv()` eksportuje dane do CSV.
+
+Ryzyka:
+
+- Model tabeli `orders` jest branzowy i nie jest jeszcze generycznym modelem rekordow.
+- Zapytania SQL, wyszukiwanie, sortowanie i statystyki znaja konkretne kolumny.
+- `migrate_tables()` wykonuje migracje przy starcie aplikacji.
+- `Database` jest uzywana bezposrednio przez `WorkshopApp`, wiec UI i dane sa mocno polaczone.
+- `export_csv()` jest w warstwie bazy, ale dotyka formatu eksportu, czyli przyszlej osobnej odpowiedzialnosci.
+
+Obszary niejasne:
+
+- Nie wiadomo, jakie rzeczywiste dane uzytkownika istnieja w lokalnych bazach.
+- Nie wiadomo, czy wszystkie kolumny sa nadal aktywnie uzywane w UI.
+- Nie ma osobnych testow migracji ani eksportu.
+
+### Kod zwiazany z UI
+
+Kod UI znajduje sie glownie w klasie `WorkshopApp`, ktora dziedziczy po `tk.Tk`.
+
+Znane grupy metod:
+
+- start i inicjalizacja: `__init__()`,
+- style i motywy: `configure_style()`, `apply_theme()`, `toggle_theme()`, `repaint_widgets()`,
+- budowanie widoku: `build_ui()`, `build_orders_tab()`, `build_form_area()`, `build_form()`, `build_archive_tab()`,
+- pomocnicze kontrolki: `create_text_block()`, `add_form_row()`, `add_combo_row()`,
+- obsluga formularza i tabel: `refresh_table()`, `refresh_archive_table()`, `load_order_to_form()`, `clear_form()`,
+- akcje uzytkownika: `save_order()`, `delete_order()`, `duplicate_order()`, `quick_status()`, `archive_order()`, `restore_archived_order()`,
+- eksport i backup: `export_csv()`, `backup_database()`.
+
+Ryzyka:
+
+- UI wywoluje metody bazy danych bez warstwy posredniej.
+- UI zna nazwy kolumn bazy i obecny model danych.
+- Formularz jest oparty o hardcodowane pola w `form_vars`.
+- Etykiety i akcje nadal zawieraja zalozenia starej aplikacji.
+- Sortowanie, filtrowanie i walidacja formularza sa wymieszane z kodem widoku.
+
+Obszary niejasne:
+
+- Nie wiadomo, ktore elementy UI sa krytyczne dla obecnych uzytkownikow.
+- Nie ma automatycznych testow zachowania UI.
+- Przed wydzielaniem UI potrzebne sa scenariusze testow recznych.
+
+### Konfiguracja i stan aplikacji
+
+Konfiguracja jest rozproszona:
+
+- `SettingsManager` zapisuje ustawienia w JSON.
+- `get_app_data_dir()` wybiera katalog danych.
+- `resource_path()` buduje sciezki do plikow danych.
+- `WorkshopApp.__init__()` tworzy zmienne Tkinter, m.in. filtry, tryb wyszukiwania, motyw, sortowanie i `form_vars`.
+
+Ryzyka:
+
+- Czesc ustawien jest w JSON, a czesc w stalych globalnych.
+- Nie ma osobnego modelu konfiguracji aplikacji.
+- Katalog danych i nazwy plikow sa nadal powiazane ze stara nazwa aplikacji.
+- Przyszla konfiguracja typow rekordow i pol wymaga osobnego projektu, a nie szybkiego dopisywania kolejnych stalych.
+
+### Hardcodowane zalozenia branzowe
+
+Obecne przyklady zalozen, ktore trzeba traktowac jako stan przejsciowy:
+
+- nazwa `WorkshopApp`,
+- tytul `Warsztat Manager Premium`,
+- baza `warsztat_manager.db`,
+- katalog `WarsztatManagerPremium`,
+- tabela `orders`,
+- numeracja `WM/YYYY/NNNN`,
+- pola klienta, pojazdu, VIN, miejsca parkingowego, mechanika, czesci i kosztow,
+- statusy typu `Oczekuje na czesci`, `Gotowe do odbioru`, `Odebrane`,
+- nazwy eksportow i backupow zaczynajace sie od `warsztat_`.
+
+Nie nalezy usuwac ani zmieniac tych elementow bez osobnego etapu migracji, bo moga byc powiazane z istniejacymi danymi i obecnym dzialaniem UI.
+
+### Bezpieczna kolejnosc przyszlego refaktoru
+
+1. Najpierw opisac scenariusze testow recznych dla obecnego zachowania.
+2. Wydzielic pomocnicze funkcje dostepu do danych bez zmiany schematu.
+3. Wydzielic konfiguracje stalych i ustawien bez zmiany wartosci.
+4. Wydzielic fragmenty UI do mniejszych funkcji lub modulow bez zmiany wygladu.
+5. Dopiero pozniej projektowac generyczny model typow rekordow i pol.

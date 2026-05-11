@@ -103,3 +103,21 @@ Konsekwencje:
 - Najpierw dokumentacja i mapa kodu.
 - Potem przeglad struktury.
 - Dopiero pozniej stopniowe wydzielanie modulow.
+
+## 2026-05-11 - Najpierw stopniowe oddzielenie odpowiedzialnosci
+
+Decyzja:
+
+Przed zmiana funkcjonalnosci projekt najpierw bedzie stopniowo oddzielal odpowiedzialnosci.
+
+Kontekst:
+
+Obecny `main.py` laczy punkt wejscia aplikacji, UI Tkinter, dostep do SQLite, konfiguracje, walidacje formularza, wyszukiwanie, sortowanie, archiwum, backup i eksport. To zwieksza ryzyko przypadkowej zmiany zachowania podczas refaktoru.
+
+Konsekwencje:
+
+- Najpierw wydzielamy warstwe danych/bazy danych bez zmiany schematu.
+- Potem wydzielamy warstwe UI bez zmiany wygladu i zachowania.
+- Model biznesowy/domenowy oddzielamy od konkretnych nazw warsztatowych stopniowo.
+- Warstwe konfiguracji projektujemy osobno, zanim dodamy konfigurowalne typy rekordow i pola.
+- Kazdy etap musi byc maly, odwracalny i mozliwy do sprawdzenia recznie.
