@@ -37,6 +37,7 @@ Repozytorium jest male i skupione wokol jednego pliku aplikacji:
 - `domain/__init__.py` oznacza `domain` jako pakiet domenowy.
 - `services/app_config_service.py` zawiera loader konfiguracji aplikacji z JSON.
 - `services/config_service.py` zawiera centralny serwis konfiguracji agregujacy szczegolowe loadery.
+- `services/config_validation_service.py` zawiera podstawowa walidacje konfiguracji.
 - `services/field_config_service.py` zawiera loader konfiguracji pol z JSON.
 - `services/record_type_config_service.py` zawiera loader konfiguracji typu rekordu z JSON.
 - `services/section_config_service.py` zawiera loader konfiguracji sekcji/kart z JSON.
@@ -156,6 +157,27 @@ Udostepnia metody:
 
 Centralny serwis nie duplikuje logiki szczegolowych loaderow. Jest przygotowaniem pod przyszla ikone zebatki, ekran ustawien, konfigurator pol i konfigurator kart. Nie jest jeszcze podlaczony do UI i nie zapisuje konfiguracji.
 
+## Fundament walidacji konfiguracji
+
+`services/config_validation_service.py` wprowadza `ConfigValidationService` i `ConfigValidationResult`.
+
+Walidator sprawdza podstawowe wymagania dla:
+
+- konfiguracji aplikacji,
+- definicji pol,
+- typu rekordu,
+- sekcji.
+
+Sprawdzane sa tylko proste reguly:
+
+- wymagane pola tekstowe nie sa puste,
+- listy maja poprawny typ,
+- typy logiczne i liczbowe maja poprawny typ,
+- typ pola nalezy do `text`, `number`, `date`, `boolean`, `select`,
+- identyfikatory pol i sekcji nie sa powielone w swoich listach.
+
+Walidacja nie jest jeszcze pelnym systemem ustawien, nie jest podlaczona do UI i nie przerywa startu aplikacji.
+
 ## Current architecture observations
 
 ### UI logic
@@ -237,9 +259,24 @@ Central configuration access starts in `services/config_service.py`.
 - delegating record type loading to `RecordTypeConfigService`,
 - delegating section loading to `SectionConfigService`,
 - returning a combined `ManagerConfig` through `load_all()`,
+- validating the combined configuration through `validate_all()`,
 - writing application config, field definitions, record type config and section config back to JSON.
 
 It does not replace the detailed loaders, build settings UI, add a gear icon or change runtime behavior yet. Config writing is available as a technical foundation and is not connected to UI.
+
+### Configuration validation service
+
+Configuration validation starts in `services/config_validation_service.py`.
+
+`ConfigValidationService` is responsible for:
+
+- validating `AppConfig`,
+- validating field definitions,
+- validating `RecordTypeDefinition`,
+- validating section definitions,
+- returning `ConfigValidationResult` with a list of errors.
+
+It intentionally performs shallow validation only. It does not yet validate every cross-file relationship and it does not stop the current application from starting.
 
 ### Section configuration loader
 
@@ -608,6 +645,25 @@ Known risks:
 - There is no automatic backup before writing configuration files yet.
 - There is no user-specific configuration location yet.
 - Future settings UI must validate changes before saving and handle write errors clearly.
+
+## MVP-013 configuration validation foundation
+
+MVP-013 added:
+
+- `services/config_validation_service.py`.
+
+MVP-013 extended:
+
+- `services/config_service.py` with `validate_all()`.
+
+Added concepts:
+
+- `ConfigValidationService`,
+- `ConfigValidationResult`.
+
+The validator checks application config, field definitions, record type and sections. It returns a list of readable error messages and does not raise a full custom exception system.
+
+The validator is not connected to UI and does not block application startup. Future settings UI should call validation before saving configuration changes.
 
 ## Zasady techniczne
 

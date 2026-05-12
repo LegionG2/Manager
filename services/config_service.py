@@ -9,6 +9,7 @@ from domain.app_section import AppSectionDefinition
 from domain.field_definition import FieldDefinition, FieldOption
 from domain.record_type import RecordTypeDefinition
 from services.app_config_service import AppConfigService
+from services.config_validation_service import ConfigValidationResult, ConfigValidationService
 from services.field_config_service import FieldConfigService
 from services.record_type_config_service import RecordTypeConfigService
 from services.section_config_service import SectionConfigService
@@ -29,6 +30,7 @@ class ConfigService:
         self.field_config_service = FieldConfigService()
         self.record_type_config_service = RecordTypeConfigService()
         self.section_config_service = SectionConfigService()
+        self.config_validation_service = ConfigValidationService()
 
     def load_app_config(self) -> AppConfig:
         return self.app_config_service.load_config(self.config_dir / "app_config.json")
@@ -67,6 +69,15 @@ class ConfigService:
         self.save_field_definitions(config.field_definitions)
         self.save_record_type(config.record_type)
         self.save_sections(config.sections)
+
+    def validate_all(self, config: ManagerConfig | None = None) -> ConfigValidationResult:
+        config = config or self.load_all()
+        return self.config_validation_service.validate_all(
+            app_config=config.app_config,
+            field_definitions=config.field_definitions,
+            record_type=config.record_type,
+            sections=config.sections,
+        )
 
     def _write_json(self, path: Path, value) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)

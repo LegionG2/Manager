@@ -313,3 +313,22 @@ Konsekwencje:
 - Zapis nie jest jeszcze podlaczony do UI i nie dodaje funkcji uzytkowych.
 - Nie zmieniono UI, bazy danych, zaleznosci ani sposobu dzialania aplikacji.
 - Backup konfiguracji przed zapisem pozostaje osobnym przyszlym krokiem.
+
+## 2026-05-12 - Walidacja konfiguracji zaczyna sie w `services/config_validation_service.py`
+
+Decyzja:
+
+Dodano `ConfigValidationService` i `ConfigValidationResult` jako podstawowy mechanizm walidacji konfiguracji.
+
+Kontekst:
+
+MVP-013 ma przygotowac przyszly ekran ustawien do sprawdzania konfiguracji przed zapisem, ale bez zmiany obecnego UI i startu aplikacji. Poniewaz konfiguracja nie jest jeszcze uzywana przez runtime UI, walidacja jest dostepna jako jawnie wywolywany serwis i nie blokuje uruchamiania aplikacji.
+
+Konsekwencje:
+
+- Walidator sprawdza konfiguracje aplikacji, definicje pol, typ rekordu i sekcje.
+- Wynik walidacji zawiera liste czytelnych komunikatow bledow i flage `is_valid`.
+- `ConfigService` udostepnia `validate_all()`.
+- Walidacja jest podstawowa i nie jest jeszcze pelnym systemem ustawien.
+- Nie zmieniono UI, bazy danych, zaleznosci ani sposobu dzialania aplikacji.
+- Przyszly ekran ustawien powinien uzywac walidacji przed zapisem konfiguracji.

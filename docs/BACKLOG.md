@@ -339,7 +339,38 @@ Nastepny bezpieczny krok:
 
 - dodac backup konfiguracji przed zapisem albo walidacje spojnosc konfiguracji przed uzyciem zapisu w UI.
 
-### MVP-013 - Fundament wyszukiwania i filtrowania
+### MVP-013 - Configuration validation foundation
+
+Status: wykonane
+
+Cel:
+
+- dodac podstawowa walidacje konfiguracji,
+- przygotowac przyszly ekran ustawien do sprawdzania danych przed zapisem,
+- zachowac obecne UI, zachowanie i schemat bazy.
+
+Wynik MVP-013:
+
+- dodano `services/config_validation_service.py`,
+- wprowadzono `ConfigValidationService`,
+- wprowadzono `ConfigValidationResult`,
+- rozbudowano `ConfigService` o `validate_all()`,
+- walidator sprawdza konfiguracje aplikacji, definicje pol, typ rekordu i sekcje,
+- walidator zwraca liste komunikatow bledow,
+- walidacja nie jest jeszcze podlaczona do UI.
+
+Pozostale ryzyka:
+
+- walidacja nie obejmuje jeszcze wszystkich relacji miedzy plikami,
+- walidacja nie zatrzymuje startu aplikacji,
+- nie ma jeszcze ekranu ustawien ani ikony zebatki,
+- przyszle UI ustawien musi wywolywac walidacje przed zapisem.
+
+Nastepny bezpieczny krok:
+
+- rozszerzyc walidacje o spojnosc referencji albo uzyc jej w przyszlym ekranie ustawien przed zapisem konfiguracji.
+
+### MVP-014 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -348,7 +379,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-014 - Fundament archiwum
+### MVP-015 - Fundament archiwum
 
 Status: planowane
 
@@ -357,7 +388,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-015 - Fundament importu i eksportu
+### MVP-016 - Fundament importu i eksportu
 
 Status: planowane
 

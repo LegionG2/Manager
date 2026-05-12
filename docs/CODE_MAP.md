@@ -34,6 +34,7 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |   |-- __init__.py
 |   |-- app_config_service.py
 |   |-- config_service.py
+|   |-- config_validation_service.py
 |   |-- field_config_service.py
 |   |-- order_service.py
 |   |-- record_type_config_service.py
@@ -297,8 +298,10 @@ Co robi:
 - zawiera `ConfigService`,
 - zawiera `ManagerConfig` jako zebrany wynik wczytania konfiguracji,
 - agreguje `AppConfigService`, `FieldConfigService`, `RecordTypeConfigService` i `SectionConfigService`,
+- korzysta z `ConfigValidationService` dla jawnej walidacji konfiguracji,
 - udostepnia metody `load_app_config()`, `load_field_definitions()`, `load_record_type()`, `load_sections()` i `load_all()`,
 - udostepnia metody zapisu `save_app_config()`, `save_field_definitions()`, `save_record_type()`, `save_sections()` i `save_all()`,
+- udostepnia `validate_all()`,
 - korzysta z plikow JSON w katalogu `config`.
 
 Ryzyka i niejasne obszary:
@@ -308,6 +311,25 @@ Ryzyka i niejasne obszary:
 - Zapis konfiguracji istnieje jako fundament techniczny, ale nie jest jeszcze podlaczony do UI.
 - Nie obsluguje konfiguracji per uzytkownik.
 - Nie jest jeszcze pelnym systemem edycji ustawien.
+
+### `services/config_validation_service.py`
+
+Kategoria: konfiguracja, walidacja.
+
+Co robi:
+
+- zawiera `ConfigValidationService`,
+- zawiera `ConfigValidationResult`,
+- waliduje podstawowe wymagania konfiguracji aplikacji, definicji pol, typu rekordu i sekcji,
+- zwraca liste czytelnych komunikatow bledow,
+- sprawdza m.in. puste identyfikatory, wymagane nazwy, listy oraz dozwolone typy pol.
+
+Ryzyka i niejasne obszary:
+
+- Walidator nie jest jeszcze podlaczony do UI.
+- Walidator nie przerywa startu aplikacji.
+- To nie jest pelny system ustawien ani pelna walidacja relacji miedzy wszystkimi plikami.
+- Przyszly ekran ustawien powinien uzywac walidacji przed zapisem.
 
 ### `services/order_service.py`
 
@@ -997,3 +1019,34 @@ Ryzyka:
 Nastepny bezpieczny krok:
 
 - dodac prosty backup konfiguracji przed zapisem albo walidacje spojnosc konfiguracji przed zapisaniem zmian z przyszlego UI ustawien.
+
+## MVP-013 - Fundament walidacji konfiguracji
+
+Dodano:
+
+- `services/config_validation_service.py`.
+
+Rozbudowano:
+
+- `services/config_service.py` o jawna metode `validate_all()`.
+
+Walidator sprawdza:
+
+- `app_config`,
+- definicje pol,
+- typ rekordu,
+- sekcje.
+
+Zakres walidacji jest podstawowy:
+
+- wymagane pola tekstowe nie sa puste,
+- listy maja poprawny typ,
+- wartosci logiczne i liczbowe maja poprawny typ,
+- typ pola nalezy do `text`, `number`, `date`, `boolean`, `select`,
+- identyfikatory sekcji i pol nie sa powielone w swoich listach.
+
+Walidacja nie jest jeszcze podlaczona do UI, nie blokuje startu aplikacji i nie jest pelnym systemem ustawien.
+
+Nastepny bezpieczny krok:
+
+- uzyc walidatora w przyszlym ekranie ustawien przed zapisem albo rozszerzyc walidacje o spojnosc referencji miedzy typem rekordu, polami i sekcjami.
