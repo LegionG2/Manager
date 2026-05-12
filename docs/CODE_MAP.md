@@ -16,18 +16,21 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |-- README.md
 |-- build_exe.bat
 |-- config/
-|   `-- default_record_fields.json
+|   |-- default_record_fields.json
+|   `-- default_record_type.json
 |-- data/
 |   |-- __init__.py
 |   `-- database.py
 |-- domain/
 |   |-- __init__.py
 |   |-- field_definition.py
+|   |-- record_type.py
 |   `-- record.py
 |-- services/
 |   |-- __init__.py
 |   |-- field_config_service.py
-|   `-- order_service.py
+|   |-- order_service.py
+|   `-- record_type_config_service.py
 |-- ui/
 |   |-- __init__.py
 |   `-- app.py
@@ -58,6 +61,22 @@ Ryzyka i niejasne obszary:
 - Plik nie jest jeszcze podlaczony do UI ani bazy danych.
 - To przyklad techniczny, a nie preset branzowy ani docelowy konfigurator.
 - Przyszle zmiany musza rozstrzygnac, gdzie bedzie zapisywana konfiguracja uzytkownika.
+
+### `config/default_record_type.json`
+
+Kategoria: konfiguracja, fundament typow rekordow.
+
+Co robi:
+
+- zawiera neutralna domyslna konfiguracje typu rekordu,
+- definiuje typ `default` o nazwie `Default record`,
+- wskazuje liste identyfikatorow pol: `title`, `description`, `status`, `created_date`.
+
+Ryzyka i niejasne obszary:
+
+- Plik nie jest jeszcze podlaczony do UI ani bazy danych.
+- To techniczny przyklad konfiguracji typu rekordu, a nie preset branzowy.
+- Nie istnieje jeszcze edytor typow rekordow ani zapis konfiguracji uzytkownika.
 
 ### `main.py`
 
@@ -154,6 +173,21 @@ Ryzyka i niejasne obszary:
 - Nie istnieje jeszcze walidacja runtime dla wszystkich typow pol.
 - Nie ma jeszcze zapisu konfiguracji uzytkownika ani migracji danych.
 
+### `domain/record_type.py`
+
+Kategoria: domena, konfiguracja typow rekordow.
+
+Co robi:
+
+- definiuje `RecordTypeDefinition`,
+- opisuje generyczny typ rekordu przez `id`, `name`, opcjonalny `description` i liste identyfikatorow pol.
+
+Ryzyka i niejasne obszary:
+
+- Model typu rekordu nie jest jeszcze podlaczony do UI, bazy ani dynamicznych formularzy.
+- Lista pol wskazuje identyfikatory, ale nie jest jeszcze walidowana wzgledem `FieldDefinition`.
+- Obecny model `orders` nadal dziala jako stan przejsciowy.
+
 ### `services/__init__.py`
 
 Kategoria: logika aplikacyjna.
@@ -203,6 +237,24 @@ Co robi:
 Ryzyka i niejasne obszary:
 
 - Loader nie jest jeszcze uzywany przez UI.
+- Loader nie zapisuje konfiguracji i nie obsluguje konfiguracji per uzytkownik.
+- Nie zmienia schematu SQLite ani obecnego modelu `orders`.
+
+### `services/record_type_config_service.py`
+
+Kategoria: konfiguracja, logika aplikacyjna.
+
+Co robi:
+
+- zawiera `RecordTypeConfigService`,
+- wczytuje konfiguracje typu rekordu z pliku JSON,
+- mapuje JSON na `RecordTypeDefinition`,
+- sprawdza, czy konfiguracja typu jest obiektem i czy `fields` jest lista.
+
+Ryzyka i niejasne obszary:
+
+- Loader nie jest jeszcze uzywany przez UI.
+- Loader nie laczy jeszcze typu rekordu z definicjami pol.
 - Loader nie zapisuje konfiguracji i nie obsluguje konfiguracji per uzytkownik.
 - Nie zmienia schematu SQLite ani obecnego modelu `orders`.
 
@@ -664,3 +716,34 @@ Obecny model warsztatowy nadal dziala jako stan przejsciowy:
 Nastepny bezpieczny krok:
 
 - dodac walidacje definicji pol albo przygotowac adapter tylko do odczytu, ktory mapuje domyslna konfiguracje na przyszly `RecordType`, bez zmiany UI i schematu bazy.
+
+## MVP-008 - Fundament konfigurowalnych typow rekordow
+
+Dodano:
+
+- `domain/record_type.py`,
+- `config/default_record_type.json`,
+- `services/record_type_config_service.py`.
+
+Wprowadzono generyczne pojecie:
+
+- `RecordTypeDefinition` - definicja typu rekordu z `id`, `name`, opcjonalnym opisem i lista identyfikatorow pol.
+
+Domyslna konfiguracja typu rekordu znajduje sie w `config/default_record_type.json` i zawiera neutralny typ:
+
+- `id`: `default`,
+- `name`: `Default record`,
+- `fields`: `title`, `description`, `status`, `created_date`.
+
+`RecordTypeConfigService` umie wczytac JSON typu rekordu i zamienic go na obiekt domenowy. Loader nie jest jeszcze podlaczony do UI, bazy, obecnego formularza ani `OrderService`.
+
+Obecny model warsztatowy nadal dziala jako stan przejsciowy:
+
+- tabela `orders` pozostaje bez zmian,
+- formularze i tabele UI pozostaja statyczne,
+- `OrderService` nadal obsluguje obecny model zlecen,
+- nie dodano migracji ani nowych tabel.
+
+Nastepny bezpieczny krok:
+
+- dodac walidacje zgodnosci typu rekordu z definicjami pol albo przygotowac adapter tylko do odczytu laczacy `RecordTypeDefinition` z `FieldDefinition`, bez zmiany UI i schematu bazy.

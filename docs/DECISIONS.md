@@ -217,3 +217,22 @@ Konsekwencje:
 - Nie zmieniono UI, bazy danych, zaleznosci ani sposobu zapisu danych.
 - Obecny model warsztatowy i `OrderService` pozostaja stanem przejsciowym.
 - Nastepny bezpieczny krok to walidacja konfiguracji albo adapter do `RecordType`, nadal bez dynamicznego UI i migracji bazy.
+
+## 2026-05-12 - Definicje typow rekordow zaczynaja sie w `domain/record_type.py`
+
+Decyzja:
+
+Dodano neutralny model typu rekordu w `domain/record_type.py`, domyslna konfiguracje w `config/default_record_type.json` oraz loader w `services/record_type_config_service.py`.
+
+Kontekst:
+
+MVP-008 ma przygotowac fundament pod konfigurowalne typy rekordow bez zmiany obecnego UI, zachowania aplikacji i schematu SQLite. Typ rekordu ma w przyszlosci laczyc zestaw pol w uzytkownikowo definiowana kategorie danych, ale obecny statyczny formularz i model `orders` pozostaja aktywne.
+
+Konsekwencje:
+
+- `RecordTypeDefinition` opisuje typ rekordu przez `id`, `name`, opcjonalny opis i liste identyfikatorow pol.
+- `RecordTypeConfigService` wczytuje konfiguracje typu rekordu z JSON i mapuje ja na obiekt domenowy.
+- Domyslna konfiguracja jest neutralna: `default`, `Default record`, pola `title`, `description`, `status`, `created_date`.
+- Nie zmieniono UI, bazy danych, zaleznosci ani sposobu zapisu danych.
+- Obecny model warsztatowy i `OrderService` pozostaja stanem przejsciowym.
+- Nastepny bezpieczny krok to walidacja referencji pol albo adapter laczacy `RecordTypeDefinition` z `FieldDefinition`, nadal bez dynamicznego UI i migracji bazy.

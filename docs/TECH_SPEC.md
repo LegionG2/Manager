@@ -24,12 +24,15 @@ Repozytorium jest male i skupione wokol jednego pliku aplikacji:
 
 - `main.py` zawiera prosty punkt wejscia aplikacji.
 - `config/default_record_fields.json` zawiera neutralna domyslna konfiguracje przyszlych pol rekordow.
+- `config/default_record_type.json` zawiera neutralna domyslna konfiguracje przyszlego typu rekordu.
 - `ui/app.py` zawiera aplikacje Tkinter, ustawienia, logike UI, archiwum i backup.
 - `ui/__init__.py` oznacza `ui` jako pakiet warstwy UI.
 - `domain/record.py` zawiera fundament generycznego modelu domenowego rekordow.
 - `domain/field_definition.py` zawiera fundament definicji konfigurowalnych pol.
+- `domain/record_type.py` zawiera fundament definicji konfigurowalnych typow rekordow.
 - `domain/__init__.py` oznacza `domain` jako pakiet domenowy.
 - `services/field_config_service.py` zawiera loader konfiguracji pol z JSON.
+- `services/record_type_config_service.py` zawiera loader konfiguracji typu rekordu z JSON.
 - `services/order_service.py` zawiera przejsciowy serwis logiki rekordow/zlecen.
 - `services/__init__.py` oznacza `services` jako pakiet serwisow aplikacyjnych.
 - `data/database.py` zawiera obsluge SQLite, obecny model tabeli `orders`, operacje CRUD, statystyki i eksport CSV.
@@ -78,6 +81,21 @@ Domyslna konfiguracja znajduje sie w `config/default_record_fields.json`. Jest n
 
 `services/field_config_service.py` zawiera `FieldConfigService`, ktory wczytuje liste pol z JSON i mapuje ja na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, bazy ani obecnego statycznego formularza.
 
+## Fundament konfigurowalnych typow rekordow
+
+`domain/record_type.py` wprowadza neutralne pojecie `RecordTypeDefinition`.
+
+Definicja typu rekordu zawiera:
+
+- `id`,
+- `name`,
+- opcjonalny `description`,
+- liste identyfikatorow pol.
+
+Domyslna konfiguracja znajduje sie w `config/default_record_type.json`. Jest neutralna i opisuje typ `default` o nazwie `Default record`, uzywajacy pol `title`, `description`, `status` i `created_date`.
+
+`services/record_type_config_service.py` zawiera `RecordTypeConfigService`, ktory wczytuje konfiguracje typu rekordu z JSON i mapuje ja na obiekt domenowy. Loader nie jest jeszcze podlaczony do UI, bazy ani obecnego statycznego formularza.
+
 ## Current architecture observations
 
 ### UI logic
@@ -115,7 +133,7 @@ The name is intentionally transitional. The current database table is still `ord
 
 ### Domain model
 
-Generic domain model definitions live in `domain/record.py` and `domain/field_definition.py`.
+Generic domain model definitions live in `domain/record.py`, `domain/field_definition.py` and `domain/record_type.py`.
 
 The modules currently contain simple structures only:
 
@@ -125,9 +143,10 @@ The modules currently contain simple structures only:
 - `Record`,
 - `FieldType`,
 - `FieldOption`,
-- `FieldDefinition`.
+- `FieldDefinition`,
+- `RecordTypeDefinition`.
 
-They are intentionally not wired into the running application yet. This keeps MVP-006 and MVP-007 as safe foundations without changing database schema, UI behavior or data persistence.
+They are intentionally not wired into the running application yet. This keeps MVP-006, MVP-007 and MVP-008 as safe foundations without changing database schema, UI behavior or data persistence.
 
 ### Field configuration loader
 
@@ -141,6 +160,19 @@ Field configuration loading starts in `services/field_config_service.py`.
 - converting select options into `FieldOption`.
 
 It does not save configuration, load user-specific configuration or build UI controls yet.
+
+### Record type configuration loader
+
+Record type configuration loading starts in `services/record_type_config_service.py`.
+
+`RecordTypeConfigService` is responsible for:
+
+- reading a JSON file with one record type definition,
+- checking that the root value is an object,
+- checking that `fields` is a list,
+- converting the raw dictionary into `RecordTypeDefinition`.
+
+It does not save configuration, load user-specific configuration, validate field references against `FieldDefinition` or build UI controls yet.
 
 ### Database logic
 
@@ -175,6 +207,7 @@ The code is tightly coupled rather than modular:
 - UI methods know database column names.
 - The new `domain/record.py` model is not yet mapped to `orders`.
 - The field configuration model is not yet mapped to the current static form.
+- The record type configuration model is not yet mapped to the current static form or database.
 - `OrderService` knows database column names and current order fields.
 - Database queries know current status names and workflow assumptions.
 - Sorting, filtering and validation still know current business fields, though part of that logic moved out of UI.
@@ -350,6 +383,28 @@ The supported field types are:
 The current workshop-oriented model remains active as a transitional state. The default field configuration and loader are not connected to UI, SQLite or `OrderService`. No migration, new tables, dynamic form, dynamic list or user-facing feature was added.
 
 Next safe steps are to validate field definitions more strictly, map the default fields into a future `RecordType`, or add a read-only adapter. Those steps should still avoid changing the current UI and database schema.
+
+## MVP-008 configurable record types foundation
+
+MVP-008 added:
+
+- `domain/record_type.py`,
+- `config/default_record_type.json`,
+- `services/record_type_config_service.py`.
+
+Added generic concept:
+
+- `RecordTypeDefinition`.
+
+The default record type configuration is neutral:
+
+- `id`: `default`,
+- `name`: `Default record`,
+- `fields`: `title`, `description`, `status`, `created_date`.
+
+The current workshop-oriented model remains active as a transitional state. The default record type configuration and loader are not connected to UI, SQLite or `OrderService`. No migration, new tables, dynamic form, dynamic list or user-facing feature was added.
+
+Next safe steps are to validate that record type field references exist in loaded field definitions, build a read-only adapter that combines `RecordTypeDefinition` and `FieldDefinition`, or prepare documentation for user-owned type configuration. Those steps should still avoid changing the current UI and database schema.
 
 ## Zasady techniczne
 

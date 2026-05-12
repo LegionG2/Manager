@@ -1,0 +1,11 @@
+{
+  "id": "default",
+  "name": "Default record",
+  "description": "Generic default record type",
+  "fields": [
+    "title",
+    "description",
+    "status",
+    "created_date"
+  ]
+}

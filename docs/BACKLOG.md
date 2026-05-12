@@ -182,7 +182,38 @@ Nastepny bezpieczny krok:
 
 - dodac walidacje konfiguracji albo adapter tylko do odczytu laczacy definicje pol z `RecordType`, bez zmiany schematu bazy i UI.
 
-### MVP-008 - Fundament wyszukiwania i filtrowania
+### MVP-008 - Introduce configurable record types model
+
+Status: wykonane
+
+Cel:
+
+- zaprojektowac konfiguracje typow rekordow,
+- powiazac typ rekordu z lista pol,
+- zachowac obecne UI, zachowanie i schemat bazy.
+
+Wynik MVP-008:
+
+- dodano `domain/record_type.py`,
+- dodano `config/default_record_type.json`,
+- dodano `services/record_type_config_service.py`,
+- wprowadzono `RecordTypeDefinition`,
+- domyslna konfiguracja typu jest neutralna: `default`, `Default record`, pola `title`, `description`, `status`, `created_date`,
+- loader potrafi wczytac JSON i zmapowac go na obiekt domenowy,
+- konfiguracja typu rekordu nie jest jeszcze podlaczona do UI ani bazy.
+
+Pozostale ryzyka:
+
+- obecny statyczny formularz nadal dziala na modelu `orders`,
+- nie ma jeszcze edytora typow rekordow ani zapisu konfiguracji uzytkownika,
+- referencje pol w typie rekordu nie sa jeszcze walidowane wzgledem `FieldDefinition`,
+- przyszle podpiecie musi zachowac obecne dane i UI.
+
+Nastepny bezpieczny krok:
+
+- dodac walidacje zgodnosci typu rekordu z definicjami pol albo adapter tylko do odczytu laczacy `RecordTypeDefinition` i `FieldDefinition`, bez zmiany schematu bazy i UI.
+
+### MVP-009 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -191,7 +222,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-009 - Fundament archiwum
+### MVP-010 - Fundament archiwum
 
 Status: planowane
 
@@ -200,7 +231,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-010 - Fundament importu i eksportu
+### MVP-011 - Fundament importu i eksportu
 
 Status: planowane
 
