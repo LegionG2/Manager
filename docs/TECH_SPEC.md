@@ -236,9 +236,10 @@ Central configuration access starts in `services/config_service.py`.
 - delegating field definition loading to `FieldConfigService`,
 - delegating record type loading to `RecordTypeConfigService`,
 - delegating section loading to `SectionConfigService`,
-- returning a combined `ManagerConfig` through `load_all()`.
+- returning a combined `ManagerConfig` through `load_all()`,
+- writing application config, field definitions, record type config and section config back to JSON.
 
-It does not replace the detailed loaders, save configuration, build settings UI, add a gear icon or change runtime behavior yet.
+It does not replace the detailed loaders, build settings UI, add a gear icon or change runtime behavior yet. Config writing is available as a technical foundation and is not connected to UI.
 
 ### Section configuration loader
 
@@ -577,7 +578,36 @@ Added concepts:
 - record type configuration,
 - section configuration.
 
-The detailed loaders remain in place and still own JSON parsing for their specific configuration files. The central service is only a thin access layer for future settings work. It is not connected to UI, does not save user settings and does not add any user-facing feature.
+The detailed loaders remain in place and still own JSON parsing for their specific configuration files. The central service is only a thin access layer for future settings work. It is not connected to UI and does not add any user-facing feature.
+
+## MVP-012 configuration writing foundation
+
+MVP-012 extended:
+
+- `services/config_service.py`.
+
+Added write methods:
+
+- `save_app_config()`,
+- `save_field_definitions()`,
+- `save_record_type()`,
+- `save_sections()`,
+- `save_all()`.
+
+The writable config files are:
+
+- `config/app_config.json`,
+- `config/default_record_fields.json`,
+- `config/default_record_type.json`,
+- `config/default_sections.json`.
+
+JSON writing uses the Python standard library with `ensure_ascii=False` and `indent=2`. The writer serializes the existing domain objects into the current JSON structures. It is not connected to UI and does not change application behavior.
+
+Known risks:
+
+- There is no automatic backup before writing configuration files yet.
+- There is no user-specific configuration location yet.
+- Future settings UI must validate changes before saving and handle write errors clearly.
 
 ## Zasady techniczne
 

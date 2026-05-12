@@ -306,7 +306,40 @@ Nastepny bezpieczny krok:
 
 - dodac walidacje spojnosc konfiguracji albo zaplanowac osobny MVP dla ustawien korzystajacych z `ConfigService`.
 
-### MVP-012 - Fundament wyszukiwania i filtrowania
+### MVP-012 - Configuration writing foundation
+
+Status: wykonane
+
+Cel:
+
+- dodac fundament zapisu konfiguracji do JSON,
+- zachowac obecne UI, zachowanie i schemat bazy,
+- przygotowac przyszly ekran ustawien do zapisywania zmian.
+
+Wynik MVP-012:
+
+- rozbudowano `services/config_service.py`,
+- dodano `save_app_config()`,
+- dodano `save_field_definitions()`,
+- dodano `save_record_type()`,
+- dodano `save_sections()`,
+- dodano `save_all()`,
+- zapis obejmuje `app_config.json`, `default_record_fields.json`, `default_record_type.json` i `default_sections.json`,
+- zapis uzywa standardowej biblioteki Pythona oraz `indent=2`,
+- zapis nie jest jeszcze podlaczony do UI.
+
+Pozostale ryzyka:
+
+- nie ma jeszcze automatycznego backupu konfiguracji przed zapisem,
+- nie ma jeszcze zapisu konfiguracji per uzytkownik,
+- nie ma jeszcze ekranu ustawien ani ikony zebatki,
+- przyszle UI ustawien musi walidowac dane przed zapisem.
+
+Nastepny bezpieczny krok:
+
+- dodac backup konfiguracji przed zapisem albo walidacje spojnosc konfiguracji przed uzyciem zapisu w UI.
+
+### MVP-013 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -315,7 +348,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-013 - Fundament archiwum
+### MVP-014 - Fundament archiwum
 
 Status: planowane
 
@@ -324,7 +357,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-014 - Fundament importu i eksportu
+### MVP-015 - Fundament importu i eksportu
 
 Status: planowane
 

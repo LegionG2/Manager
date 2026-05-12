@@ -298,13 +298,15 @@ Co robi:
 - zawiera `ManagerConfig` jako zebrany wynik wczytania konfiguracji,
 - agreguje `AppConfigService`, `FieldConfigService`, `RecordTypeConfigService` i `SectionConfigService`,
 - udostepnia metody `load_app_config()`, `load_field_definitions()`, `load_record_type()`, `load_sections()` i `load_all()`,
+- udostepnia metody zapisu `save_app_config()`, `save_field_definitions()`, `save_record_type()`, `save_sections()` i `save_all()`,
 - korzysta z plikow JSON w katalogu `config`.
 
 Ryzyka i niejasne obszary:
 
 - Centralny serwis nie jest jeszcze uzywany przez UI.
 - Nie zastępuje szczegolowych loaderow i nie usuwa ich odpowiedzialnosci.
-- Nie zapisuje konfiguracji i nie obsluguje konfiguracji per uzytkownik.
+- Zapis konfiguracji istnieje jako fundament techniczny, ale nie jest jeszcze podlaczony do UI.
+- Nie obsluguje konfiguracji per uzytkownik.
 - Nie jest jeszcze pelnym systemem edycji ustawien.
 
 ### `services/order_service.py`
@@ -962,3 +964,36 @@ Istniejace szczegolowe serwisy pozostaja:
 Nastepny bezpieczny krok:
 
 - dodac walidacje spojnosc konfiguracji albo w osobnym MVP zaczac uzywac `ConfigService` w przyszlym ekranie ustawien, bez zmiany obecnego UI i schematu bazy.
+
+## MVP-012 - Fundament zapisu konfiguracji
+
+Rozbudowano:
+
+- `services/config_service.py`.
+
+Dodano zapis JSON dla:
+
+- `config/app_config.json`,
+- `config/default_record_fields.json`,
+- `config/default_record_type.json`,
+- `config/default_sections.json`.
+
+Dodane metody:
+
+- `save_app_config()`,
+- `save_field_definitions()`,
+- `save_record_type()`,
+- `save_sections()`,
+- `save_all()`.
+
+Zapis uzywa standardowej biblioteki Pythona, `ensure_ascii=False` i `indent=2`. Serwis serializuje obiekty domenowe do obecnych struktur JSON i nie jest jeszcze podlaczony do UI.
+
+Ryzyka:
+
+- Brak automatycznego backupu plikow konfiguracji przed zapisem.
+- Brak zapisu konfiguracji per uzytkownik.
+- Przyszly ekran ustawien musi uwzglednic walidacje i obsluge bledow zapisu.
+
+Nastepny bezpieczny krok:
+
+- dodac prosty backup konfiguracji przed zapisem albo walidacje spojnosc konfiguracji przed zapisaniem zmian z przyszlego UI ustawien.

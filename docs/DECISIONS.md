@@ -294,3 +294,22 @@ Konsekwencje:
 - Nie zmieniono UI, bazy danych, zaleznosci ani sposobu zapisu danych.
 - Centralny serwis jest przygotowaniem pod przyszla ikone zebatki, ekran ustawien, konfigurator pol i konfigurator kart.
 - Nastepny bezpieczny krok to walidacja spojnosc konfiguracji albo osobny MVP dla ustawien korzystajacych z `ConfigService`.
+
+## 2026-05-12 - Zapis konfiguracji zaczyna sie w `services/config_service.py`
+
+Decyzja:
+
+Rozbudowano `ConfigService` o metody zapisu konfiguracji do plikow JSON.
+
+Kontekst:
+
+MVP-012 ma przygotowac fundament pod przyszly ekran ustawien i ikone zebatki bez zmiany obecnego UI. Poniewaz `ConfigService` jest centralnym punktem dostepu do konfiguracji, dodano w nim zapis obiektow domenowych do istniejacych plikow JSON, bez usuwania szczegolowych loaderow.
+
+Konsekwencje:
+
+- `ConfigService` zapisuje `app_config.json`, `default_record_fields.json`, `default_record_type.json` i `default_sections.json`.
+- Dodano `save_app_config()`, `save_field_definitions()`, `save_record_type()`, `save_sections()` i `save_all()`.
+- Zapis uzywa standardowej biblioteki Pythona, `ensure_ascii=False` i `indent=2`.
+- Zapis nie jest jeszcze podlaczony do UI i nie dodaje funkcji uzytkowych.
+- Nie zmieniono UI, bazy danych, zaleznosci ani sposobu dzialania aplikacji.
+- Backup konfiguracji przed zapisem pozostaje osobnym przyszlym krokiem.
