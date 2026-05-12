@@ -18,6 +18,9 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |-- data/
 |   |-- __init__.py
 |   `-- database.py
+|-- ui/
+|   |-- __init__.py
+|   `-- app.py
 |-- main.py
 `-- docs/
     |-- BACKLOG.md
@@ -32,36 +35,17 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 
 ### `main.py`
 
-Kategoria: punkt wejscia, UI, logika aplikacji, konfiguracja.
+Kategoria: punkt wejscia.
 
-Co prawdopodobnie robi:
+Co robi:
 
-- uruchamia aplikacje Tkinter,
-- definiuje tytul aplikacji, nazwy plikow danych i ustawien,
-- definiuje obecne statusy i priorytety,
-- definiuje motywy jasny i ciemny,
-- zarzadza ustawieniami lokalnymi przez JSON,
-- importuje `Database` z `data.database`,
-- buduje glowne okno aplikacji,
-- buduje zakladki aktywnych rekordow i archiwum,
-- obsluguje formularz, tabele, wyszukiwanie, filtrowanie, sortowanie, archiwum, backup i eksport CSV.
-
-Znane elementy:
-
-- `get_app_data_dir()` wybiera lokalny katalog danych uzytkownika.
-- `resource_path()` buduje sciezki do plikow danych.
-- `SettingsManager` obsluguje plik ustawien JSON.
-- `Database` jest importowana z `data.database`.
-- `WorkshopApp` laczy UI Tkinter z logika aplikacji.
+- importuje `WorkshopApp` z `ui.app`,
+- tworzy instancje aplikacji,
+- uruchamia `mainloop()`.
 
 Ryzyka i niejasne obszary:
 
-- Plik laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
-- Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
-- UI nadal zna konkretne kolumny aktualnego modelu danych.
-- Backup nadal korzysta bezposrednio z `self.db.conn`.
-- Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
-- Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
+- Punkt startowy nadal uruchamia obecna aplikacje warsztatowa, bo nie zmieniano zachowania ani nazewnictwa UI.
 
 ### `data/__init__.py`
 
@@ -95,8 +79,51 @@ Ryzyka i niejasne obszary:
 - Schemat `orders` nie jest jeszcze generycznym modelem rekordow.
 - Zapytania nadal zawieraja obecne statusy i zalozenia starego modelu.
 - Eksport CSV nadal jest czescia klasy `Database`; w przyszlosci moze zostac wydzielony.
-- `Database.conn` nadal jest uzywane w `main.py` przy backupie.
+- `Database.conn` nadal jest uzywane w `ui/app.py` przy backupie.
 - Nie zmieniono schematu bazy ani zachowania migracji.
+
+### `ui/__init__.py`
+
+Kategoria: UI.
+
+Co robi:
+
+- oznacza `ui` jako pakiet Pythona dla warstwy interfejsu.
+
+Ryzyka i niejasne obszary:
+
+- Na ten moment nie zawiera logiki.
+
+### `ui/app.py`
+
+Kategoria: UI, logika aplikacji, konfiguracja.
+
+Co robi:
+
+- definiuje tytul aplikacji, nazwy plikow danych i ustawien,
+- definiuje obecne statusy i priorytety,
+- definiuje motywy jasny i ciemny,
+- zarzadza ustawieniami lokalnymi przez JSON,
+- importuje `Database` z `data.database`,
+- buduje glowne okno aplikacji,
+- buduje zakladki aktywnych rekordow i archiwum,
+- obsluguje formularz, tabele, wyszukiwanie, filtrowanie, sortowanie, archiwum, backup i eksport CSV.
+
+Znane elementy:
+
+- `get_app_data_dir()` wybiera lokalny katalog danych uzytkownika.
+- `resource_path()` buduje sciezki do plikow danych.
+- `SettingsManager` obsluguje plik ustawien JSON.
+- `WorkshopApp` laczy UI Tkinter z logika aplikacji.
+
+Ryzyka i niejasne obszary:
+
+- Modul UI nadal laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
+- Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
+- UI nadal zna konkretne kolumny aktualnego modelu danych.
+- Backup nadal korzysta bezposrednio z `self.db.conn`.
+- Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
+- Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
 
 ### `build_exe.bat`
 
@@ -196,7 +223,7 @@ Ryzyka i niejasne obszary:
 
 ## Obecne granice odpowiedzialnosci
 
-Na ten moment granice odpowiedzialnosci sa slabe, bo duza czesc aplikacji znajduje sie w `main.py`.
+Na ten moment granice odpowiedzialnosci sa lepsze niz na starcie, ale nadal slabe wewnatrz warstwy UI. Punkt wejscia znajduje sie w `main.py`, dostep do danych w `data/database.py`, a obecna aplikacja Tkinter w `ui/app.py`.
 
 Przy przyszlym rozwoju warto stopniowo wydzielac:
 
@@ -213,16 +240,18 @@ Nie nalezy robic tego jednym duzym refaktorem.
 
 ### Punkt wejscia aplikacji
 
-Punkt wejscia znajduje sie na koncu `main.py`:
+Stan opisany w MVP-002 dotyczyl kodu przed wydzieleniem UI. Po MVP-004 punkt wejscia znajduje sie w `main.py`, a implementacja UI w `ui/app.py`.
+
+Punkt wejscia:
 
 - tworzona jest instancja `WorkshopApp`,
 - uruchamiany jest `app.mainloop()`.
 
-Oznacza to, ze `main.py` jest jednoczesnie plikiem startowym i glownym miejscem implementacji aplikacji.
+Oznacza to, ze `main.py` jest juz tylko plikiem startowym aplikacji.
 
 ### Stale i zalozenia globalne
 
-Na gorze `main.py` znajduja sie stale:
+Stale przeniesiono do `ui/app.py`:
 
 - `APP_TITLE`,
 - `DB_NAME`,
@@ -352,7 +381,7 @@ Przeniesiono z `main.py`:
 - statystyki,
 - eksport CSV.
 
-Zostalo w `main.py`:
+Po MVP-003 zostalo w `main.py`; po MVP-004 te elementy przeniesiono dalej do `ui/app.py` poza samym punktem wejscia:
 
 - punkt wejscia aplikacji,
 - stale aplikacji,
@@ -363,9 +392,39 @@ Zostalo w `main.py`:
 - akcje uzytkownika,
 - backup pliku bazy danych.
 
-Kolejne bezpieczne kroki:
+Kolejne bezpieczne kroki po MVP-003:
 
-- usunac bezposrednie uzycie `self.db.conn` z `main.py` przez metode backupu w warstwie danych,
+- usunac bezposrednie uzycie `self.db.conn` z UI przez metode backupu w warstwie danych,
 - wydzielic `SettingsManager` i sciezki danych do osobnego modulu konfiguracji,
 - dopiero potem zaczac rozbijac UI,
 - nie zmieniac schematu `orders` przed osobna decyzja migracyjna.
+
+## MVP-004 - Wydzielenie warstwy UI
+
+Dodano pakiet `ui` i modul `ui/app.py`.
+
+Przeniesiono z `main.py`:
+
+- importy i stale uzywane przez UI,
+- funkcje sciezek `get_app_data_dir()` i `resource_path()`,
+- `SettingsManager`,
+- klase `WorkshopApp`,
+- budowanie okna, zakladek, formularzy, tabel i stylow,
+- obsluge akcji UI: zapis, edycje, usuwanie, wyszukiwanie, archiwum, eksport CSV i backup.
+
+Zostalo w `main.py`:
+
+- import `WorkshopApp`,
+- funkcja `main()`,
+- utworzenie aplikacji i `mainloop()`.
+
+Sprzezenia, ktore nadal istnieja:
+
+- `WorkshopApp` nadal bezposrednio tworzy `Database`.
+- UI nadal zna kolumny tabeli `orders`, statusy, priorytety i obecne pola formularza.
+- Walidacja, mapowanie formularza, sortowanie i filtrowanie nadal sa metodami UI.
+- Backup nadal uzywa `self.db.conn` oraz sciezki pliku bazy.
+
+Nastepny bezpieczny krok:
+
+- wydzielic konfiguracje i sciezki danych z `ui/app.py` do malego modulu konfiguracyjnego albo przeniesc backup do `data/database.py`, bez zmiany wartosci, schematu ani zachowania UI.

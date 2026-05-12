@@ -61,9 +61,9 @@ Pozostale ryzyka:
 - `main.py` nadal korzysta z `self.db.conn` przy backupie,
 - model danych nadal jest oparty o `orders`.
 
-### MVP-004 - Extract UI layout/components
+### MVP-004 - Extract UI layer
 
-Status: planowane
+Status: wykonane
 
 Cel:
 
@@ -71,14 +71,25 @@ Cel:
 - ograniczyc rozrost `main.py`,
 - zachowac obecny wyglad i zachowanie UI.
 
-Kandydaci prac:
+Wynik MVP-004:
 
-- przed wydzielaniem UI przeniesc backup bazy do bezpiecznej metody w warstwie danych,
-- rozwazyc wydzielenie ustawien i sciezek danych do osobnego modulu,
-- wydzielic budowanie zakladek i formularza,
-- pozostawic te same etykiety, rozmiary i akcje,
-- nie zmieniac zachowania przyciskow,
-- nie zmieniac ukladu bez osobnego zadania UI.
+- dodano `ui/app.py`,
+- dodano `ui/__init__.py`,
+- przeniesiono `WorkshopApp`, `SettingsManager`, stale UI i helpery sciezek z `main.py` do `ui/app.py`,
+- zostawiono w `main.py` prosty punkt startowy aplikacji,
+- pozostawiono te same etykiety, rozmiary, akcje i zachowanie przyciskow,
+- nie zmieniono ukladu, schematu bazy ani zaleznosci.
+
+Pozostale ryzyka:
+
+- `ui/app.py` nadal laczy layout, stan formularza, walidacje, sortowanie, filtrowanie i akcje uzytkownika,
+- `WorkshopApp` nadal korzysta bezposrednio z `Database`,
+- backup nadal siega do `self.db.conn`,
+- obecny UI nadal zna branzowe pola i statusy starego modelu.
+
+Nastepny bezpieczny krok:
+
+- wydzielic konfiguracje/sciezki albo backup do osobnego malego modulu bez zmiany zachowania.
 
 ### MVP-005 - Introduce generic record type model
 

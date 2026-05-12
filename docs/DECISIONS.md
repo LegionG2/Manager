@@ -139,3 +139,22 @@ Konsekwencje:
 - UI nadal jest powiazane z obecnym modelem danych, ale kod SQLite ma juz osobny modul.
 - Backup nadal wymaga dalszego uporzadkowania, bo `main.py` uzywa `self.db.conn`.
 - Nastepne kroki powinny byc rownie male: metoda backupu w warstwie danych, potem konfiguracja/sciezki, potem UI.
+
+## 2026-05-12 - Warstwa UI zaczyna sie w `ui/app.py`
+
+Decyzja:
+
+Kod Tkinter UI zostal przeniesiony z `main.py` do `ui/app.py`, a `main.py` pozostaje prostym punktem startowym.
+
+Kontekst:
+
+MVP-004 mial oddzielic warstwe UI bez zmiany wygladu i zachowania aplikacji. Obecny `WorkshopApp` jest nadal mocno powiazany z aktualnym modelem danych, wiec bezpiecznym krokiem bylo przeniesienie calej glownej klasy UI i powiazanych helperow do osobnego modulu bez rozbijania metod.
+
+Konsekwencje:
+
+- `main.py` importuje `WorkshopApp` i uruchamia `mainloop()`.
+- `ui/app.py` zawiera `WorkshopApp`, `SettingsManager`, stale UI i helpery sciezek.
+- Nie zmieniono tekstow UI, schematu bazy, zaleznosci ani zachowania formularzy.
+- UI nadal wywoluje `Database` bezposrednio i zna obecne kolumny `orders`.
+- Backup nadal wymaga dalszego uporzadkowania, bo `WorkshopApp` uzywa `self.db.conn`.
+- Nastepny bezpieczny krok to wydzielenie konfiguracji/sciezek albo backupu bez zmiany zachowania.

@@ -22,7 +22,9 @@
 
 Repozytorium jest male i skupione wokol jednego pliku aplikacji:
 
-- `main.py` zawiera punkt wejscia, aplikacje Tkinter, ustawienia, logike UI, archiwum i backup.
+- `main.py` zawiera prosty punkt wejscia aplikacji.
+- `ui/app.py` zawiera aplikacje Tkinter, ustawienia, logike UI, archiwum i backup.
+- `ui/__init__.py` oznacza `ui` jako pakiet warstwy UI.
 - `data/database.py` zawiera obsluge SQLite, obecny model tabeli `orders`, operacje CRUD, statystyki i eksport CSV.
 - `data/__init__.py` oznacza `data` jako pakiet warstwy danych.
 - `build_exe.bat` zawiera prosty proces budowy pliku EXE przez PyInstaller.
@@ -50,7 +52,7 @@ To nie jest jeszcze docelowy generyczny model rekordow. Przed zmianami schematu 
 
 ### UI logic
 
-UI logic currently lives in `main.py`, mainly inside `WorkshopApp`.
+UI logic currently lives in `ui/app.py`, mainly inside `WorkshopApp`.
 
 `WorkshopApp` is responsible for:
 
@@ -133,7 +135,7 @@ Moved from `main.py` to `data/database.py`:
 - current stats queries,
 - CSV export.
 
-Still in `main.py`:
+After MVP-003 these parts were still in `main.py`; after MVP-004 they live in `ui/app.py` except for startup:
 
 - Tkinter application and UI layout,
 - Tkinter state variables,
@@ -145,6 +147,40 @@ Still in `main.py`:
 - JSON settings manager.
 
 No schema changes were made. The `orders` table, column names, status values and public `Database` method names remain compatible with the previous code.
+
+## MVP-004 UI layer extraction
+
+MVP-004 added a small `ui` package:
+
+- `ui/app.py`,
+- `ui/__init__.py`.
+
+Moved from `main.py` to `ui/app.py`:
+
+- UI imports and constants,
+- app data path helpers,
+- `SettingsManager`,
+- `WorkshopApp`,
+- Tkinter layout, styles, state variables and user action handlers.
+
+Still in `main.py`:
+
+- import of `WorkshopApp`,
+- `main()` function,
+- application startup and `mainloop()`.
+
+No UI labels, layouts, status values, database schema, dependencies or data access method names were changed.
+
+Known remaining coupling:
+
+- `WorkshopApp` still creates and calls `Database` directly.
+- UI code still knows the current `orders` columns and current form fields.
+- Search, sorting, form validation, archive behavior, export triggering and backup triggering still live inside the UI class.
+- Backup still reaches into `self.db.conn`.
+
+Next safe step:
+
+- move configuration/path helpers or backup behavior out of `ui/app.py` in a separate small change, preserving current values and behavior.
 
 ## Zasady techniczne
 
