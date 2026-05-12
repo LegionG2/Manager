@@ -33,6 +33,7 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |-- services/
 |   |-- __init__.py
 |   |-- app_config_service.py
+|   |-- config_service.py
 |   |-- field_config_service.py
 |   |-- order_service.py
 |   |-- record_type_config_service.py
@@ -286,6 +287,25 @@ Ryzyka i niejasne obszary:
 - Loader nie zapisuje konfiguracji i nie obsluguje konfiguracji per uzytkownik.
 - Nie dodaje ekranu ustawien ani ikony zebatki.
 - Nie zmienia schematu SQLite ani obecnego modelu `orders`.
+
+### `services/config_service.py`
+
+Kategoria: konfiguracja, logika aplikacyjna.
+
+Co robi:
+
+- zawiera `ConfigService`,
+- zawiera `ManagerConfig` jako zebrany wynik wczytania konfiguracji,
+- agreguje `AppConfigService`, `FieldConfigService`, `RecordTypeConfigService` i `SectionConfigService`,
+- udostepnia metody `load_app_config()`, `load_field_definitions()`, `load_record_type()`, `load_sections()` i `load_all()`,
+- korzysta z plikow JSON w katalogu `config`.
+
+Ryzyka i niejasne obszary:
+
+- Centralny serwis nie jest jeszcze uzywany przez UI.
+- Nie zastępuje szczegolowych loaderow i nie usuwa ich odpowiedzialnosci.
+- Nie zapisuje konfiguracji i nie obsluguje konfiguracji per uzytkownik.
+- Nie jest jeszcze pelnym systemem edycji ustawien.
 
 ### `services/order_service.py`
 
@@ -916,3 +936,29 @@ Obecna aplikacja nadal uzywa przejsciowego starego UI:
 Nastepny bezpieczny krok:
 
 - dodac walidacje sekcji albo przygotowac osobny MVP dla ustawien/ikony zebatki, ktory zacznie uzywac konfiguracji sekcji bez zmiany schematu bazy.
+
+## MVP-011 - Centralny serwis konfiguracji
+
+Dodano:
+
+- `services/config_service.py`.
+
+Centralny serwis agreguje:
+
+- konfiguracje aplikacji z `config/app_config.json`,
+- definicje pol z `config/default_record_fields.json`,
+- typ rekordu z `config/default_record_type.json`,
+- sekcje z `config/default_sections.json`.
+
+Istniejace szczegolowe serwisy pozostaja:
+
+- `AppConfigService`,
+- `FieldConfigService`,
+- `RecordTypeConfigService`,
+- `SectionConfigService`.
+
+`ConfigService` jest cienka warstwa porzadkujaca dostep do konfiguracji. Nie jest jeszcze podlaczony do UI, nie dodaje ekranu ustawien, nie dodaje ikony zebatki i nie zapisuje konfiguracji uzytkownika.
+
+Nastepny bezpieczny krok:
+
+- dodac walidacje spojnosc konfiguracji albo w osobnym MVP zaczac uzywac `ConfigService` w przyszlym ekranie ustawien, bez zmiany obecnego UI i schematu bazy.

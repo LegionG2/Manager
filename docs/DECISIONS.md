@@ -275,3 +275,22 @@ Konsekwencje:
 - Nie zmieniono UI, kart Tkinter, bazy danych, zaleznosci ani sposobu zapisu danych.
 - Obecny stary UI pozostaje stanem przejsciowym.
 - Nastepny bezpieczny krok to walidacja konfiguracji sekcji albo osobny MVP dla ustawien/ikony zebatki.
+
+## 2026-05-12 - Centralny dostep do konfiguracji zaczyna sie w `services/config_service.py`
+
+Decyzja:
+
+Dodano `ConfigService` i `ManagerConfig` w `services/config_service.py` jako centralny punkt odczytu konfiguracji.
+
+Kontekst:
+
+MVP-011 ma uporzadkowac rozproszone loadery konfiguracji bez zmiany UI i zachowania aplikacji. Projekt ma juz osobne loadery dla konfiguracji aplikacji, pol, typu rekordu i sekcji, wiec centralny serwis powinien byc cienka warstwa agregujaca, a nie nowym miejscem duplikowania parsowania JSON.
+
+Konsekwencje:
+
+- `ConfigService` korzysta z `AppConfigService`, `FieldConfigService`, `RecordTypeConfigService` i `SectionConfigService`.
+- Szczegolowe loadery pozostaja w projekcie i nadal odpowiadaja za parsowanie swoich plikow.
+- `load_all()` zwraca `ManagerConfig` z konfiguracja aplikacji, definicjami pol, typem rekordu i sekcjami.
+- Nie zmieniono UI, bazy danych, zaleznosci ani sposobu zapisu danych.
+- Centralny serwis jest przygotowaniem pod przyszla ikone zebatki, ekran ustawien, konfigurator pol i konfigurator kart.
+- Nastepny bezpieczny krok to walidacja spojnosc konfiguracji albo osobny MVP dla ustawien korzystajacych z `ConfigService`.

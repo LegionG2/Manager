@@ -36,6 +36,7 @@ Repozytorium jest male i skupione wokol jednego pliku aplikacji:
 - `domain/record_type.py` zawiera fundament definicji konfigurowalnych typow rekordow.
 - `domain/__init__.py` oznacza `domain` jako pakiet domenowy.
 - `services/app_config_service.py` zawiera loader konfiguracji aplikacji z JSON.
+- `services/config_service.py` zawiera centralny serwis konfiguracji agregujacy szczegolowe loadery.
 - `services/field_config_service.py` zawiera loader konfiguracji pol z JSON.
 - `services/record_type_config_service.py` zawiera loader konfiguracji typu rekordu z JSON.
 - `services/section_config_service.py` zawiera loader konfiguracji sekcji/kart z JSON.
@@ -134,6 +135,27 @@ Domyslna konfiguracja znajduje sie w `config/default_sections.json`. Jest neutra
 
 `services/section_config_service.py` zawiera `SectionConfigService`, ktory wczytuje liste sekcji z JSON i mapuje ja na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, obecnych zakladek, menu ani bazy danych. Przyszla ikona zebatki, ekran ustawien, edytor kart i dynamiczne menu sa osobnymi MVP.
 
+## Centralny serwis konfiguracji
+
+`services/config_service.py` wprowadza `ConfigService` i `ManagerConfig`.
+
+`ConfigService` agreguje istniejace loadery:
+
+- `AppConfigService`,
+- `FieldConfigService`,
+- `RecordTypeConfigService`,
+- `SectionConfigService`.
+
+Udostepnia metody:
+
+- `load_app_config()`,
+- `load_field_definitions()`,
+- `load_record_type()`,
+- `load_sections()`,
+- `load_all()`.
+
+Centralny serwis nie duplikuje logiki szczegolowych loaderow. Jest przygotowaniem pod przyszla ikone zebatki, ekran ustawien, konfigurator pol i konfigurator kart. Nie jest jeszcze podlaczony do UI i nie zapisuje konfiguracji.
+
 ## Current architecture observations
 
 ### UI logic
@@ -202,6 +224,21 @@ Application configuration loading starts in `services/app_config_service.py`.
 - converting the raw dictionary into `AppConfig`.
 
 It does not save configuration, load user-specific configuration, modify the window title, build a settings screen or add a settings icon yet.
+
+### Central configuration service
+
+Central configuration access starts in `services/config_service.py`.
+
+`ConfigService` is responsible for:
+
+- holding default paths to config files,
+- delegating application config loading to `AppConfigService`,
+- delegating field definition loading to `FieldConfigService`,
+- delegating record type loading to `RecordTypeConfigService`,
+- delegating section loading to `SectionConfigService`,
+- returning a combined `ManagerConfig` through `load_all()`.
+
+It does not replace the detailed loaders, save configuration, build settings UI, add a gear icon or change runtime behavior yet.
 
 ### Section configuration loader
 
@@ -277,6 +314,7 @@ The code is tightly coupled rather than modular:
 - The record type configuration model is not yet mapped to the current static form or database.
 - The application configuration model is not yet mapped to the current window title, tabs or sections.
 - The section configuration model is not yet mapped to the current Tkinter notebook or navigation.
+- The central configuration service is not yet used by UI.
 - `OrderService` knows database column names and current order fields.
 - Database queries know current status names and workflow assumptions.
 - Sorting, filtering and validation still know current business fields, though part of that logic moved out of UI.
@@ -520,6 +558,26 @@ The default section configuration is neutral:
 The current workshop-oriented UI remains active as a transitional state. The section configuration and loader are not connected to UI, SQLite, menu, notebook tabs or view switching. No settings screen, gear icon, dynamic menu, migration, new table or user-facing feature was added.
 
 Next safe steps are to validate section configuration more strictly or plan a separate MVP for a subtle settings screen under a gear icon. Those steps should still avoid changing the current database schema.
+
+## MVP-011 central configuration service
+
+MVP-011 added:
+
+- `services/config_service.py`.
+
+Added concepts:
+
+- `ConfigService`,
+- `ManagerConfig`.
+
+`ConfigService` aggregates:
+
+- application configuration,
+- field definitions,
+- record type configuration,
+- section configuration.
+
+The detailed loaders remain in place and still own JSON parsing for their specific configuration files. The central service is only a thin access layer for future settings work. It is not connected to UI, does not save user settings and does not add any user-facing feature.
 
 ## Zasady techniczne
 

@@ -275,7 +275,38 @@ Nastepny bezpieczny krok:
 
 - dodac walidacje konfiguracji sekcji albo zaplanowac osobny MVP dla ustawien/ikony zebatki.
 
-### MVP-011 - Fundament wyszukiwania i filtrowania
+### MVP-011 - Central configuration service
+
+Status: wykonane
+
+Cel:
+
+- uporzadkowac dostep do konfiguracji,
+- dodac jeden centralny serwis agregujacy istniejace loadery,
+- zachowac obecne UI, zachowanie i schemat bazy.
+
+Wynik MVP-011:
+
+- dodano `services/config_service.py`,
+- wprowadzono `ConfigService`,
+- wprowadzono `ManagerConfig`,
+- centralny serwis korzysta z `AppConfigService`, `FieldConfigService`, `RecordTypeConfigService` i `SectionConfigService`,
+- udostepniono `load_app_config()`, `load_field_definitions()`, `load_record_type()`, `load_sections()` i `load_all()`,
+- nie usunieto szczegolowych loaderow,
+- centralny serwis nie jest jeszcze podlaczony do UI.
+
+Pozostale ryzyka:
+
+- nie ma jeszcze zapisu konfiguracji uzytkownika,
+- nie ma jeszcze ekranu ustawien ani ikony zebatki,
+- konfiguracje nie sa jeszcze walidowane jako spojny zestaw,
+- przyszle podpiecie musi zachowac obecne dane i UI.
+
+Nastepny bezpieczny krok:
+
+- dodac walidacje spojnosc konfiguracji albo zaplanowac osobny MVP dla ustawien korzystajacych z `ConfigService`.
+
+### MVP-012 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -284,7 +315,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-012 - Fundament archiwum
+### MVP-013 - Fundament archiwum
 
 Status: planowane
 
@@ -293,7 +324,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-013 - Fundament importu i eksportu
+### MVP-014 - Fundament importu i eksportu
 
 Status: planowane
 
