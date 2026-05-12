@@ -256,3 +256,22 @@ Konsekwencje:
 - Nie zmieniono UI, tytulu okna, kart, bazy danych, zaleznosci ani sposobu zapisu danych.
 - Obecny stary UI pozostaje stanem przejsciowym.
 - Nastepny bezpieczny krok to walidacja konfiguracji aplikacji albo osobny MVP dla ustawien pod ikona zebatki.
+
+## 2026-05-12 - Sekcje aplikacji zaczynaja sie w `domain/app_section.py`
+
+Decyzja:
+
+Dodano neutralny model sekcji/kart aplikacji w `domain/app_section.py`, domyslna konfiguracje w `config/default_sections.json` oraz loader w `services/section_config_service.py`.
+
+Kontekst:
+
+MVP-010 ma przygotowac fundament pod przyszle konfigurowalne sekcje i karty Managera. Dynamiczne menu, edytor kart, ikona zebatki oraz ekran ustawien maja byc osobnymi MVP, dlatego konfiguracja sekcji jest wczytywalna, ale nie jest jeszcze uzywana przez obecny UI.
+
+Konsekwencje:
+
+- `AppSectionDefinition` opisuje sekcje przez `id`, `name`, `type`, opcjonalne `record_type_id`, `visible` i `order`.
+- `SectionConfigService` wczytuje liste sekcji z JSON i mapuje ja na obiekty domenowe.
+- Domyslna konfiguracja jest neutralna: `dashboard`, `records`, `archive`, `settings`.
+- Nie zmieniono UI, kart Tkinter, bazy danych, zaleznosci ani sposobu zapisu danych.
+- Obecny stary UI pozostaje stanem przejsciowym.
+- Nastepny bezpieczny krok to walidacja konfiguracji sekcji albo osobny MVP dla ustawien/ikony zebatki.

@@ -26,16 +26,19 @@ Repozytorium jest male i skupione wokol jednego pliku aplikacji:
 - `config/app_config.json` zawiera neutralna domyslna konfiguracje aplikacji.
 - `config/default_record_fields.json` zawiera neutralna domyslna konfiguracje przyszlych pol rekordow.
 - `config/default_record_type.json` zawiera neutralna domyslna konfiguracje przyszlego typu rekordu.
+- `config/default_sections.json` zawiera neutralna domyslna konfiguracje przyszlych sekcji/kart.
 - `ui/app.py` zawiera aplikacje Tkinter, ustawienia, logike UI, archiwum i backup.
 - `ui/__init__.py` oznacza `ui` jako pakiet warstwy UI.
 - `domain/record.py` zawiera fundament generycznego modelu domenowego rekordow.
 - `domain/app_config.py` zawiera fundament modelu konfiguracji aplikacji.
+- `domain/app_section.py` zawiera fundament modelu sekcji/kart aplikacji.
 - `domain/field_definition.py` zawiera fundament definicji konfigurowalnych pol.
 - `domain/record_type.py` zawiera fundament definicji konfigurowalnych typow rekordow.
 - `domain/__init__.py` oznacza `domain` jako pakiet domenowy.
 - `services/app_config_service.py` zawiera loader konfiguracji aplikacji z JSON.
 - `services/field_config_service.py` zawiera loader konfiguracji pol z JSON.
 - `services/record_type_config_service.py` zawiera loader konfiguracji typu rekordu z JSON.
+- `services/section_config_service.py` zawiera loader konfiguracji sekcji/kart z JSON.
 - `services/order_service.py` zawiera przejsciowy serwis logiki rekordow/zlecen.
 - `services/__init__.py` oznacza `services` jako pakiet serwisow aplikacyjnych.
 - `data/database.py` zawiera obsluge SQLite, obecny model tabeli `orders`, operacje CRUD, statystyki i eksport CSV.
@@ -114,6 +117,23 @@ Domyslna konfiguracja znajduje sie w `config/app_config.json`. Jest neutralna i 
 
 `services/app_config_service.py` zawiera `AppConfigService`, ktory wczytuje konfiguracje aplikacji z JSON i mapuje ja na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, tytulu okna, obecnych kart ani bazy danych. Przyszly ekran ustawien i ikona zebatki sa osobnym MVP.
 
+## Fundament sekcji/kart aplikacji
+
+`domain/app_section.py` wprowadza neutralne pojecie `AppSectionDefinition`.
+
+Definicja sekcji/karty zawiera:
+
+- `id`,
+- `name`,
+- `type`,
+- opcjonalne `record_type_id`,
+- `visible`,
+- `order`.
+
+Domyslna konfiguracja znajduje sie w `config/default_sections.json`. Jest neutralna i zawiera sekcje `dashboard`, `records`, `archive` oraz `settings`.
+
+`services/section_config_service.py` zawiera `SectionConfigService`, ktory wczytuje liste sekcji z JSON i mapuje ja na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, obecnych zakladek, menu ani bazy danych. Przyszla ikona zebatki, ekran ustawien, edytor kart i dynamiczne menu sa osobnymi MVP.
+
 ## Current architecture observations
 
 ### UI logic
@@ -151,7 +171,7 @@ The name is intentionally transitional. The current database table is still `ord
 
 ### Domain model
 
-Generic domain model definitions live in `domain/record.py`, `domain/field_definition.py`, `domain/record_type.py` and `domain/app_config.py`.
+Generic domain model definitions live in `domain/record.py`, `domain/field_definition.py`, `domain/record_type.py`, `domain/app_config.py` and `domain/app_section.py`.
 
 The modules currently contain simple structures only:
 
@@ -164,9 +184,10 @@ The modules currently contain simple structures only:
 - `FieldDefinition`,
 - `RecordTypeDefinition`,
 - `AppSection`,
-- `AppConfig`.
+- `AppConfig`,
+- `AppSectionDefinition`.
 
-They are intentionally not wired into the running application yet. This keeps MVP-006 through MVP-009 as safe foundations without changing database schema, UI behavior or data persistence.
+They are intentionally not wired into the running application yet. This keeps MVP-006 through MVP-010 as safe foundations without changing database schema, UI behavior or data persistence.
 
 ### Application configuration loader
 
@@ -181,6 +202,18 @@ Application configuration loading starts in `services/app_config_service.py`.
 - converting the raw dictionary into `AppConfig`.
 
 It does not save configuration, load user-specific configuration, modify the window title, build a settings screen or add a settings icon yet.
+
+### Section configuration loader
+
+Section configuration loading starts in `services/section_config_service.py`.
+
+`SectionConfigService` is responsible for:
+
+- reading a JSON file with section definitions,
+- checking that the root value is a list,
+- converting section dictionaries into `AppSectionDefinition`.
+
+It does not save configuration, load user-specific configuration, build dynamic tabs, build dynamic menus, switch views or add a settings icon yet.
 
 ### Field configuration loader
 
@@ -243,6 +276,7 @@ The code is tightly coupled rather than modular:
 - The field configuration model is not yet mapped to the current static form.
 - The record type configuration model is not yet mapped to the current static form or database.
 - The application configuration model is not yet mapped to the current window title, tabs or sections.
+- The section configuration model is not yet mapped to the current Tkinter notebook or navigation.
 - `OrderService` knows database column names and current order fields.
 - Database queries know current status names and workflow assumptions.
 - Sorting, filtering and validation still know current business fields, though part of that logic moved out of UI.
@@ -463,6 +497,29 @@ The default application configuration is neutral:
 The current workshop-oriented UI remains active as a transitional state. The application configuration and loader are not connected to UI, SQLite, window title or tabs. No settings screen, gear icon, migration, new table or user-facing feature was added.
 
 Next safe steps are to validate application configuration more strictly or plan a separate MVP for a subtle settings screen under a gear icon. Those steps should still avoid changing the current database schema.
+
+## MVP-010 application sections foundation
+
+MVP-010 added:
+
+- `domain/app_section.py`,
+- `config/default_sections.json`,
+- `services/section_config_service.py`.
+
+Added generic concept:
+
+- `AppSectionDefinition`.
+
+The default section configuration is neutral:
+
+- `dashboard`,
+- `records`,
+- `archive`,
+- `settings`.
+
+The current workshop-oriented UI remains active as a transitional state. The section configuration and loader are not connected to UI, SQLite, menu, notebook tabs or view switching. No settings screen, gear icon, dynamic menu, migration, new table or user-facing feature was added.
+
+Next safe steps are to validate section configuration more strictly or plan a separate MVP for a subtle settings screen under a gear icon. Those steps should still avoid changing the current database schema.
 
 ## Zasady techniczne
 

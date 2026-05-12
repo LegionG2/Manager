@@ -244,7 +244,38 @@ Nastepny bezpieczny krok:
 
 - dodac walidacje konfiguracji aplikacji albo zaplanowac osobny MVP dla subtelnego ekranu ustawien pod ikona zebatki.
 
-### MVP-010 - Fundament wyszukiwania i filtrowania
+### MVP-010 - Application sections/tabs foundation
+
+Status: wykonane
+
+Cel:
+
+- przygotowac neutralny model sekcji/kart aplikacji,
+- opisac przyszle dynamiczne sekcje,
+- zachowac obecne UI, zachowanie i schemat bazy.
+
+Wynik MVP-010:
+
+- dodano `domain/app_section.py`,
+- dodano `config/default_sections.json`,
+- dodano `services/section_config_service.py`,
+- wprowadzono `AppSectionDefinition`,
+- domyslna konfiguracja sekcji jest neutralna: `dashboard`, `records`, `archive`, `settings`,
+- loader potrafi wczytac JSON i zmapowac go na obiekty domenowe,
+- konfiguracja sekcji nie jest jeszcze podlaczona do UI ani bazy.
+
+Pozostale ryzyka:
+
+- obecne zakladki Tkinter nadal sa statyczne,
+- nie ma jeszcze edytora kart, dynamicznego menu, ekranu ustawien ani ikony zebatki,
+- nie ma jeszcze zapisu konfiguracji uzytkownika,
+- przyszle podpiecie musi zachowac obecne dane i UI.
+
+Nastepny bezpieczny krok:
+
+- dodac walidacje konfiguracji sekcji albo zaplanowac osobny MVP dla ustawien/ikony zebatki.
+
+### MVP-011 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -253,7 +284,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-011 - Fundament archiwum
+### MVP-012 - Fundament archiwum
 
 Status: planowane
 
@@ -262,7 +293,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-012 - Fundament importu i eksportu
+### MVP-013 - Fundament importu i eksportu
 
 Status: planowane
 

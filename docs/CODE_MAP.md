@@ -18,13 +18,15 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |-- config/
 |   |-- app_config.json
 |   |-- default_record_fields.json
-|   `-- default_record_type.json
+|   |-- default_record_type.json
+|   `-- default_sections.json
 |-- data/
 |   |-- __init__.py
 |   `-- database.py
 |-- domain/
 |   |-- __init__.py
 |   |-- app_config.py
+|   |-- app_section.py
 |   |-- field_definition.py
 |   |-- record_type.py
 |   `-- record.py
@@ -33,7 +35,8 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |   |-- app_config_service.py
 |   |-- field_config_service.py
 |   |-- order_service.py
-|   `-- record_type_config_service.py
+|   |-- record_type_config_service.py
+|   `-- section_config_service.py
 |-- ui/
 |   |-- __init__.py
 |   `-- app.py
@@ -97,6 +100,22 @@ Ryzyka i niejasne obszary:
 - Plik nie jest jeszcze podlaczony do UI ani bazy danych.
 - To techniczny przyklad konfiguracji typu rekordu, a nie preset branzowy.
 - Nie istnieje jeszcze edytor typow rekordow ani zapis konfiguracji uzytkownika.
+
+### `config/default_sections.json`
+
+Kategoria: konfiguracja, fundament sekcji/kart aplikacji.
+
+Co robi:
+
+- zawiera neutralna domyslna konfiguracje przyszlych sekcji aplikacji,
+- definiuje sekcje `dashboard`, `records`, `archive` i `settings`,
+- opisuje kolejnosc, widocznosc, typ sekcji i opcjonalne powiazanie z typem rekordu.
+
+Ryzyka i niejasne obszary:
+
+- Plik nie jest jeszcze podlaczony do UI ani bazy danych.
+- Sekcja `settings` pozostaje niewidoczna w konfiguracji i nie oznacza jeszcze ekranu ustawien.
+- Nie istnieje jeszcze edytor kart, dynamiczne menu ani ikona zebatki.
 
 ### `main.py`
 
@@ -173,6 +192,21 @@ Ryzyka i niejasne obszary:
 - Model konfiguracji aplikacji nie jest jeszcze podlaczony do UI.
 - Nie zmienia obecnego tytulu okna, kart ani sekcji.
 - Nie istnieje jeszcze zapis konfiguracji uzytkownika.
+
+### `domain/app_section.py`
+
+Kategoria: domena, konfiguracja sekcji/kart aplikacji.
+
+Co robi:
+
+- definiuje `AppSectionDefinition`,
+- opisuje generyczna sekcje lub karte aplikacji przez `id`, `name`, `type`, `visible`, `order` i opcjonalne `record_type_id`.
+
+Ryzyka i niejasne obszary:
+
+- Model sekcji nie jest jeszcze podlaczony do UI, menu ani zakladek Tkinter.
+- Nie zmienia obecnych kart aplikacji.
+- Nie istnieje jeszcze edytor sekcji ani zapis konfiguracji uzytkownika.
 
 ### `domain/record.py`
 
@@ -308,6 +342,24 @@ Ryzyka i niejasne obszary:
 
 - Loader nie jest jeszcze uzywany przez UI.
 - Loader nie laczy jeszcze typu rekordu z definicjami pol.
+- Loader nie zapisuje konfiguracji i nie obsluguje konfiguracji per uzytkownik.
+- Nie zmienia schematu SQLite ani obecnego modelu `orders`.
+
+### `services/section_config_service.py`
+
+Kategoria: konfiguracja, logika aplikacyjna.
+
+Co robi:
+
+- zawiera `SectionConfigService`,
+- wczytuje liste sekcji z pliku JSON,
+- mapuje JSON na `AppSectionDefinition`,
+- sprawdza, czy konfiguracja sekcji ma postac listy obiektow.
+
+Ryzyka i niejasne obszary:
+
+- Loader nie jest jeszcze uzywany przez UI.
+- Loader nie buduje dynamicznych zakladek ani menu.
 - Loader nie zapisuje konfiguracji i nie obsluguje konfiguracji per uzytkownik.
 - Nie zmienia schematu SQLite ani obecnego modelu `orders`.
 
@@ -832,3 +884,35 @@ Obecna aplikacja nadal uzywa przejsciowego starego UI:
 Nastepny bezpieczny krok:
 
 - dodac walidacje konfiguracji aplikacji albo przygotowac osobny MVP dla subtelnego ekranu ustawien pod ikona zebatki, nadal bez zmiany schematu bazy.
+
+## MVP-010 - Fundament sekcji/kart aplikacji
+
+Dodano:
+
+- `domain/app_section.py`,
+- `config/default_sections.json`,
+- `services/section_config_service.py`.
+
+Wprowadzono generyczne pojecie:
+
+- `AppSectionDefinition` - definicja sekcji/karty aplikacji z `id`, `name`, `type`, `visible`, `order` i opcjonalnym `record_type_id`.
+
+Domyslna konfiguracja sekcji znajduje sie w `config/default_sections.json` i zawiera neutralne sekcje:
+
+- `dashboard`,
+- `records`,
+- `archive`,
+- `settings`.
+
+`SectionConfigService` umie wczytac JSON z lista sekcji i zamienic go na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, menu, zakladek, bazy ani `OrderService`.
+
+Obecna aplikacja nadal uzywa przejsciowego starego UI:
+
+- obecne zakladki Tkinter pozostaja statyczne,
+- nie dodano dynamicznego menu ani przelaczania widokow,
+- nie dodano ekranu ustawien ani ikony zebatki,
+- nie dodano migracji ani nowych tabel.
+
+Nastepny bezpieczny krok:
+
+- dodac walidacje sekcji albo przygotowac osobny MVP dla ustawien/ikony zebatki, ktory zacznie uzywac konfiguracji sekcji bez zmiany schematu bazy.

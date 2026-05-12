@@ -1,0 +1,32 @@
+[
+  {
+    "id": "dashboard",
+    "name": "Dashboard",
+    "type": "dashboard",
+    "visible": true,
+    "order": 0
+  },
+  {
+    "id": "records",
+    "name": "Records",
+    "type": "records",
+    "record_type_id": "default",
+    "visible": true,
+    "order": 1
+  },
+  {
+    "id": "archive",
+    "name": "Archive",
+    "type": "archive",
+    "record_type_id": "default",
+    "visible": true,
+    "order": 2
+  },
+  {
+    "id": "settings",
+    "name": "Settings",
+    "type": "settings",
+    "visible": false,
+    "order": 3
+  }
+]
