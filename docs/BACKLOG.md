@@ -213,7 +213,38 @@ Nastepny bezpieczny krok:
 
 - dodac walidacje zgodnosci typu rekordu z definicjami pol albo adapter tylko do odczytu laczacy `RecordTypeDefinition` i `FieldDefinition`, bez zmiany schematu bazy i UI.
 
-### MVP-009 - Fundament wyszukiwania i filtrowania
+### MVP-009 - Application configuration foundation
+
+Status: wykonane
+
+Cel:
+
+- przygotowac neutralna konfiguracje aplikacji,
+- opisac przyszle sekcje/karty aplikacji,
+- zachowac obecne UI, zachowanie i schemat bazy.
+
+Wynik MVP-009:
+
+- dodano `domain/app_config.py`,
+- dodano `config/app_config.json`,
+- dodano `services/app_config_service.py`,
+- wprowadzono `AppConfig` i `AppSection`,
+- domyslna konfiguracja jest neutralna: `Manager`, `default`, sekcje `Dashboard`, `Records`, `Archive`,
+- loader potrafi wczytac JSON i zmapowac go na obiekty domenowe,
+- konfiguracja aplikacji nie jest jeszcze podlaczona do UI ani bazy.
+
+Pozostale ryzyka:
+
+- obecny UI nadal uzywa statycznych tekstow, kart i starego tytulu,
+- nie ma jeszcze ekranu ustawien ani ikony zebatki,
+- nie ma jeszcze zapisu konfiguracji uzytkownika,
+- przyszle podpiecie musi zachowac obecne dane i UI.
+
+Nastepny bezpieczny krok:
+
+- dodac walidacje konfiguracji aplikacji albo zaplanowac osobny MVP dla subtelnego ekranu ustawien pod ikona zebatki.
+
+### MVP-010 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -222,7 +253,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-010 - Fundament archiwum
+### MVP-011 - Fundament archiwum
 
 Status: planowane
 
@@ -231,7 +262,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-011 - Fundament importu i eksportu
+### MVP-012 - Fundament importu i eksportu
 
 Status: planowane
 

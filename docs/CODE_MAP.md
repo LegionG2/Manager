@@ -16,6 +16,7 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |-- README.md
 |-- build_exe.bat
 |-- config/
+|   |-- app_config.json
 |   |-- default_record_fields.json
 |   `-- default_record_type.json
 |-- data/
@@ -23,11 +24,13 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |   `-- database.py
 |-- domain/
 |   |-- __init__.py
+|   |-- app_config.py
 |   |-- field_definition.py
 |   |-- record_type.py
 |   `-- record.py
 |-- services/
 |   |-- __init__.py
+|   |-- app_config_service.py
 |   |-- field_config_service.py
 |   |-- order_service.py
 |   `-- record_type_config_service.py
@@ -45,6 +48,23 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 ```
 
 ## Pliki glowne
+
+### `config/app_config.json`
+
+Kategoria: konfiguracja aplikacji.
+
+Co robi:
+
+- zawiera neutralna domyslna konfiguracje aplikacji,
+- definiuje `app_name` jako `Manager`,
+- wskazuje `active_record_type_id` jako `default`,
+- opisuje sekcje `Dashboard`, `Records` i `Archive`.
+
+Ryzyka i niejasne obszary:
+
+- Plik nie jest jeszcze podlaczony do UI ani bazy danych.
+- Nie istnieje jeszcze ekran ustawien ani ikona zebatki.
+- Przyszle zmiany musza rozstrzygnac, gdzie bedzie zapisywana konfiguracja uzytkownika.
 
 ### `config/default_record_fields.json`
 
@@ -139,6 +159,21 @@ Ryzyka i niejasne obszary:
 
 - Na ten moment nie zawiera logiki.
 
+### `domain/app_config.py`
+
+Kategoria: domena, konfiguracja aplikacji.
+
+Co robi:
+
+- definiuje `AppSection` jako neutralny opis sekcji aplikacji,
+- definiuje `AppConfig` jako konfiguracje z `app_name`, `active_record_type_id` i lista sekcji.
+
+Ryzyka i niejasne obszary:
+
+- Model konfiguracji aplikacji nie jest jeszcze podlaczony do UI.
+- Nie zmienia obecnego tytulu okna, kart ani sekcji.
+- Nie istnieje jeszcze zapis konfiguracji uzytkownika.
+
 ### `domain/record.py`
 
 Kategoria: domena, generyczny model rekordow.
@@ -199,6 +234,24 @@ Co robi:
 Ryzyka i niejasne obszary:
 
 - Na ten moment nie zawiera logiki.
+
+### `services/app_config_service.py`
+
+Kategoria: konfiguracja, logika aplikacyjna.
+
+Co robi:
+
+- zawiera `AppConfigService`,
+- wczytuje konfiguracje aplikacji z pliku JSON,
+- mapuje JSON na `AppConfig` i `AppSection`,
+- sprawdza, czy konfiguracja jest obiektem i czy `sections` jest lista.
+
+Ryzyka i niejasne obszary:
+
+- Loader nie jest jeszcze uzywany przez UI.
+- Loader nie zapisuje konfiguracji i nie obsluguje konfiguracji per uzytkownik.
+- Nie dodaje ekranu ustawien ani ikony zebatki.
+- Nie zmienia schematu SQLite ani obecnego modelu `orders`.
 
 ### `services/order_service.py`
 
@@ -747,3 +800,35 @@ Obecny model warsztatowy nadal dziala jako stan przejsciowy:
 Nastepny bezpieczny krok:
 
 - dodac walidacje zgodnosci typu rekordu z definicjami pol albo przygotowac adapter tylko do odczytu laczacy `RecordTypeDefinition` z `FieldDefinition`, bez zmiany UI i schematu bazy.
+
+## MVP-009 - Fundament konfiguracji aplikacji
+
+Dodano:
+
+- `domain/app_config.py`,
+- `config/app_config.json`,
+- `services/app_config_service.py`.
+
+Wprowadzono generyczne pojecia:
+
+- `AppSection` - neutralny opis sekcji aplikacji,
+- `AppConfig` - konfiguracja aplikacji z `app_name`, `active_record_type_id` i lista sekcji.
+
+Domyslna konfiguracja aplikacji znajduje sie w `config/app_config.json` i zawiera:
+
+- `app_name`: `Manager`,
+- `active_record_type_id`: `default`,
+- sekcje `Dashboard`, `Records`, `Archive`.
+
+`AppConfigService` umie wczytac JSON konfiguracji aplikacji i zamienic go na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, obecnych kart, tytulu okna, bazy ani `OrderService`.
+
+Obecna aplikacja nadal uzywa przejsciowego starego UI:
+
+- tytul okna i teksty pozostaja bez zmian,
+- zakladki UI pozostaja statyczne,
+- nie dodano ekranu ustawien ani ikony zebatki,
+- nie dodano migracji ani nowych tabel.
+
+Nastepny bezpieczny krok:
+
+- dodac walidacje konfiguracji aplikacji albo przygotowac osobny MVP dla subtelnego ekranu ustawien pod ikona zebatki, nadal bez zmiany schematu bazy.

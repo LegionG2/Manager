@@ -1,0 +1,21 @@
+{
+  "app_name": "Manager",
+  "active_record_type_id": "default",
+  "sections": [
+    {
+      "id": "dashboard",
+      "label": "Dashboard",
+      "enabled": true
+    },
+    {
+      "id": "records",
+      "label": "Records",
+      "enabled": true
+    },
+    {
+      "id": "archive",
+      "label": "Archive",
+      "enabled": true
+    }
+  ]
+}

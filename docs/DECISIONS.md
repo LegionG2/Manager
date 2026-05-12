@@ -236,3 +236,23 @@ Konsekwencje:
 - Nie zmieniono UI, bazy danych, zaleznosci ani sposobu zapisu danych.
 - Obecny model warsztatowy i `OrderService` pozostaja stanem przejsciowym.
 - Nastepny bezpieczny krok to walidacja referencji pol albo adapter laczacy `RecordTypeDefinition` z `FieldDefinition`, nadal bez dynamicznego UI i migracji bazy.
+
+## 2026-05-12 - Konfiguracja aplikacji zaczyna sie w `domain/app_config.py`
+
+Decyzja:
+
+Dodano neutralny model konfiguracji aplikacji w `domain/app_config.py`, domyslna konfiguracje w `config/app_config.json` oraz loader w `services/app_config_service.py`.
+
+Kontekst:
+
+MVP-009 ma przygotowac fundament pod przyszle ustawienia Managera, takie jak nazwa aplikacji i sekcje/karty. Pelny ekran ustawien oraz ikona zebatki maja byc osobnym MVP, dlatego konfiguracja jest wczytywalna, ale nie jest jeszcze uzywana przez obecny UI.
+
+Konsekwencje:
+
+- `AppConfig` opisuje `app_name`, `active_record_type_id` i liste sekcji.
+- `AppSection` opisuje pojedyncza sekcje aplikacji.
+- `AppConfigService` wczytuje konfiguracje aplikacji z JSON i mapuje ja na obiekty domenowe.
+- Domyslna konfiguracja jest neutralna: `Manager`, `default`, sekcje `Dashboard`, `Records`, `Archive`.
+- Nie zmieniono UI, tytulu okna, kart, bazy danych, zaleznosci ani sposobu zapisu danych.
+- Obecny stary UI pozostaje stanem przejsciowym.
+- Nastepny bezpieczny krok to walidacja konfiguracji aplikacji albo osobny MVP dla ustawien pod ikona zebatki.
