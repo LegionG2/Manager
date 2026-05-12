@@ -18,6 +18,9 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |-- data/
 |   |-- __init__.py
 |   `-- database.py
+|-- domain/
+|   |-- __init__.py
+|   `-- record.py
 |-- services/
 |   |-- __init__.py
 |   `-- order_service.py
@@ -84,6 +87,36 @@ Ryzyka i niejasne obszary:
 - Eksport CSV nadal jest czescia klasy `Database`; w przyszlosci moze zostac wydzielony.
 - `Database.conn` nadal jest uzywane w `ui/app.py` przy backupie.
 - Nie zmieniono schematu bazy ani zachowania migracji.
+
+### `domain/__init__.py`
+
+Kategoria: domena.
+
+Co robi:
+
+- oznacza `domain` jako pakiet Pythona dla przyszlych generycznych modeli domenowych.
+
+Ryzyka i niejasne obszary:
+
+- Na ten moment nie zawiera logiki.
+
+### `domain/record.py`
+
+Kategoria: domena, generyczny model rekordow.
+
+Co robi:
+
+- definiuje `RecordField` jako opis pojedynczego pola rekordu,
+- definiuje `RecordStatus` jako neutralny status rekordu,
+- definiuje `RecordType` jako opis typu rekordu z polami i statusami,
+- definiuje `Record` jako neutralny rekord z typem, wartosciami, statusem i opcjonalnym identyfikatorem.
+
+Ryzyka i niejasne obszary:
+
+- Model domenowy nie jest jeszcze podlaczony do UI, `OrderService` ani SQLite.
+- Nie istnieje jeszcze migracja z tabeli `orders` do generycznego modelu.
+- Przyszle podpiecie musi uwzglednic istniejace dane uzytkownika i zgodnosc z obecnym zachowaniem.
+- Obecny model warsztatowy nadal dziala jako stan przejsciowy.
 
 ### `services/__init__.py`
 
@@ -263,7 +296,7 @@ Ryzyka i niejasne obszary:
 
 ## Obecne granice odpowiedzialnosci
 
-Na ten moment granice odpowiedzialnosci sa lepsze niz na starcie. Punkt wejscia znajduje sie w `main.py`, dostep do danych w `data/database.py`, czesc logiki rekordow w `services/order_service.py`, a obecna aplikacja Tkinter w `ui/app.py`.
+Na ten moment granice odpowiedzialnosci sa lepsze niz na starcie. Punkt wejscia znajduje sie w `main.py`, dostep do danych w `data/database.py`, fundament generycznej domeny w `domain/record.py`, czesc logiki rekordow w `services/order_service.py`, a obecna aplikacja Tkinter w `ui/app.py`.
 
 Przy przyszlym rozwoju warto stopniowo wydzielac:
 
@@ -271,6 +304,7 @@ Przy przyszlym rozwoju warto stopniowo wydzielac:
 - warstwe konfiguracji,
 - warstwe UI,
 - logike rekordow,
+- modele domenowe,
 - logike importu i eksportu,
 - logike wyszukiwania i filtrowania,
 - migracje danych.
@@ -507,3 +541,39 @@ Nazwa `order_service.py` jest przejsciowa. Uzyto jej, bo obecny kod i baza nadal
 Nastepny bezpieczny krok:
 
 - wydzielic backup z UI do warstwy danych albo wydzielic konfiguracje/sciezki danych, bez zmiany schematu i bez zmiany zachowania aplikacji.
+
+## MVP-006 - Fundament generycznego modelu rekordu
+
+Dodano pakiet `domain` i modul `domain/record.py`.
+
+Wprowadzono generyczne pojecia:
+
+- `RecordField` - opis pola rekordu,
+- `RecordStatus` - neutralny status rekordu,
+- `RecordType` - typ rekordu z lista pol i statusow,
+- `Record` - instancja rekordu z typem, wartosciami, statusem i opcjonalnym ID.
+
+Nie podlaczono jeszcze nowego modelu do:
+
+- UI,
+- `OrderService`,
+- `Database`,
+- schematu SQLite.
+
+Obecny model warsztatowy nadal dziala jako stan przejsciowy:
+
+- tabela `orders` pozostaje bez zmian,
+- pola warsztatowe pozostaja w UI i serwisie,
+- nie wykonano migracji danych,
+- nie zmieniono widocznego zachowania aplikacji.
+
+Ryzyka przyszlej migracji:
+
+- trzeba zachowac istniejace lokalne dane uzytkownika,
+- trzeba zaplanowac mapowanie kolumn `orders` na generyczne pola,
+- trzeba oddzielic konfiguracje typow rekordow od danych rekordow,
+- trzeba uniknac zmiany UI i zapisu danych w jednym duzym kroku.
+
+Nastepny bezpieczny krok:
+
+- opisac konfiguracje typow i pol rekordow albo przygotowac adapter mapujacy obecne `orders` na `Record` tylko do odczytu, bez zmiany schematu bazy.

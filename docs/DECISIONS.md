@@ -177,3 +177,22 @@ Konsekwencje:
 - Nie zmieniono UI, tekstow, schematu bazy danych, zaleznosci ani widocznego zachowania aplikacji.
 - Nazwy warsztatowe pozostaja etapem przejsciowym do czasu osobnej decyzji o generycznym modelu rekordow.
 - Nastepny bezpieczny krok to wydzielenie backupu lub konfiguracji/sciezek danych albo dodanie testow dla `OrderService`.
+
+## 2026-05-12 - Generyczny model rekordu zaczyna sie w `domain/record.py`
+
+Decyzja:
+
+Dodano neutralny modul domenowy `domain/record.py` z podstawowymi strukturami `Record`, `RecordField`, `RecordType` i `RecordStatus`.
+
+Kontekst:
+
+MVP-006 ma przygotowac fundament pod docelowego Managera jako aplikacje do generycznych rekordow, ale bez zmiany dzialania obecnej aplikacji. Obecny model `orders` oraz warsztatowe pola nadal obsluguja realne dane, wiec nowy model domenowy nie zostal jeszcze podlaczony do UI, serwisu ani SQLite.
+
+Konsekwencje:
+
+- Powstal pakiet `domain` dla przyszlych modeli domenowych.
+- Nowe struktury sa neutralne i nie uzywaja warsztatowych nazw jako docelowych pojec domenowych.
+- Nie zmieniono schematu bazy, UI, zaleznosci ani sposobu zapisu danych.
+- `orders`, `OrderService` i obecne pola UI pozostaja stanem przejsciowym.
+- Przyszle MVP powinny stopniowo mapowac obecny model na `Record`, projektowac konfigurowalne pola i statusy oraz planowac migracje z ochrona istniejacych danych.
+- Glownym ryzykiem pozniejszej migracji jest utrata kompatybilnosci z lokalnymi bazami uzytkownikow albo jednoczesna zmiana schematu, UI i logiki zapisu.

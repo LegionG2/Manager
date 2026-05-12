@@ -123,19 +123,32 @@ Nastepny bezpieczny krok:
 
 ### MVP-006 - Introduce generic record type model
 
-Status: planowane
+Status: wykonane
 
 Cel:
 
 - zaprojektowac neutralny model typow rekordow,
 - unikac zalozen branzowych,
-- przygotowac bezpieczna migracje z obecnego modelu.
+- przygotowac fundament pod przyszla migracje z obecnego modelu.
 
-Kandydaci prac:
+Wynik MVP-006:
 
-- opisac docelowy model typu rekordu,
-- zaplanowac migracje z `orders`,
-- nie wdrazac nowego schematu bez decyzji i backupu.
+- dodano `domain/record.py`,
+- dodano `domain/__init__.py`,
+- wprowadzono neutralne dataclassy `Record`, `RecordField`, `RecordType` i `RecordStatus`,
+- nie podpieto jeszcze modelu do UI, `OrderService` ani bazy danych,
+- nie zmieniono schematu SQLite, UI ani zachowania aplikacji.
+
+Pozostale ryzyka:
+
+- obecny model `orders` nadal jest aktywnym modelem zapisu danych,
+- przyszla migracja musi zachowac lokalne dane uzytkownika,
+- trzeba zaprojektowac mapowanie warsztatowych kolumn na generyczne pola,
+- typy rekordow i pola nie sa jeszcze konfigurowalne.
+
+Nastepny bezpieczny krok:
+
+- opisac konfiguracje pol i typow rekordow albo dodac adapter tylko do odczytu mapujacy obecne `orders` na `Record`, bez zmiany schematu.
 
 ### MVP-007 - Introduce configurable fields model
 

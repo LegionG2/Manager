@@ -25,6 +25,8 @@ Repozytorium jest male i skupione wokol jednego pliku aplikacji:
 - `main.py` zawiera prosty punkt wejscia aplikacji.
 - `ui/app.py` zawiera aplikacje Tkinter, ustawienia, logike UI, archiwum i backup.
 - `ui/__init__.py` oznacza `ui` jako pakiet warstwy UI.
+- `domain/record.py` zawiera fundament generycznego modelu domenowego rekordow.
+- `domain/__init__.py` oznacza `domain` jako pakiet domenowy.
 - `services/order_service.py` zawiera przejsciowy serwis logiki rekordow/zlecen.
 - `services/__init__.py` oznacza `services` jako pakiet serwisow aplikacyjnych.
 - `data/database.py` zawiera obsluge SQLite, obecny model tabeli `orders`, operacje CRUD, statystyki i eksport CSV.
@@ -49,6 +51,17 @@ Nazwy te sa obecnie zwiazane ze stara wersja aplikacji. Nalezy traktowac je jako
 Obecny kod tworzy tabele `orders` w SQLite. Model zawiera pola zwiazane z poprzednim zastosowaniem aplikacji, m.in. klient, pojazd, status, priorytet, terminy, koszty, notatki i archiwum.
 
 To nie jest jeszcze docelowy generyczny model rekordow. Przed zmianami schematu nalezy zaplanowac migracje i zabezpieczenie istniejacych danych.
+
+## Fundament modelu domenowego
+
+`domain/record.py` wprowadza neutralne pojecia przyszlego Managera:
+
+- `RecordField` dla definicji pola,
+- `RecordStatus` dla statusu rekordu,
+- `RecordType` dla typu rekordu,
+- `Record` dla pojedynczej instancji rekordu.
+
+Ten model nie jest jeszcze podlaczony do UI ani bazy danych. Obecna aplikacja nadal dziala na tabeli `orders` i przejsciowym `OrderService`.
 
 ## Current architecture observations
 
@@ -85,6 +98,19 @@ Record/order application logic currently starts in `services/order_service.py`, 
 
 The name is intentionally transitional. The current database table is still `orders`, so the service keeps the current vocabulary until a separate generic record model is designed.
 
+### Domain model
+
+Generic domain model definitions live in `domain/record.py`.
+
+The module currently contains dataclasses only:
+
+- `RecordField`,
+- `RecordStatus`,
+- `RecordType`,
+- `Record`.
+
+They are intentionally not wired into the running application yet. This keeps MVP-006 as a safe foundation without changing database schema, UI behavior or data persistence.
+
 ### Database logic
 
 Database logic currently lives in `data/database.py`, inside `Database`.
@@ -116,6 +142,7 @@ Future configurable record types, fields and statuses should not be added as mor
 The code is tightly coupled rather than modular:
 
 - UI methods know database column names.
+- The new `domain/record.py` model is not yet mapped to `orders`.
 - `OrderService` knows database column names and current order fields.
 - Database queries know current status names and workflow assumptions.
 - Sorting, filtering and validation still know current business fields, though part of that logic moved out of UI.
@@ -242,6 +269,29 @@ Known remaining coupling:
 Next safe step:
 
 - extract backup or configuration/path helpers in a separate small change, or add focused tests around `OrderService` before designing generic records.
+
+## MVP-006 generic record model foundation
+
+MVP-006 added a small `domain` package:
+
+- `domain/record.py`,
+- `domain/__init__.py`.
+
+Added generic concepts:
+
+- `RecordField`,
+- `RecordStatus`,
+- `RecordType`,
+- `Record`.
+
+The current workshop-oriented model remains active as a transitional state:
+
+- the SQLite schema still uses `orders`,
+- existing UI fields and labels remain unchanged,
+- `OrderService` still works with the current order-shaped data,
+- no migration, new tables or new user-facing features were added.
+
+Future MVPs should gradually connect the running application to the generic model. The main migration risks are preserving existing local data, mapping current `orders` columns to configurable fields, keeping status behavior compatible and avoiding a large combined schema/UI rewrite.
 
 ## Zasady techniczne
 
