@@ -5,9 +5,11 @@ from tkinter import ttk, messagebox, filedialog
 from datetime import datetime
 
 from data.database import Database
+from services.config_service import ConfigService
 from services.order_service import OrderService
 
 APP_TITLE = "Warsztat Manager Premium"
+DEFAULT_APP_TITLE = "Manager"
 DB_NAME = "warsztat_manager.db"
 SETTINGS_NAME = "settings.json"
 STATUSES = [
@@ -79,6 +81,14 @@ def resource_path(filename: str) -> str:
     return os.path.join(get_app_data_dir(), filename)
 
 
+def load_window_title() -> str:
+    try:
+        app_name = ConfigService().load_app_config().app_name.strip()
+    except Exception:
+        return DEFAULT_APP_TITLE
+    return app_name or DEFAULT_APP_TITLE
+
+
 class SettingsManager:
     def __init__(self, path: str):
         self.path = path
@@ -110,7 +120,8 @@ class SettingsManager:
 class WorkshopApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title(APP_TITLE)
+        self.app_title = load_window_title()
+        self.title(self.app_title)
         self.geometry("1366x820")
         self.minsize(1024, 640)
         try:

@@ -401,7 +401,35 @@ Nastepny bezpieczny krok:
 
 - rozszerzyc walidacje o spojnosc referencji albo uzyc tych samych uslug w osobnym MVP ekranu ustawien.
 
-### MVP-015 - Fundament wyszukiwania i filtrowania
+### MVP-015 - Tytul okna z konfiguracji aplikacji
+
+Status: wykonane
+
+Cel:
+
+- podlaczyc `app_name` z konfiguracji do obecnego UI w minimalny sposob,
+- ustawic tytul okna na podstawie `config/app_config.json`,
+- zachowac obecne UI, zachowanie aplikacji i schemat bazy.
+
+Wynik MVP-015:
+
+- `WorkshopApp` ustawia tytul okna na podstawie `ConfigService().load_app_config().app_name`,
+- dodano bezpieczny fallback `Manager`, gdy konfiguracja nie zaladuje sie poprawnie albo nazwa jest pusta,
+- jest to pierwszy maly krok integracji konfiguracji z UI,
+- nie dodano ekranu ustawien, ikony zebatki ani edytora nazwy aplikacji,
+- reszta aplikacji nadal dziala na starym przejsciowym UI.
+
+Pozostale ryzyka:
+
+- konfiguracja aplikacji nadal nie steruje kartami, formularzami ani widokami,
+- pelny ekran ustawien i ikona zebatki pozostaja osobnym MVP,
+- obecny model danych i UI nadal zawieraja przejsciowe nazwy oraz zalozenia starej aplikacji.
+
+Nastepny bezpieczny krok:
+
+- przygotowac osobny MVP dla ustawien albo kontynuowac male integracje konfiguracji bez zmiany schematu bazy.
+
+### MVP-016 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -410,7 +438,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-016 - Fundament archiwum
+### MVP-017 - Fundament archiwum
 
 Status: planowane
 
@@ -419,7 +447,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-017 - Fundament importu i eksportu
+### MVP-018 - Fundament importu i eksportu
 
 Status: planowane
 

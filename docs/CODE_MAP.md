@@ -70,7 +70,8 @@ Co robi:
 
 Ryzyka i niejasne obszary:
 
-- Plik nie jest jeszcze podlaczony do UI ani bazy danych.
+- `app_name` jest juz uzywany jako tytul okna aplikacji.
+- Pozostale elementy pliku nie sa jeszcze podlaczone do UI ani bazy danych.
 - Nie istnieje jeszcze ekran ustawien ani ikona zebatki.
 - Przyszle zmiany musza rozstrzygnac, gdzie bedzie zapisywana konfiguracja uzytkownika.
 
@@ -195,7 +196,8 @@ Co robi:
 Ryzyka i niejasne obszary:
 
 - Model konfiguracji aplikacji nie jest jeszcze podlaczony do UI.
-- Nie zmienia obecnego tytulu okna, kart ani sekcji.
+- `app_name` z konfiguracji jest uzywany jako tytul okna aplikacji.
+- Nie zmienia obecnych kart ani sekcji.
 - Nie istnieje jeszcze zapis konfiguracji uzytkownika.
 
 ### `domain/app_section.py`
@@ -460,6 +462,7 @@ Kategoria: UI, konfiguracja.
 Co robi:
 
 - definiuje tytul aplikacji, nazwy plikow danych i ustawien,
+- laduje `app_name` z konfiguracji przez `ConfigService` i uzywa go jako tytulu okna,
 - definiuje obecne statusy i priorytety,
 - definiuje motywy jasny i ciemny,
 - zarzadza ustawieniami lokalnymi przez JSON,
@@ -626,7 +629,8 @@ Stale przeniesiono do `ui/app.py`:
 
 Obecne ryzyka:
 
-- `APP_TITLE`, `DB_NAME` i katalog danych zawieraja nazwy zwiazane ze stara aplikacja warsztatowa.
+- `APP_TITLE` nadal jest uzywany przez czesc komunikatow UI jako przejsciowy tytul dialogow.
+- `DB_NAME` i katalog danych zawieraja nazwy zwiazane ze stara aplikacja warsztatowa.
 - `STATUSES` i `PRIORITIES` sa hardcodowane w kodzie.
 - Statusy, priorytety, nazwy plikow i czesc etykiet UI nie sa jeszcze konfigurowalne.
 - Zmiana tych wartosci moze wplynac jednoczesnie na UI, sortowanie, filtry, dane i eksport.
@@ -950,7 +954,7 @@ Domyslna konfiguracja aplikacji znajduje sie w `config/app_config.json` i zawier
 - `active_record_type_id`: `default`,
 - sekcje `Dashboard`, `Records`, `Archive`.
 
-`AppConfigService` umie wczytac JSON konfiguracji aplikacji i zamienic go na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, obecnych kart, tytulu okna, bazy ani `OrderService`.
+`AppConfigService` umie wczytac JSON konfiguracji aplikacji i zamienic go na obiekty domenowe. `app_name` z tej konfiguracji jest juz uzywany jako tytul okna aplikacji. Pozostale elementy loadera nie sa jeszcze podlaczone do obecnych kart, bazy ani `OrderService`.
 
 Obecna aplikacja nadal uzywa przejsciowego starego UI:
 
@@ -1109,3 +1113,23 @@ Nie zmieniono:
 - zaleznosci projektu.
 
 Przyszla ikona zebatki albo ekran ustawien powinny korzystac z tych samych uslug konfiguracji i walidacji, ale pozostaja osobnym MVP.
+
+## MVP-015 - Tytul okna z konfiguracji aplikacji
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+Obecny `WorkshopApp` laduje `app_name` z `config/app_config.json` przez `ConfigService` i uzywa tej wartosci jako tytulu okna Tkinter. Jesli konfiguracja nie zaladuje sie poprawnie albo nazwa jest pusta, tytul okna wraca do bezpiecznego fallbacku `Manager`.
+
+To pierwszy maly krok integracji konfiguracji z obecnym UI.
+
+Nie zmieniono:
+
+- ukladu UI,
+- formularzy, tabel, zapisu, edycji, usuwania ani wyszukiwania,
+- schematu bazy danych,
+- plikow JSON konfiguracji,
+- zaleznosci projektu.
+
+Nie dodano ekranu ustawien, ikony zebatki, edytora nazwy aplikacji, edytora kart, edytora pol ani dynamicznego UI. Reszta aplikacji nadal dziala na starym przejsciowym UI.

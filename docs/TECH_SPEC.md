@@ -119,7 +119,7 @@ Domyslna konfiguracja znajduje sie w `config/app_config.json`. Jest neutralna i 
 - `active_record_type_id`: `default`,
 - sekcje `Dashboard`, `Records`, `Archive`.
 
-`services/app_config_service.py` zawiera `AppConfigService`, ktory wczytuje konfiguracje aplikacji z JSON i mapuje ja na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, tytulu okna, obecnych kart ani bazy danych. Przyszly ekran ustawien i ikona zebatki sa osobnym MVP.
+`services/app_config_service.py` zawiera `AppConfigService`, ktory wczytuje konfiguracje aplikacji z JSON i mapuje ja na obiekty domenowe. `app_name` z tej konfiguracji jest uzywany jako tytul okna aplikacji przez `ui/app.py`. Pozostale elementy konfiguracji aplikacji nie sa jeszcze podlaczone do obecnych kart ani bazy danych. Przyszly ekran ustawien i ikona zebatki sa osobnym MVP.
 
 ## Fundament sekcji/kart aplikacji
 
@@ -259,7 +259,7 @@ Application configuration loading starts in `services/app_config_service.py`.
 - converting section dictionaries into `AppSection`,
 - converting the raw dictionary into `AppConfig`.
 
-It does not save configuration, load user-specific configuration, modify the window title, build a settings screen or add a settings icon yet.
+It does not save configuration, load user-specific configuration, build a settings screen or add a settings icon yet. The current window title is the only UI value already using `app_name`.
 
 ### Central configuration service
 
@@ -364,7 +364,7 @@ The code is tightly coupled rather than modular:
 - The new `domain/record.py` model is not yet mapped to `orders`.
 - The field configuration model is not yet mapped to the current static form.
 - The record type configuration model is not yet mapped to the current static form or database.
-- The application configuration model is not yet mapped to the current window title, tabs or sections.
+- The application configuration model is mapped only to the current window title. It is not yet mapped to tabs, sections or other UI behavior.
 - The section configuration model is not yet mapped to the current Tkinter notebook or navigation.
 - The central configuration service is not yet used by UI.
 - `OrderService` knows database column names and current order fields.
@@ -584,7 +584,7 @@ The default application configuration is neutral:
 - `active_record_type_id`: `default`,
 - `sections`: `Dashboard`, `Records`, `Archive`.
 
-The current workshop-oriented UI remains active as a transitional state. The application configuration and loader are not connected to UI, SQLite, window title or tabs. No settings screen, gear icon, migration, new table or user-facing feature was added.
+The current workshop-oriented UI remains active as a transitional state. After MVP-015, `app_name` from the application configuration is used as the window title. The rest of the application configuration is not connected to SQLite, tabs or runtime UI behavior. No settings screen, gear icon, migration, new table or broader user-facing feature was added.
 
 Next safe steps are to validate application configuration more strictly or plan a separate MVP for a subtle settings screen under a gear icon. Those steps should still avoid changing the current database schema.
 
@@ -693,6 +693,16 @@ python tools/check_config.py
 ```
 
 It uses the existing `ConfigService` and `ConfigValidationService` path. It does not add a user-facing feature, does not connect anything to Tkinter, does not change database schema and does not add dependencies. Future settings UI should reuse these same configuration and validation services instead of creating a separate validation path.
+
+## MVP-015 window title from configuration
+
+MVP-015 connected one small part of application configuration to the current UI:
+
+- `ui/app.py` loads `app_name` from `config/app_config.json` through `ConfigService`,
+- `WorkshopApp` uses that value as the Tkinter window title,
+- the fallback title is `Manager` when configuration loading fails or the name is empty.
+
+This is the first small integration between configuration and UI. It does not add a settings screen, gear icon, name editor, dynamic UI, database migration or new dependency. The rest of the application still uses the old transitional UI and data model.
 
 ## Zasady techniczne
 

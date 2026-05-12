@@ -351,3 +351,21 @@ Konsekwencje:
 - Skrypt jest narzedziem developerskim, nie ekranem ustawien, ikona zebatki ani elementem Tkinter.
 - Nie zmieniono UI, schematu SQLite, plikow JSON konfiguracji, zaleznosci ani sposobu startu przez `python main.py`.
 - Przyszly ekran ustawien powinien korzystac z tych samych uslug konfiguracji i walidacji.
+
+## 2026-05-13 - Tytul okna korzysta z `app_name` w konfiguracji
+
+Decyzja:
+
+Obecny tytul okna Tkinter jest ladowany z `config/app_config.json` przez `ConfigService`.
+
+Kontekst:
+
+MVP-015 ma byc pierwszym malym krokiem integracji konfiguracji aplikacji z UI. Celem jest tylko uzycie `app_name` jako tytulu okna, bez dodawania ekranu ustawien, ikony zebatki, dynamicznych kart, edytora nazwy aplikacji ani migracji bazy danych.
+
+Konsekwencje:
+
+- `WorkshopApp` ustawia tytul okna na wartosc `app_name` z konfiguracji.
+- Jesli konfiguracja nie zaladuje sie poprawnie albo nazwa jest pusta, uzywany jest fallback `Manager`.
+- Reszta aplikacji nadal dziala na starym przejsciowym UI.
+- Nie zmieniono formularzy, tabel, zapisu, edycji, usuwania, wyszukiwania, schematu SQLite ani zaleznosci.
+- Pelny ekran ustawien i ikona zebatki pozostaja osobnym MVP.
