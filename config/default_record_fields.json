@@ -1,0 +1,44 @@
+[
+  {
+    "name": "title",
+    "label": "Title",
+    "field_type": "text",
+    "required": true,
+    "default": ""
+  },
+  {
+    "name": "description",
+    "label": "Description",
+    "field_type": "text",
+    "required": false,
+    "default": ""
+  },
+  {
+    "name": "status",
+    "label": "Status",
+    "field_type": "select",
+    "required": true,
+    "default": "new",
+    "options": [
+      {
+        "value": "new",
+        "label": "New"
+      },
+      {
+        "value": "active",
+        "label": "Active"
+      },
+      {
+        "value": "done",
+        "label": "Done"
+      }
+    ]
+  },
+  {
+    "name": "created_date",
+    "label": "Created date",
+    "field_type": "date",
+    "required": false,
+    "default": ""
+  }
+]

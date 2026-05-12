@@ -196,3 +196,24 @@ Konsekwencje:
 - `orders`, `OrderService` i obecne pola UI pozostaja stanem przejsciowym.
 - Przyszle MVP powinny stopniowo mapowac obecny model na `Record`, projektowac konfigurowalne pola i statusy oraz planowac migracje z ochrona istniejacych danych.
 - Glownym ryzykiem pozniejszej migracji jest utrata kompatybilnosci z lokalnymi bazami uzytkownikow albo jednoczesna zmiana schematu, UI i logiki zapisu.
+
+## 2026-05-12 - Definicje pol zaczynaja sie w `domain/field_definition.py`
+
+Decyzja:
+
+Dodano neutralny model definicji pol w `domain/field_definition.py`, domyslna konfiguracje w `config/default_record_fields.json` oraz loader w `services/field_config_service.py`.
+
+Kontekst:
+
+MVP-007 ma przygotowac fundament pod konfigurowalne pola rekordow bez zmiany obecnego UI, zachowania aplikacji i schematu SQLite. Dlatego konfiguracja pol jest wczytywalna, ale nie jest jeszcze uzywana przez statyczny formularz ani obecny model `orders`.
+
+Konsekwencje:
+
+- `FieldType` definiuje typy `text`, `number`, `date`, `boolean` i `select`.
+- `FieldOption` opisuje opcje dla pola wyboru.
+- `FieldDefinition` opisuje pojedyncze pole rekordu.
+- `FieldConfigService` wczytuje liste definicji pol z JSON i mapuje ja na obiekty domenowe.
+- Domyslna konfiguracja jest neutralna: `title`, `description`, `status`, `created_date`.
+- Nie zmieniono UI, bazy danych, zaleznosci ani sposobu zapisu danych.
+- Obecny model warsztatowy i `OrderService` pozostaja stanem przejsciowym.
+- Nastepny bezpieczny krok to walidacja konfiguracji albo adapter do `RecordType`, nadal bez dynamicznego UI i migracji bazy.

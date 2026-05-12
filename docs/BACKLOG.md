@@ -152,7 +152,7 @@ Nastepny bezpieczny krok:
 
 ### MVP-007 - Introduce configurable fields model
 
-Status: planowane
+Status: wykonane
 
 Cel:
 
@@ -160,12 +160,27 @@ Cel:
 - uwzglednic podstawowe typy danych,
 - zachowac mozliwosc wyswietlania i edycji danych lokalnie.
 
-Kandydaci prac:
+Wynik MVP-007:
 
-- opisac typy pol,
-- opisac walidacje,
-- opisac sposob zapisu konfiguracji,
-- unikac hardcodowania nowych pol pod konkretna branze.
+- dodano `domain/field_definition.py`,
+- dodano `config/default_record_fields.json`,
+- dodano `services/field_config_service.py`,
+- wprowadzono `FieldDefinition`, `FieldType` i `FieldOption`,
+- obslugiwane typy pol to `text`, `number`, `date`, `boolean` i `select`,
+- domyslna konfiguracja uzywa neutralnych pol `title`, `description`, `status` i `created_date`,
+- loader potrafi wczytac JSON i zmapowac go na obiekty domenowe,
+- konfiguracja nie jest jeszcze podlaczona do UI ani bazy.
+
+Pozostale ryzyka:
+
+- obecny statyczny formularz nadal dziala na modelu `orders`,
+- nie ma jeszcze edytora pol ani zapisu konfiguracji uzytkownika,
+- przyszle podpiecie musi zachowac obecne dane i UI,
+- trzeba dopracowac walidacje definicji pol przed uzyciem w runtime.
+
+Nastepny bezpieczny krok:
+
+- dodac walidacje konfiguracji albo adapter tylko do odczytu laczacy definicje pol z `RecordType`, bez zmiany schematu bazy i UI.
 
 ### MVP-008 - Fundament wyszukiwania i filtrowania
 

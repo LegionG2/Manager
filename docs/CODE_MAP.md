@@ -15,14 +15,18 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |-- AGENTS.md
 |-- README.md
 |-- build_exe.bat
+|-- config/
+|   `-- default_record_fields.json
 |-- data/
 |   |-- __init__.py
 |   `-- database.py
 |-- domain/
 |   |-- __init__.py
+|   |-- field_definition.py
 |   `-- record.py
 |-- services/
 |   |-- __init__.py
+|   |-- field_config_service.py
 |   `-- order_service.py
 |-- ui/
 |   |-- __init__.py
@@ -38,6 +42,22 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 ```
 
 ## Pliki glowne
+
+### `config/default_record_fields.json`
+
+Kategoria: konfiguracja, fundament pol rekordow.
+
+Co robi:
+
+- zawiera neutralna domyslna konfiguracje pol przyszlego rekordu,
+- opisuje pola `title`, `description`, `status` i `created_date`,
+- uzywa typow `text`, `date` i `select`.
+
+Ryzyka i niejasne obszary:
+
+- Plik nie jest jeszcze podlaczony do UI ani bazy danych.
+- To przyklad techniczny, a nie preset branzowy ani docelowy konfigurator.
+- Przyszle zmiany musza rozstrzygnac, gdzie bedzie zapisywana konfiguracja uzytkownika.
 
 ### `main.py`
 
@@ -118,6 +138,22 @@ Ryzyka i niejasne obszary:
 - Przyszle podpiecie musi uwzglednic istniejace dane uzytkownika i zgodnosc z obecnym zachowaniem.
 - Obecny model warsztatowy nadal dziala jako stan przejsciowy.
 
+### `domain/field_definition.py`
+
+Kategoria: domena, konfiguracja pol rekordow.
+
+Co robi:
+
+- definiuje `FieldType` z typami `text`, `number`, `date`, `boolean` i `select`,
+- definiuje `FieldOption` jako opcje dla pol wyboru,
+- definiuje `FieldDefinition` jako generyczny opis pola rekordu.
+
+Ryzyka i niejasne obszary:
+
+- Model definicji pol nie jest jeszcze podlaczony do dynamicznego formularza.
+- Nie istnieje jeszcze walidacja runtime dla wszystkich typow pol.
+- Nie ma jeszcze zapisu konfiguracji uzytkownika ani migracji danych.
+
 ### `services/__init__.py`
 
 Kategoria: logika aplikacyjna.
@@ -152,6 +188,23 @@ Ryzyka i niejasne obszary:
 - Serwis nadal zna konkretne kolumny `orders`, statusy i pola formularza.
 - Serwis korzysta bezposrednio z `Database`; nie ma jeszcze osobnego generycznego modelu domenowego.
 - To nie jest jeszcze docelowy serwis generycznych rekordow.
+
+### `services/field_config_service.py`
+
+Kategoria: konfiguracja, logika aplikacyjna.
+
+Co robi:
+
+- zawiera `FieldConfigService`,
+- wczytuje liste definicji pol z pliku JSON,
+- mapuje JSON na `FieldDefinition`, `FieldType` i `FieldOption`,
+- sprawdza, czy konfiguracja ma postac listy obiektow.
+
+Ryzyka i niejasne obszary:
+
+- Loader nie jest jeszcze uzywany przez UI.
+- Loader nie zapisuje konfiguracji i nie obsluguje konfiguracji per uzytkownik.
+- Nie zmienia schematu SQLite ani obecnego modelu `orders`.
 
 ### `ui/__init__.py`
 
@@ -577,3 +630,37 @@ Ryzyka przyszlej migracji:
 Nastepny bezpieczny krok:
 
 - opisac konfiguracje typow i pol rekordow albo przygotowac adapter mapujacy obecne `orders` na `Record` tylko do odczytu, bez zmiany schematu bazy.
+
+## MVP-007 - Fundament konfigurowalnych pol
+
+Dodano:
+
+- `domain/field_definition.py`,
+- `config/default_record_fields.json`,
+- `services/field_config_service.py`.
+
+Wprowadzono generyczne pojecia:
+
+- `FieldType` - wspierane typy pol: `text`, `number`, `date`, `boolean`, `select`,
+- `FieldOption` - opcja dla pola wyboru,
+- `FieldDefinition` - definicja pola rekordu.
+
+Domyslna konfiguracja pol znajduje sie w `config/default_record_fields.json` i zawiera neutralne pola:
+
+- `title`,
+- `description`,
+- `status`,
+- `created_date`.
+
+`FieldConfigService` umie wczytac JSON z lista pol i zamienic go na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, bazy ani obecnego formularza.
+
+Obecny model warsztatowy nadal dziala jako stan przejsciowy:
+
+- tabela `orders` pozostaje bez zmian,
+- formularze i tabele UI pozostaja statyczne,
+- `OrderService` nadal obsluguje obecny model zlecen,
+- nie dodano migracji ani nowych tabel.
+
+Nastepny bezpieczny krok:
+
+- dodac walidacje definicji pol albo przygotowac adapter tylko do odczytu, ktory mapuje domyslna konfiguracje na przyszly `RecordType`, bez zmiany UI i schematu bazy.

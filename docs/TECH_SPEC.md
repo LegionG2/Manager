@@ -23,10 +23,13 @@
 Repozytorium jest male i skupione wokol jednego pliku aplikacji:
 
 - `main.py` zawiera prosty punkt wejscia aplikacji.
+- `config/default_record_fields.json` zawiera neutralna domyslna konfiguracje przyszlych pol rekordow.
 - `ui/app.py` zawiera aplikacje Tkinter, ustawienia, logike UI, archiwum i backup.
 - `ui/__init__.py` oznacza `ui` jako pakiet warstwy UI.
 - `domain/record.py` zawiera fundament generycznego modelu domenowego rekordow.
+- `domain/field_definition.py` zawiera fundament definicji konfigurowalnych pol.
 - `domain/__init__.py` oznacza `domain` jako pakiet domenowy.
+- `services/field_config_service.py` zawiera loader konfiguracji pol z JSON.
 - `services/order_service.py` zawiera przejsciowy serwis logiki rekordow/zlecen.
 - `services/__init__.py` oznacza `services` jako pakiet serwisow aplikacyjnych.
 - `data/database.py` zawiera obsluge SQLite, obecny model tabeli `orders`, operacje CRUD, statystyki i eksport CSV.
@@ -62,6 +65,18 @@ To nie jest jeszcze docelowy generyczny model rekordow. Przed zmianami schematu 
 - `Record` dla pojedynczej instancji rekordu.
 
 Ten model nie jest jeszcze podlaczony do UI ani bazy danych. Obecna aplikacja nadal dziala na tabeli `orders` i przejsciowym `OrderService`.
+
+## Fundament konfigurowalnych pol
+
+`domain/field_definition.py` wprowadza neutralne pojecia definicji pol:
+
+- `FieldType` dla typow `text`, `number`, `date`, `boolean` i `select`,
+- `FieldOption` dla opcji pola wyboru,
+- `FieldDefinition` dla pojedynczej definicji pola.
+
+Domyslna konfiguracja znajduje sie w `config/default_record_fields.json`. Jest neutralna i zawiera pola `title`, `description`, `status` oraz `created_date`.
+
+`services/field_config_service.py` zawiera `FieldConfigService`, ktory wczytuje liste pol z JSON i mapuje ja na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, bazy ani obecnego statycznego formularza.
 
 ## Current architecture observations
 
@@ -100,16 +115,32 @@ The name is intentionally transitional. The current database table is still `ord
 
 ### Domain model
 
-Generic domain model definitions live in `domain/record.py`.
+Generic domain model definitions live in `domain/record.py` and `domain/field_definition.py`.
 
-The module currently contains dataclasses only:
+The modules currently contain simple structures only:
 
 - `RecordField`,
 - `RecordStatus`,
 - `RecordType`,
-- `Record`.
+- `Record`,
+- `FieldType`,
+- `FieldOption`,
+- `FieldDefinition`.
 
-They are intentionally not wired into the running application yet. This keeps MVP-006 as a safe foundation without changing database schema, UI behavior or data persistence.
+They are intentionally not wired into the running application yet. This keeps MVP-006 and MVP-007 as safe foundations without changing database schema, UI behavior or data persistence.
+
+### Field configuration loader
+
+Field configuration loading starts in `services/field_config_service.py`.
+
+`FieldConfigService` is responsible for:
+
+- reading a JSON file with field definitions,
+- checking that the root value is a list,
+- converting raw dictionaries into `FieldDefinition`,
+- converting select options into `FieldOption`.
+
+It does not save configuration, load user-specific configuration or build UI controls yet.
 
 ### Database logic
 
@@ -143,6 +174,7 @@ The code is tightly coupled rather than modular:
 
 - UI methods know database column names.
 - The new `domain/record.py` model is not yet mapped to `orders`.
+- The field configuration model is not yet mapped to the current static form.
 - `OrderService` knows database column names and current order fields.
 - Database queries know current status names and workflow assumptions.
 - Sorting, filtering and validation still know current business fields, though part of that logic moved out of UI.
@@ -292,6 +324,32 @@ The current workshop-oriented model remains active as a transitional state:
 - no migration, new tables or new user-facing features were added.
 
 Future MVPs should gradually connect the running application to the generic model. The main migration risks are preserving existing local data, mapping current `orders` columns to configurable fields, keeping status behavior compatible and avoiding a large combined schema/UI rewrite.
+
+## MVP-007 configurable fields foundation
+
+MVP-007 added:
+
+- `domain/field_definition.py`,
+- `config/default_record_fields.json`,
+- `services/field_config_service.py`.
+
+Added generic concepts:
+
+- `FieldType`,
+- `FieldOption`,
+- `FieldDefinition`.
+
+The supported field types are:
+
+- `text`,
+- `number`,
+- `date`,
+- `boolean`,
+- `select`.
+
+The current workshop-oriented model remains active as a transitional state. The default field configuration and loader are not connected to UI, SQLite or `OrderService`. No migration, new tables, dynamic form, dynamic list or user-facing feature was added.
+
+Next safe steps are to validate field definitions more strictly, map the default fields into a future `RecordType`, or add a read-only adapter. Those steps should still avoid changing the current UI and database schema.
 
 ## Zasady techniczne
 
