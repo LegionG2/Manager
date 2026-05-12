@@ -18,6 +18,9 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |-- data/
 |   |-- __init__.py
 |   `-- database.py
+|-- services/
+|   |-- __init__.py
+|   `-- order_service.py
 |-- ui/
 |   |-- __init__.py
 |   `-- app.py
@@ -82,6 +85,41 @@ Ryzyka i niejasne obszary:
 - `Database.conn` nadal jest uzywane w `ui/app.py` przy backupie.
 - Nie zmieniono schematu bazy ani zachowania migracji.
 
+### `services/__init__.py`
+
+Kategoria: logika aplikacyjna.
+
+Co robi:
+
+- oznacza `services` jako pakiet Pythona dla serwisow aplikacyjnych.
+
+Ryzyka i niejasne obszary:
+
+- Na ten moment nie zawiera logiki.
+
+### `services/order_service.py`
+
+Kategoria: logika aplikacyjna, rekordy/zlecenia.
+
+Co robi:
+
+- zawiera klase `OrderService`,
+- deleguje generowanie numeru zlecenia do `Database`,
+- przygotowuje dane formularza do zapisu w obecnym modelu `orders`,
+- waliduje pola wymagane i kwoty przed zapisem,
+- liczy koszt laczny i saldo,
+- wylicza stan terminu dla tabeli,
+- obsluguje logike wyszukiwania i sortowania rekordow,
+- przygotowuje dane duplikowanego zlecenia,
+- wykonuje proste operacje na rekordach: zapis, usuniecie, zmiana statusu, archiwizacja i przywrocenie.
+
+Ryzyka i niejasne obszary:
+
+- Nazwa `OrderService` jest przejsciowa, bo obecny schemat nadal uzywa tabeli `orders` i warsztatowych pol.
+- Serwis nadal zna konkretne kolumny `orders`, statusy i pola formularza.
+- Serwis korzysta bezposrednio z `Database`; nie ma jeszcze osobnego generycznego modelu domenowego.
+- To nie jest jeszcze docelowy serwis generycznych rekordow.
+
 ### `ui/__init__.py`
 
 Kategoria: UI.
@@ -96,7 +134,7 @@ Ryzyka i niejasne obszary:
 
 ### `ui/app.py`
 
-Kategoria: UI, logika aplikacji, konfiguracja.
+Kategoria: UI, konfiguracja.
 
 Co robi:
 
@@ -105,9 +143,10 @@ Co robi:
 - definiuje motywy jasny i ciemny,
 - zarzadza ustawieniami lokalnymi przez JSON,
 - importuje `Database` z `data.database`,
+- tworzy `OrderService` z `services.order_service`,
 - buduje glowne okno aplikacji,
 - buduje zakladki aktywnych rekordow i archiwum,
-- obsluguje formularz, tabele, wyszukiwanie, filtrowanie, sortowanie, archiwum, backup i eksport CSV.
+- obsluguje formularz, tabele, filtrowanie, archiwum, backup i eksport CSV.
 
 Znane elementy:
 
@@ -115,12 +154,13 @@ Znane elementy:
 - `resource_path()` buduje sciezki do plikow danych.
 - `SettingsManager` obsluguje plik ustawien JSON.
 - `WorkshopApp` laczy UI Tkinter z logika aplikacji.
+- Czystsza czesc logiki rekordow zostala wydzielona do `OrderService`.
 
 Ryzyka i niejasne obszary:
 
 - Modul UI nadal laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
 - Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
-- UI nadal zna konkretne kolumny aktualnego modelu danych.
+- UI nadal zna konkretne kolumny aktualnego modelu danych przy budowaniu tabel i wypelnianiu formularza.
 - Backup nadal korzysta bezposrednio z `self.db.conn`.
 - Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
 - Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
@@ -223,13 +263,14 @@ Ryzyka i niejasne obszary:
 
 ## Obecne granice odpowiedzialnosci
 
-Na ten moment granice odpowiedzialnosci sa lepsze niz na starcie, ale nadal slabe wewnatrz warstwy UI. Punkt wejscia znajduje sie w `main.py`, dostep do danych w `data/database.py`, a obecna aplikacja Tkinter w `ui/app.py`.
+Na ten moment granice odpowiedzialnosci sa lepsze niz na starcie. Punkt wejscia znajduje sie w `main.py`, dostep do danych w `data/database.py`, czesc logiki rekordow w `services/order_service.py`, a obecna aplikacja Tkinter w `ui/app.py`.
 
 Przy przyszlym rozwoju warto stopniowo wydzielac:
 
 - warstwe danych,
 - warstwe konfiguracji,
 - warstwe UI,
+- logike rekordow,
 - logike importu i eksportu,
 - logike wyszukiwania i filtrowania,
 - migracje danych.
@@ -428,3 +469,41 @@ Sprzezenia, ktore nadal istnieja:
 Nastepny bezpieczny krok:
 
 - wydzielic konfiguracje i sciezki danych z `ui/app.py` do malego modulu konfiguracyjnego albo przeniesc backup do `data/database.py`, bez zmiany wartosci, schematu ani zachowania UI.
+
+## MVP-005 - Wydzielenie logiki aplikacyjnej rekordow
+
+Dodano pakiet `services` i modul `services/order_service.py`.
+
+Wydzielono z `ui/app.py`:
+
+- parsowanie kwot,
+- liczenie kosztu lacznego i salda,
+- wyliczanie stanu terminu,
+- logike dopasowania wyszukiwania,
+- sortowanie obecnych rekordow,
+- przygotowanie danych formularza do zapisu,
+- domyslne wartosci formularza,
+- przygotowanie danych duplikowanego zlecenia,
+- proste operacje na rekordzie: zapis, usuniecie, zmiana statusu, archiwizacja i przywrocenie.
+
+Zostalo w `ui/app.py`:
+
+- budowanie okna, zakladek, tabel, formularza i stylow,
+- zmienne Tkinter i odczyt/zapis wartosci widgetow,
+- obsluga zdarzen, zaznaczen, messageboxow i filedialogow,
+- wypelnianie tabel i formularza,
+- eksport CSV wywolywany z UI,
+- backup pliku bazy danych.
+
+Sprzezenia, ktore nadal istnieja:
+
+- `OrderService` nadal korzysta bezposrednio z `Database`.
+- `OrderService` nadal zna tabele `orders`, pola zlecen i obecne statusy.
+- `WorkshopApp` nadal zna kolumny bazy przy budowaniu tabel i uzupelnianiu formularza.
+- Backup nadal uzywa `self.db.conn` w UI.
+
+Nazwa `order_service.py` jest przejsciowa. Uzyto jej, bo obecny kod i baza nadal operuja na zleceniach (`orders`). Docelowo serwis powinien zostac zastapiony lub przemianowany przy wprowadzaniu generycznego modelu rekordow.
+
+Nastepny bezpieczny krok:
+
+- wydzielic backup z UI do warstwy danych albo wydzielic konfiguracje/sciezki danych, bez zmiany schematu i bez zmiany zachowania aplikacji.

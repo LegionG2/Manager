@@ -25,6 +25,8 @@ Repozytorium jest male i skupione wokol jednego pliku aplikacji:
 - `main.py` zawiera prosty punkt wejscia aplikacji.
 - `ui/app.py` zawiera aplikacje Tkinter, ustawienia, logike UI, archiwum i backup.
 - `ui/__init__.py` oznacza `ui` jako pakiet warstwy UI.
+- `services/order_service.py` zawiera przejsciowy serwis logiki rekordow/zlecen.
+- `services/__init__.py` oznacza `services` jako pakiet serwisow aplikacyjnych.
 - `data/database.py` zawiera obsluge SQLite, obecny model tabeli `orders`, operacje CRUD, statystyki i eksport CSV.
 - `data/__init__.py` oznacza `data` jako pakiet warstwy danych.
 - `build_exe.bat` zawiera prosty proces budowy pliku EXE przez PyInstaller.
@@ -61,10 +63,27 @@ UI logic currently lives in `ui/app.py`, mainly inside `WorkshopApp`.
 - building tabs, tables, forms and buttons,
 - holding Tkinter state variables,
 - handling user actions,
-- calling database methods directly,
+- coordinating `OrderService` and selected database calls,
 - refreshing active and archived record views.
 
 This means the UI layer is tightly coupled to the current data model.
+
+### Application service logic
+
+Record/order application logic currently starts in `services/order_service.py`, inside `OrderService`.
+
+`OrderService` is responsible for:
+
+- parsing money values,
+- calculating totals and balances,
+- calculating due-date display state,
+- matching rows against the current search mode,
+- sorting current order rows,
+- building validated order data from form values,
+- preparing default form values and duplicated order data,
+- performing simple record actions through `Database`.
+
+The name is intentionally transitional. The current database table is still `orders`, so the service keeps the current vocabulary until a separate generic record model is designed.
 
 ### Database logic
 
@@ -97,11 +116,12 @@ Future configurable record types, fields and statuses should not be added as mor
 The code is tightly coupled rather than modular:
 
 - UI methods know database column names.
+- `OrderService` knows database column names and current order fields.
 - Database queries know current status names and workflow assumptions.
-- Sorting and filtering know current business fields.
+- Sorting, filtering and validation still know current business fields, though part of that logic moved out of UI.
 - Export and backup are triggered by UI methods and implemented near current database assumptions.
 - The current model is still based on `orders`, not generic records.
-- Backup in `main.py` still reaches into `self.db.conn`.
+- Backup in `ui/app.py` still reaches into `self.db.conn`.
 
 This is expected for the current stage, but it should be treated as refactor risk.
 
@@ -181,6 +201,47 @@ Known remaining coupling:
 Next safe step:
 
 - move configuration/path helpers or backup behavior out of `ui/app.py` in a separate small change, preserving current values and behavior.
+
+## MVP-005 application service extraction
+
+MVP-005 added a small `services` package:
+
+- `services/order_service.py`,
+- `services/__init__.py`.
+
+Moved from `ui/app.py` to `services/order_service.py`:
+
+- money parsing,
+- total and balance calculations,
+- due-date state calculation,
+- current search matching,
+- current order sorting,
+- form data validation and payload building,
+- default form values,
+- duplicated order payload building,
+- simple record operations: save, delete, status update, archive and restore.
+
+Still in `ui/app.py`:
+
+- Tkinter layout, widgets, styles and state variables,
+- message boxes and file dialogs,
+- reading values from Tkinter widgets,
+- filling tables and forms,
+- export CSV trigger,
+- backup trigger and file copy.
+
+No UI labels, layouts, status values, database schema, dependencies or visible behavior were changed.
+
+Known remaining coupling:
+
+- `OrderService` still wraps the current `orders` model rather than a generic record model.
+- `WorkshopApp` still knows current table columns while rendering tables and loading forms.
+- `OrderService` still calls `Database` directly.
+- Backup still reaches into `self.db.conn` from UI.
+
+Next safe step:
+
+- extract backup or configuration/path helpers in a separate small change, or add focused tests around `OrderService` before designing generic records.
 
 ## Zasady techniczne
 

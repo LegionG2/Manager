@@ -91,7 +91,37 @@ Nastepny bezpieczny krok:
 
 - wydzielic konfiguracje/sciezki albo backup do osobnego malego modulu bez zmiany zachowania.
 
-### MVP-005 - Introduce generic record type model
+### MVP-005 - Extract application/record service
+
+Status: wykonane
+
+Cel:
+
+- zmniejszyc odpowiedzialnosc `ui/app.py`,
+- wydzielic najbezpieczniejsza logike rekordow/zlecen,
+- zachowac obecny wyglad, zachowanie i schemat bazy.
+
+Wynik MVP-005:
+
+- dodano `services/order_service.py`,
+- dodano `services/__init__.py`,
+- przeniesiono parsowanie kwot, liczenie salda, stan terminu, wyszukiwanie, sortowanie i przygotowanie danych formularza do `OrderService`,
+- przeniesiono proste operacje na rekordzie: zapis, usuniecie, zmiane statusu, archiwizacje i przywrocenie,
+- zostawiono UI, messageboxy, filedialogi, odczyt widgetow i wypelnianie tabel w `ui/app.py`,
+- nie zmieniono UI, schematu bazy ani zaleznosci.
+
+Pozostale ryzyka:
+
+- `OrderService` nadal zna warsztatowe pola i tabele `orders`,
+- nazwa `order_service.py` jest przejsciowa do czasu generycznego modelu rekordow,
+- `WorkshopApp` nadal zna kolumny danych przy budowaniu tabel i formularzy,
+- backup nadal jest w UI i uzywa `self.db.conn`.
+
+Nastepny bezpieczny krok:
+
+- wydzielic backup albo konfiguracje/sciezki danych bez zmiany zachowania, ewentualnie dodac testy jednostkowe dla `OrderService`.
+
+### MVP-006 - Introduce generic record type model
 
 Status: planowane
 
@@ -107,7 +137,7 @@ Kandydaci prac:
 - zaplanowac migracje z `orders`,
 - nie wdrazac nowego schematu bez decyzji i backupu.
 
-### MVP-006 - Introduce configurable fields model
+### MVP-007 - Introduce configurable fields model
 
 Status: planowane
 
@@ -124,7 +154,7 @@ Kandydaci prac:
 - opisac sposob zapisu konfiguracji,
 - unikac hardcodowania nowych pol pod konkretna branze.
 
-### MVP-007 - Fundament wyszukiwania i filtrowania
+### MVP-008 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -133,7 +163,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-008 - Fundament archiwum
+### MVP-009 - Fundament archiwum
 
 Status: planowane
 
@@ -142,7 +172,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-009 - Fundament importu i eksportu
+### MVP-010 - Fundament importu i eksportu
 
 Status: planowane
 

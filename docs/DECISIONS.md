@@ -158,3 +158,22 @@ Konsekwencje:
 - UI nadal wywoluje `Database` bezposrednio i zna obecne kolumny `orders`.
 - Backup nadal wymaga dalszego uporzadkowania, bo `WorkshopApp` uzywa `self.db.conn`.
 - Nastepny bezpieczny krok to wydzielenie konfiguracji/sciezek albo backupu bez zmiany zachowania.
+
+## 2026-05-12 - Logika rekordow zaczyna sie w `services/order_service.py`
+
+Decyzja:
+
+Najbezpieczniejsza logika aplikacyjna zwiazana z obecnymi rekordami/zleceniami zostala wydzielona z `ui/app.py` do `services/order_service.py`.
+
+Kontekst:
+
+MVP-005 mial zmniejszyc odpowiedzialnosc UI bez zmiany wygladu, zachowania aplikacji i schematu bazy. Obecny model nadal uzywa tabeli `orders` oraz warsztatowych pol, wiec wybrano przejsciowa nazwe `OrderService` zamiast udawac, ze istnieje juz generyczny model rekordow.
+
+Konsekwencje:
+
+- `ui/app.py` tworzy `OrderService` i deleguje do niego logike parsowania kwot, liczenia salda, sortowania, wyszukiwania, walidacji danych formularza i prostych operacji na rekordzie.
+- `ui/app.py` nadal odpowiada za Tkinter, widgety, tabele, formularze, messageboxy i filedialogi.
+- `services/order_service.py` nadal zna obecne pola zlecen, statusy i tabele `orders`.
+- Nie zmieniono UI, tekstow, schematu bazy danych, zaleznosci ani widocznego zachowania aplikacji.
+- Nazwy warsztatowe pozostaja etapem przejsciowym do czasu osobnej decyzji o generycznym modelu rekordow.
+- Nastepny bezpieczny krok to wydzielenie backupu lub konfiguracji/sciezek danych albo dodanie testow dla `OrderService`.

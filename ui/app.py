@@ -2,9 +2,10 @@ import json
 import os
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
-from datetime import datetime, date
+from datetime import datetime
 
 from data.database import Database
+from services.order_service import OrderService
 
 APP_TITLE = "Warsztat Manager Premium"
 DB_NAME = "warsztat_manager.db"
@@ -123,6 +124,7 @@ class WorkshopApp(tk.Tk):
         self.configure(bg=self.colors["window_bg"])
         self.style = ttk.Style(self)
         self.db = Database(resource_path(DB_NAME))
+        self.order_service = OrderService(self.db)
         self.selected_order_id = None
         self.form_min_width = 660
 
@@ -138,7 +140,7 @@ class WorkshopApp(tk.Tk):
         self.sort_desc = self.settings_mgr.get("sort_desc", True)
 
         self.form_vars = {
-            "order_no": tk.StringVar(value=self.db.generate_next_order_no()),
+            "order_no": tk.StringVar(value=self.order_service.generate_next_order_no()),
             "client_name": tk.StringVar(),
             "client_phone": tk.StringVar(),
             "car_make": tk.StringVar(),
@@ -513,17 +515,7 @@ class WorkshopApp(tk.Tk):
         self.tree.tag_configure("due_ok", background="#edf5e8" if self.current_theme == "light" else "#24402a", foreground=c["text"])
 
     def calculate_due_state(self, due_date_value: str, status: str):
-        if not due_date_value or status in ("Gotowe do odbioru", "Odebrane"):
-            return None, due_date_value or "", None
-        try:
-            days_left = (datetime.strptime(due_date_value, "%Y-%m-%d").date() - date.today()).days
-        except ValueError:
-            return None, due_date_value, None
-        if days_left <= 3:
-            return "due_overdue", f"{due_date_value} ({days_left} d)", days_left
-        if days_left <= 10:
-            return "due_soon", f"{due_date_value} ({days_left} d)", days_left
-        return "due_ok", f"{due_date_value} ({days_left} d)", days_left
+        return self.order_service.calculate_due_state(due_date_value, status)
 
     def on_sort_changed(self):
         self.settings_mgr.set("sort_field", self.sort_field_var.get())
@@ -583,50 +575,13 @@ class WorkshopApp(tk.Tk):
             self.summary_labels[key].configure(text=text)
 
     def row_matches_search(self, row, search_text: str) -> bool:
-        if not search_text:
-            return True
-        st = search_text.lower()
-        if self.search_mode_var.get() == "Nr zlecenia":
-            return st in str(row["order_no"] or "").lower()
-        values = [
-            row["order_no"], row["client_name"], row["client_phone"], row["assigned_mechanic"], row["car_make"], row["car_model"],
-            row["reg_no"], row["vin"], row["issue_description"], row["notes"], row["parts_ordered"], row["replaced_parts"],
-        ]
-        return any(st in str(v or "").lower() for v in values)
+        return self.order_service.row_matches_search(row, search_text, self.search_mode_var.get())
 
     def parse_order_no_for_sort(self, order_no: str):
-        if not order_no:
-            return ("", 0, 0)
-        parts = str(order_no).split("/")
-        if len(parts) == 3:
-            prefix, year, number = parts
-            try:
-                return (prefix, int(year), int(number))
-            except ValueError:
-                pass
-        digits = "".join(ch for ch in str(order_no) if ch.isdigit())
-        return (str(order_no), 0, int(digits) if digits else 0)
+        return self.order_service.parse_order_no_for_sort(order_no)
 
     def apply_sort(self, rows):
-        priority_rank = {"Pilne": 4, "Wysoka": 3, "Normalna": 2, "Niska": 1}
-        field = self.sort_field_var.get()
-
-        def due_key(row):
-            return row["due_date"] or ("9999-99-99" if self.sort_desc else "0000-00-00")
-
-        if field == "ID":
-            return sorted(rows, key=lambda row: int(row["id"] or 0), reverse=bool(self.sort_desc))
-        if field == "Nr zlecenia":
-            return sorted(rows, key=lambda row: self.parse_order_no_for_sort(row["order_no"] or ""), reverse=bool(self.sort_desc))
-        if field == "Data dodania":
-            return sorted(rows, key=lambda row: ((row["created_at"] or ""), int(row["id"] or 0)), reverse=bool(self.sort_desc))
-        if field == "Termin":
-            return sorted(rows, key=lambda row: (due_key(row), int(row["id"] or 0)), reverse=bool(self.sort_desc))
-        return sorted(
-            rows,
-            key=lambda row: (priority_rank.get(row["priority"] or "", 0), row["due_date"] or "9999-99-99", int(row["id"] or 0)),
-            reverse=bool(self.sort_desc),
-        )
+        return self.order_service.apply_sort(rows, self.sort_field_var.get(), self.sort_desc)
 
     def refresh_table(self):
         for item in self.tree.get_children():
@@ -696,90 +651,43 @@ class WorkshopApp(tk.Tk):
         widget.insert("1.0", text or "")
 
     def parse_money(self, value: str) -> float:
-        value = str(value).strip().replace(",", ".")
-        if not value:
-            return 0.0
-        return float(value)
+        return self.order_service.parse_money(value)
 
     def calculate_total(self, row) -> float:
-        customer_price = row["customer_price"] or 0
-        if customer_price > 0:
-            return float(customer_price)
-        return float((row["parts_cost"] or 0) + (row["labor_cost"] or 0))
+        return self.order_service.calculate_total(row)
 
     def calculate_balance(self, row) -> float:
-        balance = self.calculate_total(row) - float(row["paid_amount"] or 0)
-        return max(balance, 0.0)
+        return self.order_service.calculate_balance(row)
 
     def sync_payment_checkbox(self):
         try:
-            total = max(self.parse_money(self.form_vars["customer_price"].get()), 0.0)
-            if total <= 0:
-                total = max(self.parse_money(self.form_vars["parts_cost"].get()) + self.parse_money(self.form_vars["labor_cost"].get()), 0.0)
             if self.form_vars["is_paid"].get():
-                self.form_vars["paid_amount"].set(f"{total:.2f}")
+                form_values = {key: var.get() for key, var in self.form_vars.items()}
+                self.form_vars["paid_amount"].set(self.order_service.calculate_paid_amount_for_checkbox(form_values))
         except Exception:
             pass
 
     def form_data(self):
-        try:
-            parts_cost = self.parse_money(self.form_vars["parts_cost"].get())
-            labor_cost = self.parse_money(self.form_vars["labor_cost"].get())
-            customer_price = self.parse_money(self.form_vars["customer_price"].get())
-            paid_amount = self.parse_money(self.form_vars["paid_amount"].get())
-        except ValueError:
-            raise ValueError("Koszty i płatności muszą być liczbami.")
-
-        client_name = self.form_vars["client_name"].get().strip()
-        if not client_name:
-            raise ValueError("Podaj imię i nazwisko klienta.")
-
-        order_no = self.form_vars["order_no"].get().strip() or self.db.generate_next_order_no()
-        effective_total = customer_price if customer_price > 0 else parts_cost + labor_cost
-        is_paid = int(self.form_vars["is_paid"].get())
-        if is_paid and paid_amount < effective_total:
-            paid_amount = effective_total
-        if paid_amount >= effective_total and effective_total > 0:
-            is_paid = 1
-
-        return {
-            "order_no": order_no,
-            "client_name": client_name,
-            "client_phone": self.form_vars["client_phone"].get().strip(),
-            "car_make": self.form_vars["car_make"].get().strip(),
-            "car_model": self.form_vars["car_model"].get().strip(),
-            "reg_no": self.form_vars["reg_no"].get().strip(),
-            "vin": self.form_vars["vin"].get().strip(),
-            "parking_spot": self.form_vars["parking_spot"].get().strip(),
-            "status": self.form_vars["status"].get().strip(),
-            "priority": self.form_vars["priority"].get().strip(),
-            "assigned_mechanic": self.form_vars["assigned_mechanic"].get().strip(),
-            "intake_date": self.form_vars["intake_date"].get().strip(),
-            "due_date": self.form_vars["due_date"].get().strip(),
-            "last_contact_date": self.form_vars["last_contact_date"].get().strip(),
+        form_values = {key: var.get() for key, var in self.form_vars.items()}
+        text_values = {
             "issue_description": self.get_text(self.issue_text),
             "replaced_parts": self.get_text(self.parts_text),
             "parts_ordered": self.get_text(self.parts_ordered_text),
-            "parts_cost": parts_cost,
-            "labor_cost": labor_cost,
-            "customer_price": customer_price,
-            "paid_amount": paid_amount,
-            "is_paid": is_paid,
             "notes": self.get_text(self.notes_text),
-            "is_archived": 0,
         }
+        return self.order_service.build_order_data(
+            form_values,
+            text_values,
+            self.order_service.generate_next_order_no(),
+        )
 
     def save_order(self):
         try:
             data = self.form_data()
-            if self.selected_order_id:
-                current = self.db.fetch_order(self.selected_order_id)
-                if current and current["is_archived"]:
-                    data["is_archived"] = 1
-                self.db.update_order(self.selected_order_id, data)
+            result = self.order_service.save_order(self.selected_order_id, data)
+            if result == "updated":
                 messagebox.showinfo(APP_TITLE, "Zlecenie zostało zaktualizowane.")
             else:
-                self.db.add_order(data)
                 messagebox.showinfo(APP_TITLE, "Dodano nowe zlecenie.")
             self.refresh_all_tables()
             self.clear_form()
@@ -813,17 +721,7 @@ class WorkshopApp(tk.Tk):
 
     def clear_form(self):
         self.selected_order_id = None
-        defaults = {
-            "order_no": self.db.generate_next_order_no(),
-            "status": "Nowe",
-            "priority": "Normalna",
-            "intake_date": datetime.now().strftime("%Y-%m-%d"),
-            "parts_cost": "0",
-            "labor_cost": "0",
-            "customer_price": "0",
-            "paid_amount": "0",
-            "is_paid": 0,
-        }
+        defaults = self.order_service.default_form_values()
         for key, var in self.form_vars.items():
             var.set(defaults.get(key, ""))
         self.set_text(self.issue_text, "")
@@ -840,12 +738,7 @@ class WorkshopApp(tk.Tk):
         source = self.db.fetch_order(self.selected_order_id)
         if not source:
             return
-        data = dict(source)
-        for key in ("id", "created_at", "updated_at"):
-            data.pop(key, None)
-        data["order_no"] = self.db.generate_next_order_no()
-        data["status"] = "Nowe"
-        data["is_archived"] = 0
+        data = self.order_service.duplicate_order_data(source)
         self.db.add_order(data)
         self.refresh_all_tables()
         self.clear_form()
@@ -857,7 +750,7 @@ class WorkshopApp(tk.Tk):
             return
         if not messagebox.askyesno(APP_TITLE, "Na pewno usunąć wybrane zlecenie?"):
             return
-        self.db.delete_order(self.selected_order_id)
+        self.order_service.delete_order(self.selected_order_id)
         self.refresh_all_tables()
         self.clear_form()
 
@@ -865,7 +758,7 @@ class WorkshopApp(tk.Tk):
         if not self.selected_order_id:
             messagebox.showwarning(APP_TITLE, "Najpierw wybierz zlecenie z tabeli.")
             return
-        self.db.update_order(self.selected_order_id, {"status": status})
+        self.order_service.update_status(self.selected_order_id, status)
         self.refresh_all_tables()
         row = self.db.fetch_order(self.selected_order_id)
         if row:
@@ -877,7 +770,7 @@ class WorkshopApp(tk.Tk):
             return
         if not messagebox.askyesno(APP_TITLE, "Przenieść zlecenie do archiwum?"):
             return
-        self.db.update_order(self.selected_order_id, {"is_archived": 1})
+        self.order_service.archive_order(self.selected_order_id)
         self.refresh_all_tables()
         self.clear_form()
 
@@ -887,7 +780,7 @@ class WorkshopApp(tk.Tk):
             messagebox.showwarning(APP_TITLE, "Wybierz zlecenie z archiwum.")
             return
         order_id = int(selection[0])
-        self.db.update_order(order_id, {"is_archived": 0})
+        self.order_service.restore_order(order_id)
         self.refresh_all_tables()
         self.load_order_to_form(order_id)
 
@@ -920,4 +813,3 @@ class WorkshopApp(tk.Tk):
             messagebox.showinfo(APP_TITLE, "Kopia zapasowa została zapisana.")
         except Exception as e:
             messagebox.showerror(APP_TITLE, f"Nie udało się wykonać kopii zapasowej.\n\n{e}")
-
