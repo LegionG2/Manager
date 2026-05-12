@@ -332,3 +332,22 @@ Konsekwencje:
 - Walidacja jest podstawowa i nie jest jeszcze pelnym systemem ustawien.
 - Nie zmieniono UI, bazy danych, zaleznosci ani sposobu dzialania aplikacji.
 - Przyszly ekran ustawien powinien uzywac walidacji przed zapisem konfiguracji.
+
+## 2026-05-13 - Diagnostyka konfiguracji zaczyna sie w `tools/check_config.py`
+
+Decyzja:
+
+Dodano prosty skrypt developerski `tools/check_config.py` do konsolowego sprawdzania ladowania i walidacji konfiguracji.
+
+Kontekst:
+
+MVP-014 ma dac bezpieczny dev-check przed przyszlym ekranem ustawien, bez zmiany obecnego UI, startu aplikacji i schematu bazy danych. Projekt ma juz `ConfigService` oraz `ConfigValidationService`, wiec diagnostyka powinna korzystac z tych samych uslug zamiast tworzyc osobna sciezke walidacji.
+
+Konsekwencje:
+
+- Konfiguracje mozna sprawdzic poleceniem `python tools/check_config.py`.
+- Skrypt laduje konfiguracje przez `ConfigService` i uruchamia walidacje przez `ConfigService.validate_all()`.
+- Narzedzie wypisuje `Configuration check: OK` albo czytelna liste bledow.
+- Skrypt jest narzedziem developerskim, nie ekranem ustawien, ikona zebatki ani elementem Tkinter.
+- Nie zmieniono UI, schematu SQLite, plikow JSON konfiguracji, zaleznosci ani sposobu startu przez `python main.py`.
+- Przyszly ekran ustawien powinien korzystac z tych samych uslug konfiguracji i walidacji.

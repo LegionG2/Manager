@@ -43,6 +43,8 @@ Repozytorium jest male i skupione wokol jednego pliku aplikacji:
 - `services/section_config_service.py` zawiera loader konfiguracji sekcji/kart z JSON.
 - `services/order_service.py` zawiera przejsciowy serwis logiki rekordow/zlecen.
 - `services/__init__.py` oznacza `services` jako pakiet serwisow aplikacyjnych.
+- `tools/check_config.py` zawiera developerska diagnostyke ladowania i walidacji konfiguracji.
+- `tools/__init__.py` oznacza `tools` jako pakiet narzedzi developerskich.
 - `data/database.py` zawiera obsluge SQLite, obecny model tabeli `orders`, operacje CRUD, statystyki i eksport CSV.
 - `data/__init__.py` oznacza `data` jako pakiet warstwy danych.
 - `build_exe.bat` zawiera prosty proces budowy pliku EXE przez PyInstaller.
@@ -177,6 +179,18 @@ Sprawdzane sa tylko proste reguly:
 - identyfikatory pol i sekcji nie sa powielone w swoich listach.
 
 Walidacja nie jest jeszcze pelnym systemem ustawien, nie jest podlaczona do UI i nie przerywa startu aplikacji.
+
+## Diagnostyka konfiguracji
+
+`tools/check_config.py` jest prostym narzedziem developerskim do sprawdzenia konfiguracji z konsoli:
+
+```text
+python tools/check_config.py
+```
+
+Skrypt laduje konfiguracje przez `ConfigService`, a nastepnie uruchamia `ConfigService.validate_all()`, ktory korzysta z `ConfigValidationService`. Poprawna konfiguracja wypisuje `Configuration check: OK`. Problemy z ladowaniem albo walidacja wypisuja krotka, czytelna liste bledow.
+
+To nie jest element UI, ekran ustawien ani ikona zebatki. Skrypt nie zmienia konfiguracji, nie zmienia schematu bazy danych i nie wplywa na start aplikacji przez `python main.py`. Przyszly ekran ustawien powinien korzystac z tych samych uslug konfiguracji i walidacji.
 
 ## Current architecture observations
 
@@ -664,6 +678,21 @@ Added concepts:
 The validator checks application config, field definitions, record type and sections. It returns a list of readable error messages and does not raise a full custom exception system.
 
 The validator is not connected to UI and does not block application startup. Future settings UI should call validation before saving configuration changes.
+
+## MVP-014 configuration diagnostics
+
+MVP-014 added:
+
+- `tools/__init__.py`,
+- `tools/check_config.py`.
+
+The diagnostic script gives developers a console check for configuration loading and validation:
+
+```text
+python tools/check_config.py
+```
+
+It uses the existing `ConfigService` and `ConfigValidationService` path. It does not add a user-facing feature, does not connect anything to Tkinter, does not change database schema and does not add dependencies. Future settings UI should reuse these same configuration and validation services instead of creating a separate validation path.
 
 ## Zasady techniczne
 

@@ -39,6 +39,9 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |   |-- order_service.py
 |   |-- record_type_config_service.py
 |   `-- section_config_service.py
+|-- tools/
+|   |-- __init__.py
+|   `-- check_config.py
 |-- ui/
 |   |-- __init__.py
 |   `-- app.py
@@ -406,6 +409,37 @@ Ryzyka i niejasne obszary:
 - Loader nie buduje dynamicznych zakladek ani menu.
 - Loader nie zapisuje konfiguracji i nie obsluguje konfiguracji per uzytkownik.
 - Nie zmienia schematu SQLite ani obecnego modelu `orders`.
+
+### `tools/__init__.py`
+
+Kategoria: narzedzia developerskie.
+
+Co robi:
+
+- oznacza `tools` jako pakiet Pythona dla pomocniczych narzedzi developerskich.
+
+Ryzyka i niejasne obszary:
+
+- Na ten moment nie zawiera logiki.
+
+### `tools/check_config.py`
+
+Kategoria: narzedzia developerskie, diagnostyka konfiguracji.
+
+Co robi:
+
+- pozwala uruchomic diagnostyke konfiguracji z konsoli przez `python tools/check_config.py`,
+- laduje konfiguracje przez `ConfigService`,
+- uruchamia walidacje przez `ConfigValidationService` za posrednictwem `ConfigService.validate_all()`,
+- wypisuje `Configuration check: OK`, gdy konfiguracja jest poprawna,
+- wypisuje czytelna liste bledow, gdy konfiguracja nie laduje sie albo nie przechodzi walidacji.
+
+Ryzyka i niejasne obszary:
+
+- To narzedzie developerskie, nie element UI.
+- Nie jest ekranem ustawien ani ikona zebatki.
+- Nie zmienia obecnego startu aplikacji, schematu SQLite ani plikow konfiguracji.
+- Przyszly ekran ustawien powinien korzystac z tych samych uslug konfiguracji i walidacji.
 
 ### `ui/__init__.py`
 
@@ -1050,3 +1084,28 @@ Walidacja nie jest jeszcze podlaczona do UI, nie blokuje startu aplikacji i nie 
 Nastepny bezpieczny krok:
 
 - uzyc walidatora w przyszlym ekranie ustawien przed zapisem albo rozszerzyc walidacje o spojnosc referencji miedzy typem rekordu, polami i sekcjami.
+
+## MVP-014 - Diagnostyka konfiguracji z konsoli
+
+Dodano:
+
+- `tools/__init__.py`,
+- `tools/check_config.py`.
+
+Skrypt `tools/check_config.py` jest prostym narzedziem developerskim do sprawdzania konfiguracji bez uruchamiania nowego UI ustawien. Uruchamia sie go poleceniem:
+
+```text
+python tools/check_config.py
+```
+
+Skrypt laduje konfiguracje przez `ConfigService`, a nastepnie wywoluje `ConfigService.validate_all()`, ktory korzysta z `ConfigValidationService`. Gdy konfiguracja jest poprawna, wypisuje `Configuration check: OK`. Gdy wystapia problemy z ladowaniem albo walidacja zwroci bledy, wypisuje krotka liste komunikatow.
+
+Nie zmieniono:
+
+- UI Tkinter,
+- sposobu startu aplikacji przez `python main.py`,
+- schematu bazy danych,
+- plikow JSON konfiguracji,
+- zaleznosci projektu.
+
+Przyszla ikona zebatki albo ekran ustawien powinny korzystac z tych samych uslug konfiguracji i walidacji, ale pozostaja osobnym MVP.

@@ -370,7 +370,38 @@ Nastepny bezpieczny krok:
 
 - rozszerzyc walidacje o spojnosc referencji albo uzyc jej w przyszlym ekranie ustawien przed zapisem konfiguracji.
 
-### MVP-014 - Fundament wyszukiwania i filtrowania
+### MVP-014 - Diagnostyka konfiguracji z konsoli
+
+Status: wykonane
+
+Cel:
+
+- dodac prosty developerski check konfiguracji,
+- sprawdzac ladowanie i walidacje konfiguracji z poziomu konsoli,
+- zachowac obecne UI, zachowanie aplikacji i schemat bazy.
+
+Wynik MVP-014:
+
+- dodano `tools/check_config.py`,
+- dodano `tools/__init__.py`,
+- skrypt uruchamia sie przez `python tools/check_config.py`,
+- skrypt laduje konfiguracje przez `ConfigService`,
+- skrypt uruchamia walidacje przez `ConfigService.validate_all()` i `ConfigValidationService`,
+- poprawna konfiguracja wypisuje `Configuration check: OK`,
+- bledy ladowania albo walidacji sa wypisywane jako prosta lista komunikatow,
+- narzedzie nie jest podlaczone do Tkinter ani obecnego UI.
+
+Pozostale ryzyka:
+
+- walidacja nadal nie obejmuje wszystkich relacji miedzy plikami,
+- nie ma jeszcze ekranu ustawien ani ikony zebatki,
+- przyszly ekran ustawien powinien korzystac z tych samych uslug konfiguracji i walidacji.
+
+Nastepny bezpieczny krok:
+
+- rozszerzyc walidacje o spojnosc referencji albo uzyc tych samych uslug w osobnym MVP ekranu ustawien.
+
+### MVP-015 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -379,7 +410,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-015 - Fundament archiwum
+### MVP-016 - Fundament archiwum
 
 Status: planowane
 
@@ -388,7 +419,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-016 - Fundament importu i eksportu
+### MVP-017 - Fundament importu i eksportu
 
 Status: planowane
 
