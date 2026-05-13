@@ -768,7 +768,35 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-029 - Fundament importu i eksportu
+### MVP-029 - Fundament generycznych rekordow dla sekcji wlasnych
+
+Status: wykonane
+
+Cel:
+
+- dodac minimalny magazyn danych dla rekordow sekcji `custom`,
+- nie migrowac starego modelu `orders`,
+- zachowac obecny widok Records.
+
+Wynik MVP-029:
+
+- dodano tabele SQLite `generic_records`,
+- dodano `services/generic_record_service.py`,
+- serwis umozliwia podstawowy zapis, odczyt, aktualizacje, archiwizacje i usuwanie generycznych rekordow,
+- sekcje `custom` nadal pokazuja placeholder, ale informuja, ze magazyn danych jest przygotowany,
+- nie dodano dynamicznego formularza ani edytora pol.
+
+Pozostale ryzyka:
+
+- `data_json` wymaga przyszlej walidacji wzgledem definicji pol,
+- nie ma jeszcze UI do tworzenia rekordow generycznych,
+- `orders` nadal pozostaje aktywnym modelem starego widoku Records.
+
+Nastepny bezpieczny krok:
+
+- dodac prosty, niekonfigurowalny widok listy rekordow generycznych dla sekcji `custom` albo przygotowac adapter laczacy definicje pol z `data_json`.
+
+### MVP-030 - Fundament importu i eksportu
 
 Status: planowane
 

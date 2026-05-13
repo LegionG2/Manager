@@ -68,6 +68,8 @@ Obecny kod tworzy tabele `orders` w SQLite. Model zawiera pola zwiazane z poprze
 
 To nie jest jeszcze docelowy generyczny model rekordow. Przed zmianami schematu nalezy zaplanowac migracje i zabezpieczenie istniejacych danych.
 
+MVP-029 dodaje dodatkowa tabele `generic_records` jako minimalny magazyn danych dla przyszlych rekordow sekcji `custom`. Tabela zawiera `id`, `section_id`, `record_type_id`, `data_json`, `created_at`, `updated_at` i `archived`. Nie migruje ona danych z `orders` i nie zmienia dzialania obecnego widoku Records.
+
 ## Fundament modelu domenowego
 
 `domain/record.py` wprowadza neutralne pojecia przyszlego Managera:
@@ -170,6 +172,24 @@ Definicja sekcji/karty zawiera:
 Domyslna konfiguracja znajduje sie w `config/default_sections.json`. Jest neutralna i zawiera sekcje `dashboard`, `records`, `archive` oraz `settings`.
 
 `services/section_config_service.py` zawiera `SectionConfigService`, ktory wczytuje liste sekcji z JSON i mapuje ja na obiekty domenowe. Widoczne sekcje z konfiguracji sa uzywane jako zakladki glownego `Notebook`: pokazywane sa tylko `visible = true`, w kolejnosci `order`. Sekcje typu `records` i `archive` korzystaja z obecnych widokow. Typ `dashboard` pokazuje neutralny placeholder bez statystyk, typ `settings` pokazuje prosty widok z przyciskiem ustawien, a typ `custom` pokazuje placeholder `Sekcja wlasna w przygotowaniu`. Globalny pasek statystyk jest ukryty, bo nie jest jeszcze konfigurowalny. Po zmianach sekcji w ustawieniach zakladki sa odswiezane bez restartu aplikacji. Pelny system dynamicznych widokow, edytor kart i dynamiczne menu sa osobnymi MVP.
+
+Po MVP-029 placeholder sekcji `custom` informuje, ze magazyn danych jest przygotowany, ale formularz bedzie kolejnym MVP.
+
+## Fundament generycznych rekordow custom
+
+`services/generic_record_service.py` zawiera `GenericRecordService`, czyli minimalny serwis zapisu i odczytu rekordow generycznych dla sekcji wlasnych. Serwis korzysta z istniejacego polaczenia `Database.conn` i tabeli `generic_records`.
+
+Serwis udostepnia podstawowe operacje:
+
+- `create_record()`,
+- `fetch_record()`,
+- `list_records()`,
+- `update_record()`,
+- `set_archived()`,
+- `delete_record()`,
+- `decode_data()`.
+
+Dane rekordu sa przechowywane w `data_json` jako obiekt JSON. To fundament techniczny pod przyszle formularze dynamiczne, nie edytor pol ani migracja starego modelu `orders`.
 
 ## Centralny serwis konfiguracji
 
@@ -371,6 +391,7 @@ Database logic currently lives in `data/database.py`, inside `Database`.
 
 - opening the SQLite connection,
 - creating the `orders` table,
+- creating the `generic_records` table for future custom-section records,
 - applying simple migrations,
 - inserting, updating, deleting and fetching rows,
 - calculating dashboard statistics,
@@ -386,6 +407,7 @@ Configuration and state currently live in several places:
 - `SettingsManager` for JSON settings,
 - Tkinter variables inside `WorkshopApp`,
 - SQLite rows in the `orders` table.
+- SQLite rows in the `generic_records` table for custom sections.
 
 Future configurable record types, fields and statuses should not be added as more unrelated globals. They need a clear configuration model.
 
@@ -864,6 +886,16 @@ MVP-027 removes the header subtitle and makes basic section types more useful:
 - unknown section types still use a generic preparation placeholder.
 
 This does not change database schema, record save/edit/delete logic, field editing, record type editing, tables or dependencies.
+
+## MVP-029 generic records foundation for custom sections
+
+MVP-029 adds the first storage foundation for custom section records:
+
+- `data/database.py` creates the `generic_records` SQLite table,
+- `services/generic_record_service.py` provides minimal create, read, update, archive and delete operations,
+- custom section placeholders say that storage is prepared and the form is a future MVP.
+
+This does not migrate `orders`, change the existing Records view, add dynamic forms, edit fields, edit record types or add dependencies.
 
 ## Zasady techniczne
 

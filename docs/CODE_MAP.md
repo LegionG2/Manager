@@ -36,6 +36,7 @@ Gdy cos nie jest pewne, oznaczono to jako niejasne.
 |   |-- config_service.py
 |   |-- config_validation_service.py
 |   |-- field_config_service.py
+|   |-- generic_record_service.py
 |   |-- order_service.py
 |   |-- record_type_config_service.py
 |   `-- section_config_service.py
@@ -159,6 +160,7 @@ Co robi:
 - otwiera polaczenie SQLite,
 - ustawia `sqlite3.Row`,
 - tworzy tabele `orders`,
+- tworzy tabele `generic_records` dla przyszlych rekordow sekcji wlasnych,
 - wykonuje dotychczasowe migracje kolumn,
 - dodaje, aktualizuje, usuwa i pobiera rekordy,
 - liczy statystyki dla obecnego UI,
@@ -167,6 +169,7 @@ Co robi:
 Ryzyka i niejasne obszary:
 
 - Schemat `orders` nie jest jeszcze generycznym modelem rekordow.
+- `generic_records` jest tylko fundamentem magazynu danych dla sekcji `custom` i nie jest jeszcze podlaczona do formularzy.
 - Zapytania nadal zawieraja obecne statusy i zalozenia starego modelu.
 - Eksport CSV nadal jest czescia klasy `Database`; w przyszlosci moze zostac wydzielony.
 - `Database.conn` nadal jest uzywane w `ui/app.py` przy backupie.
@@ -358,6 +361,24 @@ Ryzyka i niejasne obszary:
 - Serwis nadal zna konkretne kolumny `orders`, statusy i pola formularza.
 - Serwis korzysta bezposrednio z `Database`; nie ma jeszcze osobnego generycznego modelu domenowego.
 - To nie jest jeszcze docelowy serwis generycznych rekordow.
+
+### `services/generic_record_service.py`
+
+Kategoria: dane, logika aplikacyjna, generyczne rekordy.
+
+Co robi:
+
+- zawiera `GenericRecordService`,
+- zapisuje generyczne rekordy do tabeli `generic_records`,
+- pobiera pojedynczy rekord i liste rekordow dla `section_id`,
+- aktualizuje `data_json`, opcjonalny `record_type_id` oraz znacznik `archived`,
+- dekoduje `data_json` do slownika Pythona.
+
+Ryzyka i niejasne obszary:
+
+- Serwis nie jest jeszcze podlaczony do dynamicznego formularza ani widoku listy rekordow.
+- Dane sa przechowywane jako JSON, wiec przyszle wyszukiwanie, sortowanie i walidacja pol wymagaja osobnej decyzji.
+- To fundament dla sekcji `custom`, a nie migracja starej tabeli `orders`.
 
 ### `services/field_config_service.py`
 
@@ -648,7 +669,7 @@ Kod bazy danych znajduje sie w `data/database.py`, w klasie `Database`.
 
 Znane metody:
 
-- `create_tables()` tworzy tabele `orders`.
+- `create_tables()` tworzy tabele `orders` i `generic_records`.
 - `migrate_tables()` dodaje brakujace kolumny do `orders`.
 - `generate_next_order_no()` generuje numer rekordu w obecnym formacie.
 - `add_order()` dodaje rekord.

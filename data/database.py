@@ -37,6 +37,19 @@ class Database:
             )
             """
         )
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS generic_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                section_id TEXT NOT NULL,
+                record_type_id TEXT,
+                data_json TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                archived INTEGER DEFAULT 0
+            )
+            """
+        )
         self.conn.commit()
 
     def migrate_tables(self):

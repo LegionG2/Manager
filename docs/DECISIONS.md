@@ -583,3 +583,21 @@ Konsekwencje:
 - `settings` pokazuje prosty widok z przyciskiem otwierajacym okno ustawien.
 - `custom` pokazuje placeholder `Sekcja wlasna w przygotowaniu`.
 - Nie zmieniono schematu SQLite, tabel, edycji pol, edycji typow rekordow ani logiki zapisu/edycji/usuwania rekordow.
+
+## 2026-05-13 - Generyczne rekordy sekcji wlasnych dostaja osobny magazyn
+
+Decyzja:
+
+Dodano minimalna tabele `generic_records` oraz `GenericRecordService` jako fundament danych dla sekcji `custom`.
+
+Kontekst:
+
+Sekcje wlasne moga juz istniec w konfiguracji i w glownym UI, ale nie mialy zadnego miejsca na przyszle dane. MVP-029 ma przygotowac magazyn bez migracji starej tabeli `orders`, bez dynamicznego formularza i bez zmian w dzialajacym widoku Records.
+
+Konsekwencje:
+
+- `data/database.py` tworzy tabele `generic_records` z `section_id`, `record_type_id`, `data_json`, znacznikami czasu i `archived`.
+- `services/generic_record_service.py` udostepnia minimalne operacje zapisu, odczytu, aktualizacji, archiwizacji i usuwania.
+- Dane generyczne sa przechowywane jako JSON, wiec przyszla walidacja i wyszukiwanie beda osobnymi decyzjami.
+- Sekcje `custom` nadal nie maja formularza, tylko placeholder informujacy o przygotowanym magazynie danych.
+- `orders`, `OrderService` i obecny widok Records pozostaja bez migracji.

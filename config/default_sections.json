@@ -28,5 +28,12 @@
     "type": "settings",
     "visible": true,
     "order": 3
+  },
+  {
+    "id": "Kon",
+    "name": "Konkursy",
+    "type": "custom",
+    "visible": true,
+    "order": 5
   }
 ]

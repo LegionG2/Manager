@@ -299,7 +299,11 @@ class WorkshopApp(tk.Tk):
             self.build_settings_section_tab(parent, section.name)
             return
         if section.type == "custom":
-            self.build_placeholder_tab(parent, section.name, f"Sekcja własna \"{section.name}\" w przygotowaniu.")
+            self.build_placeholder_tab(
+                parent,
+                section.name,
+                f"Sekcja własna \"{section.name}\" ma przygotowany magazyn danych. Formularz będzie kolejnym MVP.",
+            )
             return
         self.build_placeholder_tab(parent, section.name, "Sekcja w przygotowaniu.")
 
