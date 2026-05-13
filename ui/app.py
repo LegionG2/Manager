@@ -1,6 +1,7 @@
 import json
 import os
 import tkinter as tk
+from dataclasses import replace
 from tkinter import ttk, messagebox, filedialog
 from datetime import datetime
 
@@ -269,6 +270,7 @@ class WorkshopApp(tk.Tk):
 
     def show_settings_preview(self):
         rows, error = self.load_settings_preview()
+        values = dict(rows)
 
         window = tk.Toplevel(self)
         window.title("Ustawienia")
@@ -281,12 +283,21 @@ class WorkshopApp(tk.Tk):
         container.columnconfigure(1, weight=1)
 
         ttk.Label(container, text="Ustawienia", style="Title.TLabel").grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
-        for index, (label, value) in enumerate(rows, start=1):
+        ttk.Label(container, text="Nazwa aplikacji:", style="TLabel").grid(row=1, column=0, sticky="w", padx=(0, 16), pady=3)
+        app_name_var = tk.StringVar(value=values.get("Nazwa aplikacji", DEFAULT_APP_TITLE))
+        app_name_entry = ttk.Entry(container, textvariable=app_name_var, width=30)
+        app_name_entry.grid(row=1, column=1, sticky="ew", pady=3)
+
+        details = [
+            ("Aktywny typ rekordu", values.get("Aktywny typ rekordu", "Brak danych")),
+            ("Liczba sekcji/kart", values.get("Liczba sekcji/kart", "Brak danych")),
+        ]
+        for index, (label, value) in enumerate(details, start=2):
             ttk.Label(container, text=f"{label}:", style="TLabel").grid(row=index, column=0, sticky="w", padx=(0, 16), pady=3)
             ttk.Label(container, text=value, style="TLabel").grid(row=index, column=1, sticky="w", pady=3)
 
-        message_row = len(rows) + 1
-        note = "Podglad tylko do odczytu. Edycja ustawien zostanie dodana w osobnym etapie."
+        message_row = len(details) + 2
+        note = "Na tym etapie edytowana jest tylko nazwa aplikacji. Karty, typy rekordow i pola zostana dodane pozniej."
         if error:
             note = f"Nie udalo sie zaladowac konfiguracji. Pokazano fallback.\n{error}"
         ttk.Label(container, text=note, style="Sub.TLabel", wraplength=360, justify="left").grid(
@@ -296,6 +307,12 @@ class WorkshopApp(tk.Tk):
             sticky="w",
             pady=(12, 10),
         )
+        ttk.Button(
+            container,
+            text="Zapisz",
+            style="Primary.TButton",
+            command=lambda: self.save_app_name(app_name_var.get(), window),
+        ).grid(row=message_row + 1, column=0, sticky="w")
         ttk.Button(container, text="Zamknij", command=window.destroy).grid(row=message_row + 1, column=1, sticky="e")
 
         window.update_idletasks()
@@ -303,6 +320,33 @@ class WorkshopApp(tk.Tk):
         y = self.winfo_rooty() + max((self.winfo_height() - window.winfo_height()) // 2, 0)
         window.geometry(f"+{x}+{y}")
         window.grab_set()
+
+    def save_app_name(self, raw_app_name: str, window: tk.Toplevel | None = None) -> bool:
+        app_name = raw_app_name.strip()
+        if not app_name:
+            messagebox.showerror("Ustawienia", "Nazwa aplikacji nie moze byc pusta.")
+            return False
+
+        config_service = ConfigService()
+        try:
+            config = config_service.load_all()
+            updated_app_config = replace(config.app_config, app_name=app_name)
+            updated_config = replace(config, app_config=updated_app_config)
+            validation = config_service.validate_all(updated_config)
+            if not validation.is_valid:
+                messagebox.showerror("Ustawienia", "\n".join(validation.errors))
+                return False
+            config_service.save_app_config(updated_app_config)
+        except Exception as exc:
+            messagebox.showerror("Ustawienia", f"Nie udalo sie zapisac ustawien.\n\n{exc}")
+            return False
+
+        self.app_title = app_name
+        self.title(self.app_title)
+        messagebox.showinfo("Ustawienia", "Nazwa aplikacji zostala zapisana.")
+        if window is not None:
+            window.destroy()
+        return True
 
     def build_orders_tab(self):
         main = ttk.Frame(self.orders_tab, padding=8)

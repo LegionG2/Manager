@@ -463,7 +463,7 @@ Co robi:
 
 - definiuje tytul aplikacji, nazwy plikow danych i ustawien,
 - laduje `app_name` z konfiguracji przez `ConfigService` i uzywa go jako tytulu okna,
-- pokazuje subtelny przycisk `Ustawienia` z read-only podgladem podstawowej konfiguracji,
+- pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji i podgladem podstawowej konfiguracji,
 - definiuje obecne statusy i priorytety,
 - definiuje motywy jasny i ciemny,
 - zarzadza ustawieniami lokalnymi przez JSON,
@@ -486,7 +486,7 @@ Ryzyka i niejasne obszary:
 - Modul UI nadal laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
 - Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
 - UI nadal zna konkretne kolumny aktualnego modelu danych przy budowaniu tabel i wypelnianiu formularza.
-- Szkielet ustawien jest tylko podgladem i nie zapisuje zmian.
+- Szkielet ustawien zapisuje tylko nazwe aplikacji; edycja kart, typow rekordow i pol nie jest jeszcze dostepna.
 - Backup nadal korzysta bezposrednio z `self.db.conn`.
 - Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
 - Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
@@ -1162,3 +1162,31 @@ Nie zmieniono:
 - obecnych funkcji formularzy, tabel, wyszukiwania i archiwum.
 
 Obecna aplikacja nadal dziala na starym przejsciowym UI. Pelny edytor ustawien pozostaje osobnym MVP.
+
+## MVP-017 - Edycja nazwy aplikacji w ustawieniach
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+Okno ustawien zawiera teraz pole tekstowe dla nazwy aplikacji. Pole pokazuje aktualne `app_name` z `config/app_config.json`. Przycisk `Zapisz`:
+
+- odrzuca pusta nazwe,
+- laduje pelna konfiguracje przez `ConfigService`,
+- aktualizuje `app_name`,
+- waliduje konfiguracje,
+- zapisuje `config/app_config.json` przez `ConfigService.save_app_config()`,
+- aktualizuje tytul obecnego okna po poprawnym zapisie.
+
+To pierwszy edytowalny element ustawien.
+
+Nie zmieniono:
+
+- edycji kart,
+- edycji pol,
+- edycji typow rekordow,
+- dynamicznego przebudowywania UI,
+- schematu bazy danych,
+- obecnych funkcji zapisu rekordow, edycji, usuwania, wyszukiwania i archiwum.
+
+Edycja kart, pol i typow rekordow pozostaje osobnymi MVP.

@@ -123,16 +123,19 @@ Domyslna konfiguracja znajduje sie w `config/app_config.json`. Jest neutralna i 
 
 ## Szkielet ustawien
 
-`ui/app.py` zawiera pierwszy, subtelny szkielet ustawien. W gornym pasku UI znajduje sie przycisk `Ustawienia`, ktory otwiera proste okno podgladu read-only.
+`ui/app.py` zawiera pierwszy, subtelny szkielet ustawien. W gornym pasku UI znajduje sie przycisk z zebatka, ktory otwiera proste okno ustawien.
 
-Okno pokazuje:
+Okno pozwala edytowac:
 
 - nazwe aplikacji,
+
+oraz pokazuje informacyjnie:
+
 - aktywny typ rekordu,
 - liczbe sekcji/kart,
-- informacje, ze edycja ustawien zostanie dodana pozniej.
+- informacje, ze edycja kart, typow rekordow i pol zostanie dodana pozniej.
 
-Podglad korzysta z `ConfigService`. Jesli konfiguracja nie zaladuje sie poprawnie, UI pokazuje fallback zamiast przerywac dzialanie aplikacji. Ten szkielet nie zapisuje ustawien, nie dodaje edytora nazwy aplikacji, kart ani pol, nie przebudowuje dynamicznie UI i nie zmienia schematu bazy danych.
+Zapis nazwy aplikacji korzysta z `ConfigService.save_app_config()` i trafia do `config/app_config.json`. Przed zapisem wykonywana jest walidacja konfiguracji. Jesli konfiguracja nie zaladuje sie poprawnie, UI pokazuje fallback zamiast przerywac dzialanie aplikacji. Ten szkielet nie dodaje edytora kart, typow rekordow ani pol, nie przebudowuje dynamicznie UI i nie zmienia schematu bazy danych.
 
 ## Fundament sekcji/kart aplikacji
 
@@ -727,6 +730,17 @@ MVP-016 added a small read-only settings preview:
 - the modal uses `ConfigService` and shows a fallback if configuration loading fails.
 
 This is only a skeleton. It does not allow editing, does not save configuration from UI, does not add a full settings screen, does not add card or field editors, does not dynamically rebuild the UI and does not change the database schema. The current application still runs on the old transitional UI.
+
+## MVP-017 application name editing
+
+MVP-017 made application name the first editable settings value:
+
+- the settings modal contains a text field for `app_name`,
+- `Zapisz` validates the configuration and writes the updated value to `config/app_config.json` through `ConfigService.save_app_config()`,
+- an empty name is rejected and not saved,
+- after a successful save, the current window title is updated.
+
+This does not add card editing, field editing, record type editing, dynamic UI rebuilding, database migration, new tables or new dependencies. Those remain separate MVPs.
 
 ## Zasady techniczne
 

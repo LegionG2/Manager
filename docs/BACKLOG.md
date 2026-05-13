@@ -458,7 +458,36 @@ Nastepny bezpieczny krok:
 
 - zaprojektowac osobny MVP dla edycji jednego ustawienia albo rozszerzyc read-only diagnostyke ustawien, nadal bez migracji bazy.
 
-### MVP-017 - Fundament wyszukiwania i filtrowania
+### MVP-017 - Edycja nazwy aplikacji w ustawieniach
+
+Status: wykonane
+
+Cel:
+
+- dodac pierwszy edytowalny element ustawien,
+- pozwolic zmienic nazwe aplikacji z okna ustawien,
+- zapisywac zmiane przez istniejacy mechanizm konfiguracji.
+
+Wynik MVP-017:
+
+- okno ustawien zawiera pole tekstowe `Nazwa aplikacji`,
+- przycisk `Zapisz` zapisuje `app_name` do `config/app_config.json`,
+- zapis korzysta z `ConfigService.save_app_config()`,
+- przed zapisem wykonywana jest walidacja konfiguracji,
+- pusta nazwa pokazuje blad i nie zapisuje sie,
+- po poprawnym zapisie tytul obecnego okna jest aktualizowany.
+
+Pozostale ryzyka:
+
+- edycja kart, pol i typow rekordow pozostaje osobnymi MVP,
+- UI nadal nie przebudowuje sie dynamicznie na podstawie konfiguracji,
+- obecna aplikacja nadal dziala na starym przejsciowym UI.
+
+Nastepny bezpieczny krok:
+
+- dodac osobny, maly MVP dla edycji sekcji albo rozszerzyc walidacje relacji miedzy plikami konfiguracji.
+
+### MVP-018 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -467,7 +496,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-018 - Fundament archiwum
+### MVP-019 - Fundament archiwum
 
 Status: planowane
 
@@ -476,7 +505,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-019 - Fundament importu i eksportu
+### MVP-020 - Fundament importu i eksportu
 
 Status: planowane
 

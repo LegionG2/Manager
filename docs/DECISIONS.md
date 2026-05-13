@@ -374,7 +374,7 @@ Konsekwencje:
 
 Decyzja:
 
-Dodano pierwszy widoczny szkielet ustawien jako subtelny przycisk `Ustawienia` i proste okno podgladu read-only.
+Dodano pierwszy widoczny szkielet ustawien jako subtelny przycisk z zebatka i proste okno podgladu read-only.
 
 Kontekst:
 
@@ -388,3 +388,22 @@ Konsekwencje:
 - Niczego nie da sie jeszcze edytowac ani zapisac z UI.
 - Nie dodano edytora nazwy aplikacji, kart, pol, migracji bazy, nowych tabel ani presetow branzowych.
 - Obecna aplikacja nadal dziala na starym przejsciowym UI.
+
+## 2026-05-13 - Nazwa aplikacji jest pierwszym edytowalnym ustawieniem
+
+Decyzja:
+
+Okno ustawien pozwala edytowac `app_name` i zapisuje zmiane do `config/app_config.json` przez `ConfigService`.
+
+Kontekst:
+
+Manager ma juz konfiguracje, walidacje, zapis konfiguracji, tytul okna pobierany z `app_name` i zalazek ustawien pod zebatka. MVP-017 ma dodac tylko jeden maly edytowalny element, bez wchodzenia w edytory kart, pol i typow rekordow.
+
+Konsekwencje:
+
+- Nazwa aplikacji moze byc zmieniona z okna ustawien.
+- Pusta nazwa jest odrzucana i nie zapisuje sie.
+- Zapis trafia do `config/app_config.json`.
+- Po poprawnym zapisie tytul obecnego okna jest aktualizowany.
+- Edycja kart, pol i typow rekordow pozostaje osobnymi MVP.
+- Nie zmieniono schematu SQLite, tabel, importu, eksportu ani glownych funkcji aplikacji.
