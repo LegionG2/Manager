@@ -465,6 +465,7 @@ Co robi:
 - laduje `app_name` z konfiguracji przez `ConfigService` i uzywa go jako tytulu okna,
 - pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, edycja istniejacych sekcji/kart, usuwaniem niestandardowych sekcji oraz podgladem typu rekordu i pol,
 - porzadkuje okno ustawien w sekcje `Ogolne`, `Sekcje aplikacji`, `Typ rekordu` i `Pola`,
+- buduje glowne zakladki z widocznych sekcji konfiguracji jako bezpieczny szkielet,
 - definiuje obecne statusy i priorytety,
 - definiuje motywy jasny i ciemny,
 - zarzadza ustawieniami lokalnymi przez JSON,
@@ -488,6 +489,7 @@ Ryzyka i niejasne obszary:
 - Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
 - UI nadal zna konkretne kolumny aktualnego modelu danych przy budowaniu tabel i wypelnianiu formularza.
 - Szkielet ustawien zapisuje nazwe aplikacji oraz wybrane pola istniejacych sekcji/kart; pozwala usuwac sekcje niestandardowe, chroni sekcje bazowe, a typ rekordu i pola sa pokazywane read-only.
+- Glowne zakladki korzystaja z konfiguracji sekcji, ale pelny system dynamicznych widokow nie istnieje jeszcze.
 - Backup nadal korzysta bezposrednio z `self.db.conn`.
 - Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
 - Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
@@ -1351,3 +1353,32 @@ Nie dodano:
 - presetow branzowych.
 
 Pelny system zarzadzania kartami bedzie rozwijany dalej.
+
+## MVP-024 - Sekcje z konfiguracji w glownym UI
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+Glowne zakladki aplikacji sa teraz tworzone na podstawie widocznych sekcji z konfiguracji. Zasady:
+
+- sekcje sa ladowane przez `ConfigService`,
+- pokazywane sa tylko sekcje z `visible = true`,
+- kolejnosc pochodzi z pola `order`,
+- sekcje typu `records` i `archive` korzystaja z obecnych widokow,
+- pozostale sekcje pokazuja placeholder `Sekcja w przygotowaniu`,
+- przy bledzie ladowania konfiguracji uzywany jest fallback z obecnymi widokami.
+
+Nie dodano:
+
+- pelnego systemu dynamicznych widokow,
+- dynamicznych formularzy,
+- dynamicznej listy rekordow,
+- edycji pol,
+- edycji typow rekordow,
+- migracji bazy danych,
+- nowych tabel,
+- importu/eksportu,
+- presetow branzowych.
+
+Ustawienia nadal sa dostepne przez zebatke. Glowny UI zachowuje obecne funkcje rekordow i archiwum.

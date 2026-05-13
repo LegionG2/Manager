@@ -500,3 +500,23 @@ Konsekwencje:
 - Przed zapisem uruchamiana jest walidacja konfiguracji.
 - Glowny UI nadal nie jest dynamicznie przebudowywany na podstawie sekcji.
 - Pelny system zarzadzania kartami bedzie rozwijany dalej.
+
+## 2026-05-13 - Sekcje konfiguracji sa widoczne w glownym UI jako szkielet
+
+Decyzja:
+
+Glowne zakladki aplikacji zaczynaja korzystac z konfiguracji sekcji, ale tylko jako bezpieczny szkielet widokow.
+
+Kontekst:
+
+Sekcje byly juz edytowalne w ustawieniach, ale nie byly widoczne w glownym UI. MVP-024 ma pokazac sekcje uzytkownikowi w aplikacji, zachowujac dotychczasowe widoki rekordow i archiwum oraz unikajac pelnego systemu dynamicznych formularzy i widokow.
+
+Konsekwencje:
+
+- Pokazywane sa tylko sekcje z `visible = true`.
+- Kolejnosc zakladek pochodzi z pola `order`.
+- Sekcje `records` i `archive` korzystaja z obecnych widokow.
+- Sekcje bez pelnego widoku pokazuja placeholder.
+- Ustawienia nadal dzialaja przez zebatke.
+- Nie zmieniono schematu SQLite, tabel, zapisu rekordow ani glownych funkcji aplikacji.
+- Pelne dynamiczne widoki pozostaja osobnym przyszlym MVP.

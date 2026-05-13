@@ -6,6 +6,7 @@ from tkinter import ttk, messagebox, filedialog
 from datetime import datetime
 
 from data.database import Database
+from domain.app_section import AppSectionDefinition
 from services.config_service import ConfigService
 from services.order_service import OrderService
 
@@ -89,6 +90,23 @@ def load_window_title() -> str:
     except Exception:
         return DEFAULT_APP_TITLE
     return app_name or DEFAULT_APP_TITLE
+
+
+def load_main_sections() -> list[AppSectionDefinition]:
+    try:
+        sections = ConfigService().load_sections()
+    except Exception:
+        return [
+            AppSectionDefinition(id="records", name="Aktywne zlecenia", type="records", visible=True, order=0),
+            AppSectionDefinition(id="archive", name="Archiwum", type="archive", visible=True, order=1),
+        ]
+
+    visible_sections = [section for section in sections if section.visible]
+    visible_sections.sort(key=lambda section: section.order)
+    return visible_sections or [
+        AppSectionDefinition(id="records", name="Aktywne zlecenia", type="records", visible=True, order=0),
+        AppSectionDefinition(id="archive", name="Archiwum", type="archive", visible=True, order=1),
+    ]
 
 
 class SettingsManager:
@@ -247,11 +265,27 @@ class WorkshopApp(tk.Tk):
 
         self.orders_tab = ttk.Frame(self.notebook)
         self.archive_tab = ttk.Frame(self.notebook)
-        self.notebook.add(self.orders_tab, text="Aktywne zlecenia")
-        self.notebook.add(self.archive_tab, text="Archiwum")
+        self.config_sections = load_main_sections()
+        section_frames = {
+            "records": self.orders_tab,
+            "archive": self.archive_tab,
+        }
+
+        for section in self.config_sections:
+            frame = section_frames.get(section.type)
+            if frame is None:
+                frame = ttk.Frame(self.notebook)
+                self.build_placeholder_tab(frame, section.name)
+            self.notebook.add(frame, text=section.name)
 
         self.build_orders_tab()
         self.build_archive_tab()
+
+    def build_placeholder_tab(self, parent, title: str):
+        wrapper = ttk.Frame(parent, padding=16)
+        wrapper.pack(fill="both", expand=True)
+        ttk.Label(wrapper, text=title, style="Title.TLabel").pack(anchor="w", pady=(0, 8))
+        ttk.Label(wrapper, text="Sekcja w przygotowaniu.", style="Sub.TLabel").pack(anchor="w")
 
     def load_settings_preview(
         self,

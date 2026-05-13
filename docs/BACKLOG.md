@@ -641,7 +641,36 @@ Nastepny bezpieczny krok:
 
 - zaplanowac osobny MVP dla pelnego zarzadzania sekcjami albo dynamicznego uzycia sekcji w glownym UI.
 
-### MVP-024 - Fundament archiwum
+### MVP-024 - Sekcje z konfiguracji w glownym UI
+
+Status: wykonane
+
+Cel:
+
+- pokazac widoczne sekcje/karty z konfiguracji w glownym UI,
+- zachowac obecne widoki rekordow i archiwum,
+- pokazac placeholder dla sekcji bez pelnego widoku.
+
+Wynik MVP-024:
+
+- glowny `Notebook` wczytuje sekcje przez `ConfigService`,
+- pokazywane sa tylko sekcje z `visible = true`,
+- kolejnosc zakladek pochodzi z pola `order`,
+- sekcje typu `records` i `archive` uzywaja istniejacych widokow,
+- sekcje bez pelnego widoku pokazuja placeholder `Sekcja w przygotowaniu`,
+- przy bledzie konfiguracji uzywany jest bezpieczny fallback z obecnymi widokami.
+
+Pozostale ryzyka:
+
+- to nie jest jeszcze pelny system dynamicznych widokow,
+- formularze i lista rekordow nadal sa statyczne,
+- ustawienia nadal dzialaja przez zebatke.
+
+Nastepny bezpieczny krok:
+
+- zaprojektowac osobny MVP dla pelnych dynamicznych widokow albo dla powiazania sekcji z docelowymi komponentami UI.
+
+### MVP-025 - Fundament archiwum
 
 Status: planowane
 
@@ -650,7 +679,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-025 - Fundament importu i eksportu
+### MVP-026 - Fundament importu i eksportu
 
 Status: planowane
 

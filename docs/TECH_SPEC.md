@@ -162,7 +162,7 @@ Definicja sekcji/karty zawiera:
 
 Domyslna konfiguracja znajduje sie w `config/default_sections.json`. Jest neutralna i zawiera sekcje `dashboard`, `records`, `archive` oraz `settings`.
 
-`services/section_config_service.py` zawiera `SectionConfigService`, ktory wczytuje liste sekcji z JSON i mapuje ja na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, obecnych zakladek, menu ani bazy danych. Przyszla ikona zebatki, ekran ustawien, edytor kart i dynamiczne menu sa osobnymi MVP.
+`services/section_config_service.py` zawiera `SectionConfigService`, ktory wczytuje liste sekcji z JSON i mapuje ja na obiekty domenowe. Widoczne sekcje z konfiguracji sa uzywane jako zakladki glownego `Notebook`: pokazywane sa tylko `visible = true`, w kolejnosci `order`. Sekcje typu `records` i `archive` korzystaja z obecnych widokow, a pozostale sekcje pokazuja placeholder. Pelny system dynamicznych widokow, edytor kart i dynamiczne menu sa osobnymi MVP.
 
 ## Centralny serwis konfiguracji
 
@@ -804,6 +804,18 @@ MVP-023 added deletion for custom sections/tabs in the settings modal:
 - section deletion validates configuration and writes to `config/default_sections.json` through `ConfigService.save_sections()`.
 
 This does not delete system sections, dynamically rebuild the main UI, edit fields, edit record types, migrate the database, add tables or add dependencies. Full tab management remains a future direction.
+
+## MVP-024 configured sections in main UI
+
+MVP-024 connected configured sections to the main UI as a safe skeleton:
+
+- main `Notebook` tabs are loaded through `ConfigService` from section configuration,
+- only sections with `visible = true` are shown,
+- tab order follows the `order` field,
+- `records` and `archive` use the existing application views,
+- sections without a full view show a simple placeholder.
+
+This is not a full dynamic view system. It does not add dynamic forms, dynamic record lists, database migration, new tables, import/export or new dependencies.
 
 ## Zasady techniczne
 
