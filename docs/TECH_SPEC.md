@@ -125,6 +125,13 @@ Domyslna konfiguracja znajduje sie w `config/app_config.json`. Jest neutralna i 
 
 `ui/app.py` zawiera pierwszy, subtelny szkielet ustawien. W gornym pasku UI znajduje sie przycisk z zebatka, ktory otwiera proste okno ustawien.
 
+Okno ustawien jest uporzadkowane w sekcje:
+
+- `Ogolne`,
+- `Sekcje aplikacji`,
+- `Typ rekordu`,
+- `Pola`.
+
 Okno pozwala edytowac:
 
 - nazwe aplikacji,
@@ -766,6 +773,17 @@ MVP-019 added read-only previews for record type and fields to the existing sett
 - fields preview shows id, label, field type, required flag and select options.
 
 This does not add record type editing, field editing, adding/removing fields, dynamic forms, dynamic record lists, database migration, new tables or main UI changes. Those remain separate future MVPs.
+
+## MVP-020 settings window organization
+
+MVP-020 reorganized the existing settings modal without adding new features:
+
+- settings content is grouped into `Ogolne`, `Sekcje aplikacji`, `Typ rekordu` and `Pola`,
+- application name editing remains unchanged,
+- sections preview remains read-only,
+- record type and fields previews remain read-only.
+
+This does not add section editing, field editing, record type editing, dynamic main UI rebuilding, database migration, new tables or new dependencies.
 
 ## Zasady techniczne
 

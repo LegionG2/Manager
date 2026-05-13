@@ -444,3 +444,21 @@ Konsekwencje:
 - Typ rekordu i pola pozostaja read-only.
 - Edytor typu rekordu i edytor pol beda osobnymi przyszlymi MVP.
 - Nie zmieniono glownego UI, schematu SQLite, tabel ani zapisu rekordow.
+
+## 2026-05-13 - Okno ustawien porzadkujemy przed kolejnymi edytorami
+
+Decyzja:
+
+Okno ustawien zostalo uporzadkowane w sekcje `Ogolne`, `Sekcje aplikacji`, `Typ rekordu` i `Pola` bez dodawania nowych funkcji.
+
+Kontekst:
+
+Okno ustawien zawiera juz edycje nazwy aplikacji oraz podglady sekcji, typu rekordu i pol. Przed dodawaniem edytorow kart, pol i typow rekordow trzeba utrzymac czytelny uklad, zeby kolejne male MVP nie dokladaly przypadkowego chaosu.
+
+Konsekwencje:
+
+- Istniejace funkcje ustawien zostaly zachowane.
+- Edycja nazwy aplikacji dziala jak wczesniej.
+- Podglady sekcji, typu rekordu i pol pozostaja read-only.
+- Nie dodano edycji sekcji, pol ani typow rekordow.
+- Nie zmieniono glownego UI, schematu SQLite, tabel ani zaleznosci.

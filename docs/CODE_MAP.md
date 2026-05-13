@@ -464,6 +464,7 @@ Co robi:
 - definiuje tytul aplikacji, nazwy plikow danych i ustawien,
 - laduje `app_name` z konfiguracji przez `ConfigService` i uzywa go jako tytulu okna,
 - pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, lista sekcji/kart oraz podgladem typu rekordu i pol,
+- porzadkuje okno ustawien w sekcje `Ogolne`, `Sekcje aplikacji`, `Typ rekordu` i `Pola`,
 - definiuje obecne statusy i priorytety,
 - definiuje motywy jasny i ciemny,
 - zarzadza ustawieniami lokalnymi przez JSON,
@@ -1251,3 +1252,35 @@ Nie zmieniono:
 - glownego UI.
 
 Edycja nazwy aplikacji i podglad sekcji/kart zostaly zachowane. Edytor typu rekordu i pol pozostaje osobnymi przyszlymi MVP.
+
+## MVP-020 - Uporzadkowanie okna ustawien
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+Istniejace okno ustawien zostalo uporzadkowane w czytelne sekcje:
+
+- `Ogolne`,
+- `Sekcje aplikacji`,
+- `Typ rekordu`,
+- `Pola`.
+
+Zachowano:
+
+- edycje nazwy aplikacji,
+- podglad sekcji/kart,
+- podglad typu rekordu,
+- podglad pol.
+
+Nie dodano:
+
+- edycji sekcji,
+- dodawania/usuwania sekcji,
+- edycji pol,
+- edycji typu rekordu,
+- dynamicznego przebudowywania glownego UI,
+- migracji bazy danych,
+- nowych tabel.
+
+Zmiana dotyczy tylko czytelnosci okna ustawien.

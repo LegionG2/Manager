@@ -544,7 +544,35 @@ Nastepny bezpieczny krok:
 
 - zaprojektowac osobny MVP dla edycji pol albo rozszerzyc walidacje relacji typu rekordu z polami.
 
-### MVP-020 - Fundament wyszukiwania i filtrowania
+### MVP-020 - Uporzadkowanie okna ustawien
+
+Status: wykonane
+
+Cel:
+
+- uporzadkowac istniejace okno ustawien,
+- oddzielic obecne informacje w czytelne sekcje,
+- nie dodawac nowych funkcji.
+
+Wynik MVP-020:
+
+- okno ustawien ma sekcje `Ogolne`, `Sekcje aplikacji`, `Typ rekordu` i `Pola`,
+- zachowano edycje nazwy aplikacji,
+- zachowano podglad sekcji/kart,
+- zachowano podglad typu rekordu i pol,
+- nie dodano edycji sekcji, pol ani typow rekordow.
+
+Pozostale ryzyka:
+
+- okno ustawien nadal jest technicznym szkieletem,
+- edytory sekcji, pol i typow rekordow pozostaja osobnymi MVP,
+- glowny UI nadal nie jest dynamicznie budowany z konfiguracji.
+
+Nastepny bezpieczny krok:
+
+- przed dodaniem edytorow dopracowac walidacje relacji konfiguracji albo dodac pojedynczy edytowalny element w osobnym MVP.
+
+### MVP-021 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -553,7 +581,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-021 - Fundament archiwum
+### MVP-022 - Fundament archiwum
 
 Status: planowane
 
@@ -562,7 +590,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-022 - Fundament importu i eksportu
+### MVP-023 - Fundament importu i eksportu
 
 Status: planowane
 

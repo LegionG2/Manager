@@ -314,44 +314,42 @@ class WorkshopApp(tk.Tk):
 
         container = ttk.Frame(window, padding=16)
         container.grid(row=0, column=0, sticky="nsew")
-        container.columnconfigure(1, weight=1)
+        container.columnconfigure(0, weight=1)
 
-        ttk.Label(container, text="Ustawienia", style="Title.TLabel").grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
-        ttk.Label(container, text="Nazwa aplikacji:", style="TLabel").grid(row=1, column=0, sticky="w", padx=(0, 16), pady=3)
+        ttk.Label(container, text="Ustawienia", style="Title.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 10))
+
+        general_frame = ttk.LabelFrame(container, text="Ogólne", style="Group.TLabelframe", padding=8)
+        general_frame.grid(row=1, column=0, sticky="ew", pady=(0, 8))
+        general_frame.columnconfigure(1, weight=1)
+
+        ttk.Label(general_frame, text="Nazwa aplikacji:", style="TLabel").grid(row=0, column=0, sticky="w", padx=(0, 16), pady=3)
         app_name_var = tk.StringVar(value=values.get("Nazwa aplikacji", DEFAULT_APP_TITLE))
-        app_name_entry = ttk.Entry(container, textvariable=app_name_var, width=30)
-        app_name_entry.grid(row=1, column=1, sticky="ew", pady=3)
+        app_name_entry = ttk.Entry(general_frame, textvariable=app_name_var, width=30)
+        app_name_entry.grid(row=0, column=1, sticky="ew", pady=3)
 
         details = [
             ("Aktywny typ rekordu", values.get("Aktywny typ rekordu", "Brak danych")),
             ("Liczba sekcji/kart", values.get("Liczba sekcji/kart", "Brak danych")),
         ]
-        for index, (label, value) in enumerate(details, start=2):
-            ttk.Label(container, text=f"{label}:", style="TLabel").grid(row=index, column=0, sticky="w", padx=(0, 16), pady=3)
-            ttk.Label(container, text=value, style="TLabel").grid(row=index, column=1, sticky="w", pady=3)
+        for index, (label, value) in enumerate(details, start=1):
+            ttk.Label(general_frame, text=f"{label}:", style="TLabel").grid(row=index, column=0, sticky="w", padx=(0, 16), pady=3)
+            ttk.Label(general_frame, text=value, style="TLabel").grid(row=index, column=1, sticky="w", pady=3)
 
-        message_row = len(details) + 2
         note = "Na tym etapie edytowana jest tylko nazwa aplikacji. Karty, typy rekordow i pola zostana dodane pozniej."
         if error:
             note = f"Nie udalo sie zaladowac konfiguracji. Pokazano fallback.\n{error}"
-        ttk.Label(container, text=note, style="Sub.TLabel", wraplength=360, justify="left").grid(
-            row=message_row,
+        ttk.Label(general_frame, text=note, style="Sub.TLabel", wraplength=460, justify="left").grid(
+            row=len(details) + 1,
             column=0,
             columnspan=2,
             sticky="w",
-            pady=(12, 10),
+            pady=(10, 0),
         )
 
-        sections_row = message_row + 1
-        ttk.Label(container, text="Sekcje aplikacji", style="Panel.TLabel").grid(
-            row=sections_row,
-            column=0,
-            columnspan=2,
-            sticky="w",
-            pady=(2, 4),
-        )
+        sections_frame = ttk.LabelFrame(container, text="Sekcje aplikacji", style="Group.TLabelframe", padding=8)
+        sections_frame.grid(row=2, column=0, sticky="ew", pady=(0, 8))
         section_columns = ("name", "id", "type", "visible", "order")
-        sections_tree = ttk.Treeview(container, columns=section_columns, show="headings", height=5)
+        sections_tree = ttk.Treeview(sections_frame, columns=section_columns, show="headings", height=5)
         for column, heading, width in [
             ("name", "Nazwa", 110),
             ("id", "ID", 90),
@@ -366,30 +364,19 @@ class WorkshopApp(tk.Tk):
                 sections_tree.insert("", "end", values=section)
         else:
             sections_tree.insert("", "end", values=("Brak danych", "-", "-", "-", "-"))
-        sections_tree.grid(row=sections_row + 1, column=0, columnspan=2, sticky="ew", pady=(0, 10))
+        sections_tree.grid(row=0, column=0, sticky="ew")
 
-        record_type_row = sections_row + 2
-        ttk.Label(container, text="Typ rekordu", style="Panel.TLabel").grid(
-            row=record_type_row,
-            column=0,
-            columnspan=2,
-            sticky="w",
-            pady=(2, 4),
-        )
-        for index, (label, value) in enumerate(record_type, start=record_type_row + 1):
-            ttk.Label(container, text=f"{label}:", style="TLabel").grid(row=index, column=0, sticky="w", padx=(0, 16), pady=3)
-            ttk.Label(container, text=value, style="TLabel", wraplength=360).grid(row=index, column=1, sticky="w", pady=3)
+        record_type_frame = ttk.LabelFrame(container, text="Typ rekordu", style="Group.TLabelframe", padding=8)
+        record_type_frame.grid(row=3, column=0, sticky="ew", pady=(0, 8))
+        record_type_frame.columnconfigure(1, weight=1)
+        for index, (label, value) in enumerate(record_type):
+            ttk.Label(record_type_frame, text=f"{label}:", style="TLabel").grid(row=index, column=0, sticky="w", padx=(0, 16), pady=3)
+            ttk.Label(record_type_frame, text=value, style="TLabel", wraplength=460).grid(row=index, column=1, sticky="w", pady=3)
 
-        fields_row = record_type_row + len(record_type) + 1
-        ttk.Label(container, text="Pola", style="Panel.TLabel").grid(
-            row=fields_row,
-            column=0,
-            columnspan=2,
-            sticky="w",
-            pady=(8, 4),
-        )
+        fields_frame = ttk.LabelFrame(container, text="Pola", style="Group.TLabelframe", padding=8)
+        fields_frame.grid(row=4, column=0, sticky="ew", pady=(0, 10))
         field_columns = ("id", "label", "type", "required", "options")
-        fields_tree = ttk.Treeview(container, columns=field_columns, show="headings", height=5)
+        fields_tree = ttk.Treeview(fields_frame, columns=field_columns, show="headings", height=5)
         for column, heading, width in [
             ("id", "ID", 95),
             ("label", "Etykieta", 120),
@@ -404,16 +391,18 @@ class WorkshopApp(tk.Tk):
                 fields_tree.insert("", "end", values=field)
         else:
             fields_tree.insert("", "end", values=("Brak danych", "-", "-", "-", "-"))
-        fields_tree.grid(row=fields_row + 1, column=0, columnspan=2, sticky="ew", pady=(0, 10))
+        fields_tree.grid(row=0, column=0, sticky="ew")
 
-        buttons_row = fields_row + 2
+        buttons = ttk.Frame(container)
+        buttons.grid(row=5, column=0, sticky="ew")
+        buttons.columnconfigure(1, weight=1)
         ttk.Button(
-            container,
+            buttons,
             text="Zapisz",
             style="Primary.TButton",
             command=lambda: self.save_app_name(app_name_var.get(), window),
-        ).grid(row=buttons_row, column=0, sticky="w")
-        ttk.Button(container, text="Zamknij", command=window.destroy).grid(row=buttons_row, column=1, sticky="e")
+        ).grid(row=0, column=0, sticky="w")
+        ttk.Button(buttons, text="Zamknij", command=window.destroy).grid(row=0, column=1, sticky="e")
 
         window.update_idletasks()
         x = self.winfo_rootx() + max((self.winfo_width() - window.winfo_width()) // 2, 0)
