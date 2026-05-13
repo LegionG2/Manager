@@ -26,7 +26,7 @@
     "id": "settings",
     "name": "Settings",
     "type": "settings",
-    "visible": false,
+    "visible": true,
     "order": 3
   }
 ]

@@ -242,24 +242,7 @@ class WorkshopApp(tk.Tk):
         ttk.Button(top, text="⚙", command=self.show_settings_preview).grid(row=0, column=2, sticky="e", padx=(8, 6))
         ttk.Checkbutton(top, text="Tryb ciemny", variable=self.theme_var, command=self.toggle_theme).grid(row=0, column=3, sticky="e")
 
-        self.summary_frame = ttk.Frame(self, padding=(8, 0, 8, 8))
-        self.summary_frame.grid(row=1, column=0, sticky="ew")
         self.summary_labels = {}
-        summary_items = [
-            ("total", "Na placu"),
-            ("diagnosis", "Diagnoza"),
-            ("in_progress", "W trakcie"),
-            ("waiting_parts", "Czeka na części"),
-            ("ready", "Gotowe"),
-            ("unpaid_sum", "Do zapłaty"),
-            ("archived", "Archiwum"),
-        ]
-        for idx, (key, title) in enumerate(summary_items):
-            self.summary_frame.columnconfigure(idx, weight=1, uniform="summary")
-            label = ttk.Label(self.summary_frame, text=f"{title}: 0", style="Summary.TLabel", padding=8, anchor="center")
-            label.grid(row=0, column=idx, sticky="ew", padx=(0, 6 if idx < len(summary_items)-1 else 0))
-            self.summary_labels[key] = label
-
         self.notebook = ttk.Notebook(self)
         self.notebook.grid(row=2, column=0, sticky="nsew", padx=8, pady=(0, 8))
 
@@ -267,7 +250,6 @@ class WorkshopApp(tk.Tk):
         self.archive_tab = ttk.Frame(self.notebook)
         self.placeholder_tabs = {}
         self.section_tab_frames = {}
-        self.dashboard_stat_labels = {}
         self.refresh_configured_tabs()
 
         self.build_orders_tab()
@@ -325,22 +307,7 @@ class WorkshopApp(tk.Tk):
         wrapper = ttk.Frame(parent, padding=16)
         wrapper.pack(fill="both", expand=True)
         ttk.Label(wrapper, text=title, style="Title.TLabel").pack(anchor="w", pady=(0, 8))
-        ttk.Label(wrapper, text="Podstawowe podsumowanie rekordów.", style="Sub.TLabel").pack(anchor="w", pady=(0, 12))
-
-        stats_frame = ttk.Frame(wrapper)
-        stats_frame.pack(fill="x")
-        self.dashboard_stat_labels = {}
-        for index, (key, label_text) in enumerate([
-            ("total", "Aktywne rekordy"),
-            ("ready", "Gotowe"),
-            ("unpaid_sum", "Do zapłaty"),
-            ("archived", "Archiwum"),
-        ]):
-            stats_frame.columnconfigure(index, weight=1, uniform="dashboard")
-            label = ttk.Label(stats_frame, text=f"{label_text}: 0", style="Summary.TLabel", padding=8, anchor="center")
-            label.grid(row=0, column=index, sticky="ew", padx=(0, 6 if index < 3 else 0))
-            self.dashboard_stat_labels[key] = label
-        self.refresh_stats()
+        ttk.Label(wrapper, text="Dashboard w przygotowaniu.", style="Sub.TLabel").pack(anchor="w")
 
     def build_settings_section_tab(self, parent, title: str):
         wrapper = ttk.Frame(parent, padding=16)
@@ -1041,6 +1008,8 @@ class WorkshopApp(tk.Tk):
         self.geometry(current_geometry)
 
     def refresh_stats(self):
+        if not self.summary_labels:
+            return
         stats = self.db.stats()
         labels = {
             "total": f"Na placu: {stats['total']}",
@@ -1052,15 +1021,7 @@ class WorkshopApp(tk.Tk):
             "archived": f"Archiwum: {stats['archived']}",
         }
         for key, text in labels.items():
-            self.summary_labels[key].configure(text=text)
-        dashboard_labels = {
-            "total": f"Aktywne rekordy: {stats['total']}",
-            "ready": f"Gotowe: {stats['ready']}",
-            "unpaid_sum": f"Do zapłaty: {stats['unpaid_sum']:.2f} zł",
-            "archived": f"Archiwum: {stats['archived']}",
-        }
-        for key, text in dashboard_labels.items():
-            label = self.dashboard_stat_labels.get(key)
+            label = self.summary_labels.get(key)
             if label is not None:
                 label.configure(text=text)
 

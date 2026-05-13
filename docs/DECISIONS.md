@@ -540,6 +540,8 @@ Konsekwencje:
 - Stare warsztatowe pola danych nadal istnieja jako etap przejsciowy.
 - Nie zmieniono schematu SQLite, tabel, dynamicznych formularzy ani glownych funkcji aplikacji.
 
+Po MVP-027 opis pod naglowkiem zostal usuniety, a naglowek pokazuje tylko nazwe aplikacji.
+
 ## 2026-05-13 - Ustawienia sekcji odswiezaja UI po zapisie
 
 Decyzja:
@@ -559,3 +561,25 @@ Konsekwencje:
 - Glowny `Notebook` przebudowuje zakladki z widocznych sekcji bez restartu aplikacji.
 - Sekcje bez pelnego widoku nadal pokazuja placeholder, wiec to nadal szkielet dynamicznych sekcji, nie pelny system widokow.
 - Nie zmieniono schematu SQLite, tabel, dynamicznych formularzy, edycji pol ani edycji typow rekordow.
+
+## 2026-05-13 - Podstawowe typy sekcji dostaja proste widoki
+
+Decyzja:
+
+Naglowek aplikacji pokazuje tylko nazwe z konfiguracji, a podstawowe typy sekcji sa obslugiwane przez proste, jawne widoki.
+
+Kontekst:
+
+Po MVP-026 sekcje byly odswiezane bez restartu, ale typy inne niz `records` i `archive` nadal czesto wygladaly jak ten sam ogolny placeholder. MVP-027 ma zwiekszyc czytelnosc bez przebudowy calego UI, bez zmian w bazie i bez ruszania logiki zapisu rekordow.
+
+Konsekwencje:
+
+- Usunieto opis pod glownym naglowkiem.
+- Zapis `app_name` nadal odswieza tytul okna i naglowek.
+- `records` korzysta z obecnego widoku rekordow.
+- `archive` korzysta z obecnego widoku archiwum.
+- Globalny pasek statystyk jest ukryty, bo nie jest jeszcze konfigurowalny.
+- `dashboard` pokazuje neutralny placeholder bez statystyk.
+- `settings` pokazuje prosty widok z przyciskiem otwierajacym okno ustawien.
+- `custom` pokazuje placeholder `Sekcja wlasna w przygotowaniu`.
+- Nie zmieniono schematu SQLite, tabel, edycji pol, edycji typow rekordow ani logiki zapisu/edycji/usuwania rekordow.

@@ -464,7 +464,6 @@ Co robi:
 - definiuje tytul aplikacji, nazwy plikow danych i ustawien,
 - laduje `app_name` z konfiguracji przez `ConfigService` i uzywa go jako tytulu okna,
 - uzywa `app_name` z konfiguracji jako glownego naglowka aplikacji,
-- pokazuje neutralny opis `Lokalna aplikacja do zarzadzania rekordami`,
 - pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, edycja istniejacych sekcji/kart, dodawaniem sekcji, usuwaniem niestandardowych sekcji oraz podgladem typu rekordu i pol,
 - porzadkuje okno ustawien w sekcje `Ogolne`, `Sekcje aplikacji`, `Typ rekordu` i `Pola`,
 - buduje i odswieza glowne zakladki z widocznych sekcji konfiguracji jako bezpieczny szkielet,
@@ -490,10 +489,9 @@ Ryzyka i niejasne obszary:
 - Modul UI nadal laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
 - Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
 - Glowny naglowek jest juz neutralny, ale czesc starszych pol i tekstow nadal jest przejsciowo warsztatowa.
-- Opis aplikacji jest neutralny, ale jeszcze nie jest konfigurowalny.
 - UI nadal zna konkretne kolumny aktualnego modelu danych przy budowaniu tabel i wypelnianiu formularza.
 - Szkielet ustawien zapisuje nazwe aplikacji oraz wybrane pola istniejacych sekcji/kart; pozwala dodawac sekcje, usuwac sekcje niestandardowe, chroni sekcje bazowe, a typ rekordu i pola sa pokazywane read-only.
-- Glowne zakladki korzystaja z konfiguracji sekcji i sa odswiezane po zmianach sekcji, ale pelny system dynamicznych widokow nie istnieje jeszcze.
+- Glowne zakladki korzystaja z konfiguracji sekcji i sa odswiezane po zmianach sekcji; typy `dashboard`, `settings` i `custom` maja proste widoki, ale pelny system dynamicznych widokow nie istnieje jeszcze.
 - Backup nadal korzysta bezposrednio z `self.db.conn`.
 - Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
 - Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
@@ -658,7 +656,7 @@ Znane metody:
 - `delete_order()` usuwa rekord.
 - `fetch_orders()` pobiera liste rekordow z wyszukiwaniem, filtrem statusu i archiwum.
 - `fetch_order()` pobiera jeden rekord.
-- `stats()` liczy podsumowania dla panelu statystyk.
+- `stats()` nadal liczy podsumowania, ale globalny pasek statystyk w UI jest ukryty.
 - `export_csv()` eksportuje dane do CSV.
 
 Ryzyka:
@@ -1416,6 +1414,8 @@ Nie zmieniono:
 
 Stare warsztatowe pola danych nadal istnieja jako etap przejsciowy.
 
+Po MVP-027 opis pod naglowkiem zostal usuniety. Naglowek pokazuje tylko nazwe aplikacji z konfiguracji.
+
 ## MVP-026 - Zarzadzanie sekcjami i odswiezanie UI po zapisie ustawien
 
 Rozbudowano:
@@ -1448,3 +1448,31 @@ Nie zmieniono:
 - pelnego systemu widokow.
 
 Sekcje bez pelnego widoku nadal pokazuja placeholder `Sekcja w przygotowaniu`. To nadal jest bezpieczny szkielet zarzadzania sekcjami, nie pelny konfigurator UI.
+
+## MVP-027 - Czystszy naglowek i podstawowe typy sekcji
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+Glowny naglowek pokazuje teraz tylko nazwe aplikacji z `config/app_config.json`. Usunieto szary opis pod naglowkiem, a zapis nazwy aplikacji w ustawieniach nadal od razu aktualizuje tytul okna i tekst naglowka.
+
+Podstawowe typy sekcji sa obslugiwane w glownym `Notebook`:
+
+- `records` uzywa obecnego widoku rekordow,
+- `archive` uzywa obecnego widoku archiwum,
+- globalny pasek statystyk jest ukryty,
+- `dashboard` pokazuje neutralny placeholder bez statystyk,
+- `settings` pokazuje prosty widok z przyciskiem otwierajacym okno ustawien,
+- `custom` pokazuje placeholder `Sekcja wlasna w przygotowaniu`.
+
+Nie zmieniono:
+
+- schematu SQLite,
+- zapisu, edycji ani usuwania rekordow,
+- edytora pol,
+- edytora typow rekordow,
+- nowych tabel,
+- duzego redesignu UI.
+
+To nadal jest szkielet sekcji. Pelne dynamiczne widoki i konfigurator widokow pozostaja osobnymi przyszlymi MVP.

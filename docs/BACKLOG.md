@@ -685,18 +685,18 @@ Wynik MVP-025:
 - glowny naglowek pokazuje nazwe aplikacji z `config/app_config.json`,
 - po zapisie nazwy w ustawieniach aktualizuje sie tytul okna i naglowek,
 - opis pod naglowkiem jest neutralny: `Lokalna aplikacja do zarzadzania rekordami`,
-- opis jest jeszcze tymczasowo staly w kodzie, a nie konfigurowalny,
+- opis byl jeszcze tymczasowo staly w kodzie i zostal usuniety w MVP-027,
 - stare warsztatowe pola danych nadal istnieja jako etap przejsciowy.
 
 Pozostale ryzyka:
 
 - to nie jest pelny rebranding wszystkich pol i tekstow aplikacji,
 - obecny model danych nadal zawiera warsztatowe nazwy i tabele,
-- opis aplikacji moze zostac skonfigurowany w osobnym przyszlym MVP.
+- ewentualny opis aplikacji moze zostac zaprojektowany w osobnym przyszlym MVP.
 
 Nastepny bezpieczny krok:
 
-- kontynuowac neutralizacje widocznych tekstow albo zaprojektowac konfigurowalny opis aplikacji.
+- kontynuowac neutralizacje widocznych tekstow i dopinanie podstawowych typow sekcji do prostych widokow.
 
 ### MVP-026 - Zarzadzanie sekcjami i odswiezanie UI po zapisie ustawien
 
@@ -727,7 +727,39 @@ Nastepny bezpieczny krok:
 
 - zaprojektowac trwalsze miejsce zapisu konfiguracji uzytkownika albo dopracowac pelny edytor sekcji w osobnym MVP.
 
-### MVP-027 - Fundament archiwum
+### MVP-027 - Czystszy naglowek i podstawowe typy sekcji
+
+Status: wykonane
+
+Cel:
+
+- usunac opis z glownego naglowka,
+- zostawic w naglowku tylko nazwe aplikacji z konfiguracji,
+- podpiac podstawowe typy sekcji do sensowniejszych widokow niz jeden ogolny placeholder.
+
+Wynik MVP-027:
+
+- usunieto szary opis pod nazwa aplikacji z glownego naglowka,
+- zapis nazwy aplikacji nadal od razu odswieza tytul okna i naglowek,
+- `records` nadal prowadzi do obecnego dzialajacego widoku rekordow,
+- `archive` nadal prowadzi do obecnego widoku archiwum, gdy sekcja jest widoczna,
+- globalny pasek statystyk zostal ukryty, bo nie jest jeszcze konfigurowalny,
+- `dashboard` pokazuje neutralny placeholder bez statystyk,
+- `settings` pokazuje prosty widok z przyciskiem otwierajacym okno ustawien,
+- `custom` pokazuje placeholder `Sekcja wlasna w przygotowaniu`,
+- nie zmieniono schematu bazy, zapisu rekordow, edycji rekordow ani usuwania rekordow.
+
+Pozostale ryzyka:
+
+- dashboard jest tylko neutralnym placeholderem, nie pelnym konfigurowalnym pulpitem,
+- settings jako zakladka nadal otwiera istniejace okno ustawien zamiast pelnego widoku w karcie,
+- typy sekcji poza podstawowym zestawem nadal dostaja ogolny placeholder.
+
+Nastepny bezpieczny krok:
+
+- dopracowac docelowy model widokow sekcji albo przeniesc konfiguracje uzytkownika poza pliki domyslne repozytorium.
+
+### MVP-028 - Fundament archiwum
 
 Status: planowane
 
@@ -736,7 +768,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-028 - Fundament importu i eksportu
+### MVP-029 - Fundament importu i eksportu
 
 Status: planowane
 

@@ -123,13 +123,7 @@ Domyslna konfiguracja znajduje sie w `config/app_config.json`. Jest neutralna i 
 
 ## Branding aplikacji
 
-Tytul okna oraz glowny naglowek aplikacji korzystaja z `app_name` w `config/app_config.json`. Opis pod naglowkiem jest neutralny i nadal tymczasowo staly w kodzie:
-
-```text
-Lokalna aplikacja do zarzadzania rekordami
-```
-
-Nie dodano jeszcze `app_description` do konfiguracji. Konfigurowalny opis aplikacji moze byc osobnym przyszlym MVP. Stare warsztatowe pola danych, nazwy bazy i czesc tekstow UI nadal istnieja jako etap przejsciowy; MVP-025 usuwa tylko warsztatowy branding z glownego naglowka.
+Tytul okna oraz glowny naglowek aplikacji korzystaja z `app_name` w `config/app_config.json`. Glowny naglowek pokazuje tylko nazwe aplikacji; opis pod naglowkiem zostal usuniety w MVP-027. Stare warsztatowe pola danych, nazwy bazy i czesc tekstow UI nadal istnieja jako etap przejsciowy.
 
 ## Szkielet ustawien
 
@@ -175,7 +169,7 @@ Definicja sekcji/karty zawiera:
 
 Domyslna konfiguracja znajduje sie w `config/default_sections.json`. Jest neutralna i zawiera sekcje `dashboard`, `records`, `archive` oraz `settings`.
 
-`services/section_config_service.py` zawiera `SectionConfigService`, ktory wczytuje liste sekcji z JSON i mapuje ja na obiekty domenowe. Widoczne sekcje z konfiguracji sa uzywane jako zakladki glownego `Notebook`: pokazywane sa tylko `visible = true`, w kolejnosci `order`. Sekcje typu `records` i `archive` korzystaja z obecnych widokow, a pozostale sekcje pokazuja placeholder. Po zmianach sekcji w ustawieniach zakladki sa odswiezane bez restartu aplikacji. Pelny system dynamicznych widokow, edytor kart i dynamiczne menu sa osobnymi MVP.
+`services/section_config_service.py` zawiera `SectionConfigService`, ktory wczytuje liste sekcji z JSON i mapuje ja na obiekty domenowe. Widoczne sekcje z konfiguracji sa uzywane jako zakladki glownego `Notebook`: pokazywane sa tylko `visible = true`, w kolejnosci `order`. Sekcje typu `records` i `archive` korzystaja z obecnych widokow. Typ `dashboard` pokazuje neutralny placeholder bez statystyk, typ `settings` pokazuje prosty widok z przyciskiem ustawien, a typ `custom` pokazuje placeholder `Sekcja wlasna w przygotowaniu`. Globalny pasek statystyk jest ukryty, bo nie jest jeszcze konfigurowalny. Po zmianach sekcji w ustawieniach zakladki sa odswiezane bez restartu aplikacji. Pelny system dynamicznych widokow, edytor kart i dynamiczne menu sa osobnymi MVP.
 
 ## Centralny serwis konfiguracji
 
@@ -836,7 +830,7 @@ MVP-025 removed workshop branding from the main header:
 
 - the main header uses configured `app_name`,
 - saving application name from settings updates both window title and header,
-- the subtitle is neutral and fixed in code for now,
+- the temporary subtitle existed after MVP-025 and was removed in MVP-027,
 - `app_description` was not added to configuration in this MVP.
 
 This is not a full rebrand of every legacy workshop field or data structure. Existing workshop-oriented data fields remain transitional.
@@ -854,6 +848,22 @@ MVP-026 fixes section settings so saved changes are visible immediately:
 - saving `app_name` still updates both the window title and the main header immediately.
 
 This does not add field editing, record type editing, dynamic forms, database migration, new tables or a full dynamic view system.
+
+## MVP-027 clean header and basic section views
+
+MVP-027 removes the header subtitle and makes basic section types more useful:
+
+- the main header shows only configured `app_name`,
+- saving application name from settings still updates both window title and header immediately,
+- the global statistics bar is hidden because it is not configurable yet,
+- `records` uses the existing records view,
+- `archive` uses the existing archive view,
+- `dashboard` shows a neutral placeholder without statistics,
+- `settings` shows a simple view with a button opening settings,
+- `custom` shows `Sekcja wlasna w przygotowaniu`,
+- unknown section types still use a generic preparation placeholder.
+
+This does not change database schema, record save/edit/delete logic, field editing, record type editing, tables or dependencies.
 
 ## Zasady techniczne
 
