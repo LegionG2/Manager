@@ -121,6 +121,16 @@ Domyslna konfiguracja znajduje sie w `config/app_config.json`. Jest neutralna i 
 
 `services/app_config_service.py` zawiera `AppConfigService`, ktory wczytuje konfiguracje aplikacji z JSON i mapuje ja na obiekty domenowe. `app_name` z tej konfiguracji jest uzywany jako tytul okna aplikacji przez `ui/app.py`. Pozostale elementy konfiguracji aplikacji nie sa jeszcze podlaczone do obecnych kart ani bazy danych. Przyszly ekran ustawien i ikona zebatki sa osobnym MVP.
 
+## Branding aplikacji
+
+Tytul okna oraz glowny naglowek aplikacji korzystaja z `app_name` w `config/app_config.json`. Opis pod naglowkiem jest neutralny i nadal tymczasowo staly w kodzie:
+
+```text
+Lokalna aplikacja do zarzadzania rekordami
+```
+
+Nie dodano jeszcze `app_description` do konfiguracji. Konfigurowalny opis aplikacji moze byc osobnym przyszlym MVP. Stare warsztatowe pola danych, nazwy bazy i czesc tekstow UI nadal istnieja jako etap przejsciowy; MVP-025 usuwa tylko warsztatowy branding z glownego naglowka.
+
 ## Szkielet ustawien
 
 `ui/app.py` zawiera pierwszy, subtelny szkielet ustawien. W gornym pasku UI znajduje sie przycisk z zebatka, ktory otwiera proste okno ustawien.
@@ -135,6 +145,9 @@ Okno ustawien jest uporzadkowane w sekcje:
 Okno pozwala edytowac:
 
 - nazwe aplikacji,
+- sekcje/karty w zakresie `name`, `visible` i `order`,
+- dodawanie nowych sekcji/kart,
+- usuwanie niestandardowych sekcji/kart,
 
 oraz pokazuje informacyjnie:
 
@@ -145,7 +158,7 @@ oraz pokazuje informacyjnie:
 - pola z `config/default_record_fields.json`,
 - informacje, ze edycja kart, typow rekordow i pol zostanie dodana pozniej.
 
-Zapis nazwy aplikacji korzysta z `ConfigService.save_app_config()` i trafia do `config/app_config.json`. Przed zapisem wykonywana jest walidacja konfiguracji. Sekcje z `config/default_sections.json` mozna edytowac tylko w zakresie `name`, `visible` i `order`; `id` i `type` pozostaja read-only. Sekcje niestandardowe mozna usuwac po potwierdzeniu, a sekcje bazowe `dashboard`, `records`, `archive` i `settings` sa chronione. Zapis sekcji korzysta z `ConfigService.save_sections()`. Podglad typu rekordu pokazuje id, nazwe i przypisane pola. Podglad pol pokazuje id, etykiete, typ, wymagalnosc i opcje dla pol wyboru. Jesli konfiguracja nie zaladuje sie poprawnie, UI pokazuje fallback zamiast przerywac dzialanie aplikacji. Ten szkielet nie dodaje edytora typow rekordow ani pol, nie przebudowuje dynamicznie UI i nie zmienia schematu bazy danych.
+Zapis nazwy aplikacji korzysta z `ConfigService.save_app_config()` i trafia do `config/app_config.json`. Przed zapisem wykonywana jest walidacja konfiguracji. Sekcje z `config/default_sections.json` mozna edytowac tylko w zakresie `name`, `visible` i `order`; `id` i `type` pozostaja read-only dla istniejacych sekcji. Sekcje niestandardowe mozna usuwac po potwierdzeniu, a sekcje bazowe `dashboard`, `records`, `archive` i `settings` sa chronione. Nowe sekcje mozna dodac przez prosty wiersz formularza. Zapis sekcji korzysta z `ConfigService.save_sections()`. Po zapisie, dodaniu albo usunieciu sekcji okno ustawien odswieza liste sekcji, a glowny `Notebook` przebudowuje zakladki bez restartu aplikacji. Podglad typu rekordu pokazuje id, nazwe i przypisane pola. Podglad pol pokazuje id, etykiete, typ, wymagalnosc i opcje dla pol wyboru. Jesli konfiguracja nie zaladuje sie poprawnie, UI pokazuje fallback zamiast przerywac dzialanie aplikacji. Ten szkielet nie dodaje edytora typow rekordow ani pol, pelnego systemu dynamicznych widokow i nie zmienia schematu bazy danych.
 
 ## Fundament sekcji/kart aplikacji
 
@@ -162,7 +175,7 @@ Definicja sekcji/karty zawiera:
 
 Domyslna konfiguracja znajduje sie w `config/default_sections.json`. Jest neutralna i zawiera sekcje `dashboard`, `records`, `archive` oraz `settings`.
 
-`services/section_config_service.py` zawiera `SectionConfigService`, ktory wczytuje liste sekcji z JSON i mapuje ja na obiekty domenowe. Widoczne sekcje z konfiguracji sa uzywane jako zakladki glownego `Notebook`: pokazywane sa tylko `visible = true`, w kolejnosci `order`. Sekcje typu `records` i `archive` korzystaja z obecnych widokow, a pozostale sekcje pokazuja placeholder. Pelny system dynamicznych widokow, edytor kart i dynamiczne menu sa osobnymi MVP.
+`services/section_config_service.py` zawiera `SectionConfigService`, ktory wczytuje liste sekcji z JSON i mapuje ja na obiekty domenowe. Widoczne sekcje z konfiguracji sa uzywane jako zakladki glownego `Notebook`: pokazywane sa tylko `visible = true`, w kolejnosci `order`. Sekcje typu `records` i `archive` korzystaja z obecnych widokow, a pozostale sekcje pokazuja placeholder. Po zmianach sekcji w ustawieniach zakladki sa odswiezane bez restartu aplikacji. Pelny system dynamicznych widokow, edytor kart i dynamiczne menu sa osobnymi MVP.
 
 ## Centralny serwis konfiguracji
 
@@ -183,7 +196,7 @@ Udostepnia metody:
 - `load_sections()`,
 - `load_all()`.
 
-Centralny serwis nie duplikuje logiki szczegolowych loaderow. Jest przygotowaniem pod przyszla ikone zebatki, ekran ustawien, konfigurator pol i konfigurator kart. Nie jest jeszcze podlaczony do UI i nie zapisuje konfiguracji.
+Centralny serwis nie duplikuje logiki szczegolowych loaderow. Jest uzywany przez obecny szkielet ustawien i zapis nazwy aplikacji oraz sekcji. Nadal pozostaje fundamentem pod przyszly pelny ekran ustawien, konfigurator pol i konfigurator kart.
 
 ## Fundament walidacji konfiguracji
 
@@ -816,6 +829,31 @@ MVP-024 connected configured sections to the main UI as a safe skeleton:
 - sections without a full view show a simple placeholder.
 
 This is not a full dynamic view system. It does not add dynamic forms, dynamic record lists, database migration, new tables, import/export or new dependencies.
+
+## MVP-025 neutral header branding
+
+MVP-025 removed workshop branding from the main header:
+
+- the main header uses configured `app_name`,
+- saving application name from settings updates both window title and header,
+- the subtitle is neutral and fixed in code for now,
+- `app_description` was not added to configuration in this MVP.
+
+This is not a full rebrand of every legacy workshop field or data structure. Existing workshop-oriented data fields remain transitional.
+
+## MVP-026 settings section management refresh
+
+MVP-026 fixes section settings so saved changes are visible immediately:
+
+- settings include a simple row for adding a new section,
+- existing sections still allow editing only `name`, `visible` and `order`,
+- custom sections can be deleted after confirmation,
+- base sections `dashboard`, `records`, `archive` and `settings` remain protected,
+- saving, adding or deleting sections reloads the settings view from configuration,
+- the main `Notebook` rebuilds visible tabs from `config/default_sections.json` without restarting the application,
+- saving `app_name` still updates both the window title and the main header immediately.
+
+This does not add field editing, record type editing, dynamic forms, database migration, new tables or a full dynamic view system.
 
 ## Zasady techniczne
 

@@ -10,8 +10,8 @@ from domain.app_section import AppSectionDefinition
 from services.config_service import ConfigService
 from services.order_service import OrderService
 
-APP_TITLE = "Warsztat Manager Premium"
 DEFAULT_APP_TITLE = "Manager"
+APP_TITLE = DEFAULT_APP_TITLE
 BASE_SECTION_IDS = {"dashboard", "records", "archive", "settings"}
 DB_NAME = "warsztat_manager.db"
 SETTINGS_NAME = "settings.json"
@@ -237,8 +237,8 @@ class WorkshopApp(tk.Tk):
         top = ttk.Frame(self, padding=8)
         top.grid(row=0, column=0, sticky="ew")
         top.columnconfigure(1, weight=1)
-        ttk.Label(top, text="Warsztat Manager Premium", style="Title.TLabel").grid(row=0, column=0, sticky="w")
-        ttk.Label(top, text="Prosty program warsztatowy z lokalnym zapisem danych", style="Sub.TLabel").grid(row=0, column=1, sticky="w", padx=(10, 0))
+        self.header_title_label = ttk.Label(top, text=self.app_title, style="Title.TLabel")
+        self.header_title_label.grid(row=0, column=0, sticky="w")
         ttk.Button(top, text="⚙", command=self.show_settings_preview).grid(row=0, column=2, sticky="e", padx=(8, 6))
         ttk.Checkbutton(top, text="Tryb ciemny", variable=self.theme_var, command=self.toggle_theme).grid(row=0, column=3, sticky="e")
 
@@ -265,6 +265,32 @@ class WorkshopApp(tk.Tk):
 
         self.orders_tab = ttk.Frame(self.notebook)
         self.archive_tab = ttk.Frame(self.notebook)
+        self.placeholder_tabs = {}
+        self.section_tab_frames = {}
+        self.dashboard_stat_labels = {}
+        self.refresh_configured_tabs()
+
+        self.build_orders_tab()
+        self.build_archive_tab()
+
+    def refresh_configured_tabs(self):
+        selected_section_id = None
+        try:
+            selected_tab = self.notebook.select()
+            for section_id, frame in self.section_tab_frames.items():
+                if str(frame) == selected_tab:
+                    selected_section_id = section_id
+                    break
+        except tk.TclError:
+            selected_section_id = None
+
+        for tab_id in self.notebook.tabs():
+            self.notebook.forget(tab_id)
+        for frame in self.placeholder_tabs.values():
+            frame.destroy()
+
+        self.placeholder_tabs = {}
+        self.section_tab_frames = {}
         self.config_sections = load_main_sections()
         section_frames = {
             "records": self.orders_tab,
@@ -275,17 +301,59 @@ class WorkshopApp(tk.Tk):
             frame = section_frames.get(section.type)
             if frame is None:
                 frame = ttk.Frame(self.notebook)
-                self.build_placeholder_tab(frame, section.name)
+                self.build_section_tab(frame, section)
+                self.placeholder_tabs[section.id] = frame
             self.notebook.add(frame, text=section.name)
+            self.section_tab_frames[section.id] = frame
 
-        self.build_orders_tab()
-        self.build_archive_tab()
+        if selected_section_id in self.section_tab_frames:
+            self.notebook.select(self.section_tab_frames[selected_section_id])
 
-    def build_placeholder_tab(self, parent, title: str):
+    def build_section_tab(self, parent, section: AppSectionDefinition):
+        if section.type == "dashboard":
+            self.build_dashboard_tab(parent, section.name)
+            return
+        if section.type == "settings":
+            self.build_settings_section_tab(parent, section.name)
+            return
+        if section.type == "custom":
+            self.build_placeholder_tab(parent, section.name, "Sekcja własna w przygotowaniu.")
+            return
+        self.build_placeholder_tab(parent, section.name, "Sekcja w przygotowaniu.")
+
+    def build_dashboard_tab(self, parent, title: str):
         wrapper = ttk.Frame(parent, padding=16)
         wrapper.pack(fill="both", expand=True)
         ttk.Label(wrapper, text=title, style="Title.TLabel").pack(anchor="w", pady=(0, 8))
-        ttk.Label(wrapper, text="Sekcja w przygotowaniu.", style="Sub.TLabel").pack(anchor="w")
+        ttk.Label(wrapper, text="Podstawowe podsumowanie rekordów.", style="Sub.TLabel").pack(anchor="w", pady=(0, 12))
+
+        stats_frame = ttk.Frame(wrapper)
+        stats_frame.pack(fill="x")
+        self.dashboard_stat_labels = {}
+        for index, (key, label_text) in enumerate([
+            ("total", "Aktywne rekordy"),
+            ("ready", "Gotowe"),
+            ("unpaid_sum", "Do zapłaty"),
+            ("archived", "Archiwum"),
+        ]):
+            stats_frame.columnconfigure(index, weight=1, uniform="dashboard")
+            label = ttk.Label(stats_frame, text=f"{label_text}: 0", style="Summary.TLabel", padding=8, anchor="center")
+            label.grid(row=0, column=index, sticky="ew", padx=(0, 6 if index < 3 else 0))
+            self.dashboard_stat_labels[key] = label
+        self.refresh_stats()
+
+    def build_settings_section_tab(self, parent, title: str):
+        wrapper = ttk.Frame(parent, padding=16)
+        wrapper.pack(fill="both", expand=True)
+        ttk.Label(wrapper, text=title, style="Title.TLabel").pack(anchor="w", pady=(0, 8))
+        ttk.Label(wrapper, text="Ustawienia aplikacji są dostępne w osobnym oknie.", style="Sub.TLabel").pack(anchor="w", pady=(0, 12))
+        ttk.Button(wrapper, text="Otwórz ustawienia", command=self.show_settings_preview).pack(anchor="w")
+
+    def build_placeholder_tab(self, parent, title: str, message: str):
+        wrapper = ttk.Frame(parent, padding=16)
+        wrapper.pack(fill="both", expand=True)
+        ttk.Label(wrapper, text=title, style="Title.TLabel").pack(anchor="w", pady=(0, 8))
+        ttk.Label(wrapper, text=message, style="Sub.TLabel").pack(anchor="w")
 
     def load_settings_preview(
         self,
@@ -414,11 +482,35 @@ class WorkshopApp(tk.Tk):
                 })
         else:
             ttk.Label(sections_frame, text="Brak danych", style="TLabel").grid(row=1, column=0, columnspan=5, sticky="w", pady=2)
+        add_row = len(sections) + 1 if sections else 2
+        next_order = add_row
+        for _name, _section_id, _section_type, _visible, order in sections:
+            try:
+                next_order = max(next_order, int(order) + 1)
+            except ValueError:
+                pass
+        new_section_vars = {
+            "id_var": tk.StringVar(),
+            "name_var": tk.StringVar(),
+            "type_var": tk.StringVar(value="custom"),
+            "visible_var": tk.BooleanVar(value=True),
+            "order_var": tk.StringVar(value=str(next_order)),
+        }
+        ttk.Entry(sections_frame, textvariable=new_section_vars["name_var"], width=18).grid(row=add_row, column=0, sticky="ew", padx=(0, 8), pady=(8, 2))
+        ttk.Entry(sections_frame, textvariable=new_section_vars["id_var"], width=14).grid(row=add_row, column=1, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Entry(sections_frame, textvariable=new_section_vars["type_var"], width=12).grid(row=add_row, column=2, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Checkbutton(sections_frame, variable=new_section_vars["visible_var"]).grid(row=add_row, column=3, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Entry(sections_frame, textvariable=new_section_vars["order_var"], width=8).grid(row=add_row, column=4, sticky="w", pady=(8, 2))
+        ttk.Button(
+            sections_frame,
+            text="Dodaj sekcje",
+            command=lambda: self.add_section_settings(new_section_vars, window),
+        ).grid(row=add_row, column=5, sticky="w", padx=(8, 0), pady=(8, 2))
         ttk.Button(
             sections_frame,
             text="Zapisz sekcje",
-            command=lambda: self.save_sections_settings(section_editors),
-        ).grid(row=len(sections) + 1 if sections else 2, column=0, sticky="w", pady=(8, 0))
+            command=lambda: self.save_sections_settings(section_editors, window),
+        ).grid(row=add_row + 1, column=0, sticky="w", pady=(8, 0))
 
         record_type_frame = ttk.LabelFrame(container, text="Typ rekordu", style="Group.TLabelframe", padding=8)
         record_type_frame.grid(row=3, column=0, sticky="ew", pady=(0, 8))
@@ -486,12 +578,13 @@ class WorkshopApp(tk.Tk):
 
         self.app_title = app_name
         self.title(self.app_title)
+        self.header_title_label.configure(text=self.app_title)
         messagebox.showinfo("Ustawienia", "Nazwa aplikacji zostala zapisana.")
         if window is not None:
             window.destroy()
         return True
 
-    def save_sections_settings(self, section_editors) -> bool:
+    def save_sections_settings(self, section_editors, window: tk.Toplevel | None = None) -> bool:
         if not section_editors:
             messagebox.showerror("Ustawienia", "Brak sekcji do zapisania.")
             return False
@@ -537,7 +630,62 @@ class WorkshopApp(tk.Tk):
             messagebox.showerror("Ustawienia", f"Nie udalo sie zapisac sekcji.\n\n{exc}")
             return False
 
+        self.refresh_configured_tabs()
         messagebox.showinfo("Ustawienia", "Sekcje zostaly zapisane.")
+        if window is not None:
+            window.destroy()
+            self.show_settings_preview()
+        return True
+
+    def add_section_settings(self, new_section_vars, window: tk.Toplevel | None = None) -> bool:
+        section_id = new_section_vars["id_var"].get().strip()
+        name = new_section_vars["name_var"].get().strip()
+        section_type = new_section_vars["type_var"].get().strip()
+        if not section_id:
+            messagebox.showerror("Ustawienia", "ID sekcji nie moze byc puste.")
+            return False
+        if not name:
+            messagebox.showerror("Ustawienia", "Nazwa sekcji nie moze byc pusta.")
+            return False
+        if not section_type:
+            messagebox.showerror("Ustawienia", "Typ sekcji nie moze byc pusty.")
+            return False
+        try:
+            order = int(new_section_vars["order_var"].get().strip())
+        except ValueError:
+            messagebox.showerror("Ustawienia", "Kolejnosc sekcji musi byc liczba calkowita.")
+            return False
+
+        config_service = ConfigService()
+        try:
+            config = config_service.load_all()
+            if any(section.id == section_id for section in config.sections):
+                messagebox.showerror("Ustawienia", "Sekcja o takim ID juz istnieje.")
+                return False
+            updated_sections = config.sections + [
+                AppSectionDefinition(
+                    id=section_id,
+                    name=name,
+                    type=section_type,
+                    visible=bool(new_section_vars["visible_var"].get()),
+                    order=order,
+                )
+            ]
+            updated_config = replace(config, sections=updated_sections)
+            validation = config_service.validate_all(updated_config)
+            if not validation.is_valid:
+                messagebox.showerror("Ustawienia", "\n".join(validation.errors))
+                return False
+            config_service.save_sections(updated_sections)
+        except Exception as exc:
+            messagebox.showerror("Ustawienia", f"Nie udalo sie dodac sekcji.\n\n{exc}")
+            return False
+
+        self.refresh_configured_tabs()
+        messagebox.showinfo("Ustawienia", "Sekcja zostala dodana.")
+        if window is not None:
+            window.destroy()
+            self.show_settings_preview()
         return True
 
     def delete_section_settings(self, section_id: str, section_name: str, window: tk.Toplevel | None = None) -> bool:
@@ -564,6 +712,7 @@ class WorkshopApp(tk.Tk):
             messagebox.showerror("Ustawienia", f"Nie udalo sie usunac sekcji.\n\n{exc}")
             return False
 
+        self.refresh_configured_tabs()
         messagebox.showinfo("Ustawienia", "Sekcja zostala usunieta.")
         if window is not None:
             window.destroy()
@@ -904,6 +1053,16 @@ class WorkshopApp(tk.Tk):
         }
         for key, text in labels.items():
             self.summary_labels[key].configure(text=text)
+        dashboard_labels = {
+            "total": f"Aktywne rekordy: {stats['total']}",
+            "ready": f"Gotowe: {stats['ready']}",
+            "unpaid_sum": f"Do zapłaty: {stats['unpaid_sum']:.2f} zł",
+            "archived": f"Archiwum: {stats['archived']}",
+        }
+        for key, text in dashboard_labels.items():
+            label = self.dashboard_stat_labels.get(key)
+            if label is not None:
+                label.configure(text=text)
 
     def row_matches_search(self, row, search_text: str) -> bool:
         return self.order_service.row_matches_search(row, search_text, self.search_mode_var.get())

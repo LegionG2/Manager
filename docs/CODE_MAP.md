@@ -119,9 +119,9 @@ Co robi:
 
 Ryzyka i niejasne obszary:
 
-- Plik nie jest jeszcze podlaczony do UI ani bazy danych.
-- Sekcja `settings` pozostaje niewidoczna w konfiguracji i nie oznacza jeszcze ekranu ustawien.
-- Nie istnieje jeszcze edytor kart, dynamiczne menu ani ikona zebatki.
+- Plik jest uzywany przez ustawienia i przez szkielet glownych zakladek Tkinter.
+- Sekcja `settings` moze byc pokazana jako placeholder, ale nie oznacza jeszcze pelnego ekranu ustawien.
+- Nie istnieje jeszcze pelny edytor kart ani dynamiczne menu.
 
 ### `main.py`
 
@@ -211,9 +211,9 @@ Co robi:
 
 Ryzyka i niejasne obszary:
 
-- Model sekcji nie jest jeszcze podlaczony do UI, menu ani zakladek Tkinter.
-- Nie zmienia obecnych kart aplikacji.
-- Nie istnieje jeszcze edytor sekcji ani zapis konfiguracji uzytkownika.
+- Model sekcji jest uzywany przez ustawienia i przez szkielet zakladek Tkinter.
+- Pelny system dynamicznych widokow jeszcze nie istnieje.
+- Edytor sekcji jest ograniczony do prostego zapisu JSON i nie jest jeszcze konfiguracja per uzytkownik.
 
 ### `domain/record.py`
 
@@ -311,9 +311,9 @@ Co robi:
 
 Ryzyka i niejasne obszary:
 
-- Centralny serwis nie jest jeszcze uzywany przez UI.
+- Centralny serwis jest uzywany przez szkielet ustawien i ladowanie sekcji w UI.
 - Nie zastępuje szczegolowych loaderow i nie usuwa ich odpowiedzialnosci.
-- Zapis konfiguracji istnieje jako fundament techniczny, ale nie jest jeszcze podlaczony do UI.
+- Zapis konfiguracji jest uzywany dla nazwy aplikacji i sekcji.
 - Nie obsluguje konfiguracji per uzytkownik.
 - Nie jest jeszcze pelnym systemem edycji ustawien.
 
@@ -407,8 +407,8 @@ Co robi:
 
 Ryzyka i niejasne obszary:
 
-- Loader nie jest jeszcze uzywany przez UI.
-- Loader nie buduje dynamicznych zakladek ani menu.
+- Loader jest uzywany przez `ConfigService`, ustawienia i szkielet glownych zakladek.
+- Loader nie buduje samodzielnie dynamicznych zakladek ani menu.
 - Loader nie zapisuje konfiguracji i nie obsluguje konfiguracji per uzytkownik.
 - Nie zmienia schematu SQLite ani obecnego modelu `orders`.
 
@@ -463,9 +463,11 @@ Co robi:
 
 - definiuje tytul aplikacji, nazwy plikow danych i ustawien,
 - laduje `app_name` z konfiguracji przez `ConfigService` i uzywa go jako tytulu okna,
-- pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, edycja istniejacych sekcji/kart, usuwaniem niestandardowych sekcji oraz podgladem typu rekordu i pol,
+- uzywa `app_name` z konfiguracji jako glownego naglowka aplikacji,
+- pokazuje neutralny opis `Lokalna aplikacja do zarzadzania rekordami`,
+- pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, edycja istniejacych sekcji/kart, dodawaniem sekcji, usuwaniem niestandardowych sekcji oraz podgladem typu rekordu i pol,
 - porzadkuje okno ustawien w sekcje `Ogolne`, `Sekcje aplikacji`, `Typ rekordu` i `Pola`,
-- buduje glowne zakladki z widocznych sekcji konfiguracji jako bezpieczny szkielet,
+- buduje i odswieza glowne zakladki z widocznych sekcji konfiguracji jako bezpieczny szkielet,
 - definiuje obecne statusy i priorytety,
 - definiuje motywy jasny i ciemny,
 - zarzadza ustawieniami lokalnymi przez JSON,
@@ -487,9 +489,11 @@ Ryzyka i niejasne obszary:
 
 - Modul UI nadal laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
 - Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
+- Glowny naglowek jest juz neutralny, ale czesc starszych pol i tekstow nadal jest przejsciowo warsztatowa.
+- Opis aplikacji jest neutralny, ale jeszcze nie jest konfigurowalny.
 - UI nadal zna konkretne kolumny aktualnego modelu danych przy budowaniu tabel i wypelnianiu formularza.
-- Szkielet ustawien zapisuje nazwe aplikacji oraz wybrane pola istniejacych sekcji/kart; pozwala usuwac sekcje niestandardowe, chroni sekcje bazowe, a typ rekordu i pola sa pokazywane read-only.
-- Glowne zakladki korzystaja z konfiguracji sekcji, ale pelny system dynamicznych widokow nie istnieje jeszcze.
+- Szkielet ustawien zapisuje nazwe aplikacji oraz wybrane pola istniejacych sekcji/kart; pozwala dodawac sekcje, usuwac sekcje niestandardowe, chroni sekcje bazowe, a typ rekordu i pola sa pokazywane read-only.
+- Glowne zakladki korzystaja z konfiguracji sekcji i sa odswiezane po zmianach sekcji, ale pelny system dynamicznych widokow nie istnieje jeszcze.
 - Backup nadal korzysta bezposrednio z `self.db.conn`.
 - Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
 - Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
@@ -991,7 +995,7 @@ Domyslna konfiguracja sekcji znajduje sie w `config/default_sections.json` i zaw
 - `archive`,
 - `settings`.
 
-`SectionConfigService` umie wczytac JSON z lista sekcji i zamienic go na obiekty domenowe. Loader nie jest jeszcze podlaczony do UI, menu, zakladek, bazy ani `OrderService`.
+`SectionConfigService` umie wczytac JSON z lista sekcji i zamienic go na obiekty domenowe. Loader jest uzywany posrednio przez `ConfigService` w ustawieniach i przy budowie szkieletu glownych zakladek. Nadal nie zmienia bazy ani `OrderService`.
 
 Obecna aplikacja nadal uzywa przejsciowego starego UI:
 
@@ -1024,7 +1028,7 @@ Istniejace szczegolowe serwisy pozostaja:
 - `RecordTypeConfigService`,
 - `SectionConfigService`.
 
-`ConfigService` jest cienka warstwa porzadkujaca dostep do konfiguracji. Nie jest jeszcze podlaczony do UI, nie dodaje ekranu ustawien, nie dodaje ikony zebatki i nie zapisuje konfiguracji uzytkownika.
+`ConfigService` jest cienka warstwa porzadkujaca dostep do konfiguracji. Jest uzywany przez szkielet ustawien oraz zapis nazwy aplikacji i sekcji, ale nie jest jeszcze pelnym systemem ustawien ani zapisem konfiguracji per uzytkownik.
 
 Nastepny bezpieczny krok:
 
@@ -1051,7 +1055,7 @@ Dodane metody:
 - `save_sections()`,
 - `save_all()`.
 
-Zapis uzywa standardowej biblioteki Pythona, `ensure_ascii=False` i `indent=2`. Serwis serializuje obiekty domenowe do obecnych struktur JSON i nie jest jeszcze podlaczony do UI.
+Zapis uzywa standardowej biblioteki Pythona, `ensure_ascii=False` i `indent=2`. Serwis serializuje obiekty domenowe do obecnych struktur JSON i jest uzywany przez obecny szkielet ustawien dla nazwy aplikacji oraz sekcji.
 
 Ryzyka:
 
@@ -1382,3 +1386,65 @@ Nie dodano:
 - presetow branzowych.
 
 Ustawienia nadal sa dostepne przez zebatke. Glowny UI zachowuje obecne funkcje rekordow i archiwum.
+
+## MVP-025 - Neutralny branding naglowka
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+Usunieto warsztatowy branding z glownego naglowka aplikacji. Naglowek pokazuje teraz `app_name` z `config/app_config.json`, czyli ta sama nazwe, ktora jest uzywana jako tytul okna. Po zapisaniu nazwy aplikacji w ustawieniach aktualizowany jest tytul okna oraz tekst naglowka.
+
+Opis pod naglowkiem jest neutralny:
+
+```text
+Lokalna aplikacja do zarzadzania rekordami
+```
+
+Opis jest jeszcze tymczasowo staly w kodzie. Nie dodano `app_description` do konfiguracji w tym MVP.
+
+Nie zmieniono:
+
+- pelnego rebrandingu wszystkich warsztatowych pol,
+- migracji bazy danych,
+- dynamicznych formularzy,
+- edycji pol,
+- edycji typow rekordow,
+- nowych tabel,
+- presetow branzowych,
+- duzego redesignu UI.
+
+Stare warsztatowe pola danych nadal istnieja jako etap przejsciowy.
+
+## MVP-026 - Zarzadzanie sekcjami i odswiezanie UI po zapisie ustawien
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+Okno ustawien pozwala teraz dodac nowa sekcje/karte przez prosty wiersz w sekcji `Sekcje aplikacji`. Nowa sekcja zapisuje `id`, `name`, `type`, `visible` i `order` do `config/default_sections.json` przez `ConfigService.save_sections()`.
+
+Po zmianach sekcji aplikacja:
+
+- waliduje konfiguracje przez `ConfigService.validate_all()`,
+- zapisuje aktualna liste sekcji,
+- odswieza okno ustawien przez ponowne wczytanie konfiguracji,
+- przebudowuje glowne zakladki `Notebook` bez restartu aplikacji.
+
+Sekcje bazowe nadal sa chronione przed usunieciem:
+
+- `dashboard`,
+- `records`,
+- `archive`,
+- `settings`.
+
+Nie zmieniono:
+
+- schematu bazy danych,
+- tabel SQLite,
+- edycji pol,
+- edycji typow rekordow,
+- dynamicznych formularzy,
+- pelnego systemu widokow.
+
+Sekcje bez pelnego widoku nadal pokazuja placeholder `Sekcja w przygotowaniu`. To nadal jest bezpieczny szkielet zarzadzania sekcjami, nie pelny konfigurator UI.

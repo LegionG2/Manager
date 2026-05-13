@@ -520,3 +520,42 @@ Konsekwencje:
 - Ustawienia nadal dzialaja przez zebatke.
 - Nie zmieniono schematu SQLite, tabel, zapisu rekordow ani glownych funkcji aplikacji.
 - Pelne dynamiczne widoki pozostaja osobnym przyszlym MVP.
+
+## 2026-05-13 - Glowny naglowek uzywa neutralnego brandingu Managera
+
+Decyzja:
+
+Usunieto warsztatowy branding z glownego naglowka. Naglowek korzysta z `app_name` w konfiguracji aplikacji, a opis jest neutralnym stalym tekstem.
+
+Kontekst:
+
+Manager ma isc w kierunku uniwersalnej aplikacji do zarzadzania rekordami. Stary naglowek `Warsztat Manager Premium` i opis warsztatowy byly pozostalosc po poprzednim projekcie. MVP-025 ma usunac ten widoczny branding bez pelnego rebrandingu pol danych, bazy i calego UI.
+
+Konsekwencje:
+
+- Glowny naglowek pokazuje nazwe z `config/app_config.json`.
+- Zapis nazwy aplikacji w ustawieniach aktualizuje tytul okna i naglowek.
+- Opis pod naglowkiem brzmi `Lokalna aplikacja do zarzadzania rekordami`.
+- Opis nie jest jeszcze konfigurowalny; `app_description` pozostaje mozliwym przyszlym MVP.
+- Stare warsztatowe pola danych nadal istnieja jako etap przejsciowy.
+- Nie zmieniono schematu SQLite, tabel, dynamicznych formularzy ani glownych funkcji aplikacji.
+
+## 2026-05-13 - Ustawienia sekcji odswiezaja UI po zapisie
+
+Decyzja:
+
+Zmiany sekcji zapisane w ustawieniach maja od razu odswiezac liste sekcji w ustawieniach oraz szkielet glownych zakladek.
+
+Kontekst:
+
+Po wprowadzeniu edycji i usuwania sekcji konfiguracja zapisywala sie do JSON, ale czesc efektow byla widoczna dopiero po ponownym otwarciu ustawien albo restarcie aplikacji. MVP-026 ma naprawic ten przeplyw bez przebudowy calego UI, bez migracji bazy i bez dodawania edytora pol lub typow rekordow.
+
+Konsekwencje:
+
+- Okno ustawien ma prosty wiersz dodawania nowej sekcji.
+- Sekcje bazowe `dashboard`, `records`, `archive` i `settings` pozostaja chronione przed usunieciem.
+- Zapis, dodanie i usuniecie sekcji uruchamiaja walidacje konfiguracji i zapis przez `ConfigService.save_sections()`.
+- Po zmianie sekcji okno ustawien jest odswiezane przez ponowne wczytanie konfiguracji.
+- Glowny `Notebook` przebudowuje zakladki z widocznych sekcji bez restartu aplikacji.
+- Sekcje bez pelnego widoku nadal pokazuja placeholder, wiec to nadal szkielet dynamicznych sekcji, nie pelny system widokow.
+- Nie zmieniono schematu SQLite, tabel, dynamicznych formularzy, edycji pol ani edycji typow rekordow.

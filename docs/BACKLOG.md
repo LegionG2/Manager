@@ -670,7 +670,64 @@ Nastepny bezpieczny krok:
 
 - zaprojektowac osobny MVP dla pelnych dynamicznych widokow albo dla powiazania sekcji z docelowymi komponentami UI.
 
-### MVP-025 - Fundament archiwum
+### MVP-025 - Neutralny branding naglowka
+
+Status: wykonane
+
+Cel:
+
+- usunac stary warsztatowy branding z glownego naglowka,
+- uzyc `app_name` z konfiguracji jako nazwy w naglowku,
+- zostawic reszte aplikacji bez zmian funkcjonalnych.
+
+Wynik MVP-025:
+
+- glowny naglowek pokazuje nazwe aplikacji z `config/app_config.json`,
+- po zapisie nazwy w ustawieniach aktualizuje sie tytul okna i naglowek,
+- opis pod naglowkiem jest neutralny: `Lokalna aplikacja do zarzadzania rekordami`,
+- opis jest jeszcze tymczasowo staly w kodzie, a nie konfigurowalny,
+- stare warsztatowe pola danych nadal istnieja jako etap przejsciowy.
+
+Pozostale ryzyka:
+
+- to nie jest pelny rebranding wszystkich pol i tekstow aplikacji,
+- obecny model danych nadal zawiera warsztatowe nazwy i tabele,
+- opis aplikacji moze zostac skonfigurowany w osobnym przyszlym MVP.
+
+Nastepny bezpieczny krok:
+
+- kontynuowac neutralizacje widocznych tekstow albo zaprojektowac konfigurowalny opis aplikacji.
+
+### MVP-026 - Zarzadzanie sekcjami i odswiezanie UI po zapisie ustawien
+
+Status: wykonane
+
+Cel:
+
+- pokazac dodawanie sekcji w ustawieniach,
+- utrzymac usuwanie tylko sekcji niestandardowych,
+- odswiezac ustawienia i glowne zakladki po zapisie bez restartu aplikacji.
+
+Wynik MVP-026:
+
+- w sekcji `Sekcje aplikacji` dodano prosty wiersz dodawania nowej sekcji,
+- sekcje bazowe `dashboard`, `records`, `archive` i `settings` nadal sa chronione przed usunieciem,
+- zapis sekcji, dodanie sekcji i usuniecie sekcji odswiezaja liste w ustawieniach,
+- zmiana sekcji przebudowuje glowne zakladki `Notebook` na podstawie aktualnej konfiguracji,
+- zmiana nazwy aplikacji nadal od razu odswieza tytul okna i naglowek,
+- nie zmieniono schematu bazy, tabel, edytora pol ani typow rekordow.
+
+Pozostale ryzyka:
+
+- nowe sekcje bez pelnego widoku nadal pokazuja placeholder,
+- edycja sekcji jest nadal technicznym szkieletem, nie pelnym edytorem kart,
+- konfiguracja nadal zapisuje sie w pliku repozytorium, bez konfiguracji per uzytkownik i bez automatycznego backupu.
+
+Nastepny bezpieczny krok:
+
+- zaprojektowac trwalsze miejsce zapisu konfiguracji uzytkownika albo dopracowac pelny edytor sekcji w osobnym MVP.
+
+### MVP-027 - Fundament archiwum
 
 Status: planowane
 
@@ -679,7 +736,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-026 - Fundament importu i eksportu
+### MVP-028 - Fundament importu i eksportu
 
 Status: planowane
 
