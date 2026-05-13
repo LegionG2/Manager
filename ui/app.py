@@ -8,6 +8,7 @@ from datetime import datetime
 from data.database import Database
 from domain.app_section import AppSectionDefinition
 from services.config_service import ConfigService
+from services.generic_record_service import GenericRecordService
 from services.order_service import OrderService
 
 DEFAULT_APP_TITLE = "Manager"
@@ -155,6 +156,7 @@ class WorkshopApp(tk.Tk):
         self.configure(bg=self.colors["window_bg"])
         self.style = ttk.Style(self)
         self.db = Database(resource_path(DB_NAME))
+        self.generic_record_service = GenericRecordService(self.db)
         self.order_service = OrderService(self.db)
         self.selected_order_id = None
         self.form_min_width = 660
@@ -250,6 +252,7 @@ class WorkshopApp(tk.Tk):
         self.archive_tab = ttk.Frame(self.notebook)
         self.placeholder_tabs = {}
         self.section_tab_frames = {}
+        self.custom_record_refreshers = {}
         self.refresh_configured_tabs()
 
         self.build_orders_tab()
@@ -273,6 +276,7 @@ class WorkshopApp(tk.Tk):
 
         self.placeholder_tabs = {}
         self.section_tab_frames = {}
+        self.custom_record_refreshers = {}
         self.config_sections = load_main_sections()
         section_frames = {
             "records": self.orders_tab,
@@ -299,11 +303,7 @@ class WorkshopApp(tk.Tk):
             self.build_settings_section_tab(parent, section.name)
             return
         if section.type == "custom":
-            self.build_placeholder_tab(
-                parent,
-                section.name,
-                f"Sekcja własna \"{section.name}\" ma przygotowany magazyn danych. Formularz będzie kolejnym MVP.",
-            )
+            self.build_custom_section_tab(parent, section)
             return
         self.build_placeholder_tab(parent, section.name, "Sekcja w przygotowaniu.")
 
@@ -325,6 +325,105 @@ class WorkshopApp(tk.Tk):
         wrapper.pack(fill="both", expand=True)
         ttk.Label(wrapper, text=title, style="Title.TLabel").pack(anchor="w", pady=(0, 8))
         ttk.Label(wrapper, text=message, style="Sub.TLabel").pack(anchor="w")
+
+    def build_custom_section_tab(self, parent, section: AppSectionDefinition):
+        wrapper = ttk.Frame(parent, padding=16)
+        wrapper.pack(fill="both", expand=True)
+        wrapper.columnconfigure(0, weight=1)
+        wrapper.rowconfigure(3, weight=1)
+
+        ttk.Label(wrapper, text=section.name, style="Title.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 8))
+
+        form = ttk.Frame(wrapper)
+        form.grid(row=1, column=0, sticky="ew", pady=(0, 12))
+        form.columnconfigure(1, weight=1)
+        title_var = tk.StringVar()
+
+        ttk.Label(form, text="Tytuł", style="Panel.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=3)
+        title_entry = ttk.Entry(form, textvariable=title_var)
+        title_entry.grid(row=0, column=1, sticky="ew", pady=3)
+        self.bind_tab_navigation(title_entry)
+
+        ttk.Label(form, text="Opis", style="Panel.TLabel").grid(row=1, column=0, sticky="nw", padx=(0, 8), pady=3)
+        description_text = tk.Text(
+            form,
+            height=4,
+            relief="sunken",
+            borderwidth=1,
+            wrap="word",
+            bg=self.colors["entry_bg"],
+            fg=self.colors["text"],
+            insertbackground=self.colors["text"],
+        )
+        description_text.grid(row=1, column=1, sticky="ew", pady=3)
+        self.bind_tab_navigation(description_text)
+
+        list_label = ttk.Label(wrapper, text="Rekordy", style="Panel.TLabel")
+        list_label.grid(row=2, column=0, sticky="w", pady=(0, 4))
+
+        table_wrap = ttk.Frame(wrapper)
+        table_wrap.grid(row=3, column=0, sticky="nsew")
+        table_wrap.rowconfigure(0, weight=1)
+        table_wrap.columnconfigure(0, weight=1)
+
+        columns = ("id", "title", "description", "created_at")
+        tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="browse")
+        headings = {
+            "id": "ID",
+            "title": "Tytuł",
+            "description": "Opis",
+            "created_at": "Dodano",
+        }
+        widths = {"id": 60, "title": 220, "description": 420, "created_at": 160}
+        for column in columns:
+            tree.heading(column, text=headings[column])
+            tree.column(column, width=widths[column], minwidth=50, anchor="w")
+        tree.column("id", anchor="center")
+        tree.grid(row=0, column=0, sticky="nsew")
+
+        vsb = ttk.Scrollbar(table_wrap, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=vsb.set)
+        vsb.grid(row=0, column=1, sticky="ns")
+
+        def refresh_custom_records():
+            for item in tree.get_children():
+                tree.delete(item)
+            rows = self.generic_record_service.list_records(section.id, archived=0)
+            for row in rows:
+                data = self.generic_record_service.decode_data(row)
+                tree.insert(
+                    "",
+                    "end",
+                    values=(
+                        row["id"],
+                        data.get("title", ""),
+                        data.get("description", ""),
+                        row["created_at"] or "",
+                    ),
+                )
+
+        def add_custom_record():
+            title = title_var.get().strip()
+            description = description_text.get("1.0", "end").strip()
+            if not title:
+                messagebox.showerror(section.name, "Tytuł nie może być pusty.")
+                return
+            try:
+                self.generic_record_service.create_record(
+                    section_id=section.id,
+                    record_type_id=section.record_type_id,
+                    data={"title": title, "description": description},
+                )
+            except Exception as exc:
+                messagebox.showerror(section.name, f"Nie udało się dodać rekordu.\n\n{exc}")
+                return
+            title_var.set("")
+            description_text.delete("1.0", "end")
+            refresh_custom_records()
+
+        ttk.Button(form, text="Dodaj rekord", command=add_custom_record).grid(row=2, column=1, sticky="w", pady=(6, 0))
+        self.custom_record_refreshers[section.id] = refresh_custom_records
+        refresh_custom_records()
 
     def load_settings_preview(
         self,
@@ -1097,6 +1196,8 @@ class WorkshopApp(tk.Tk):
     def refresh_all_tables(self):
         self.refresh_table()
         self.refresh_archive_table()
+        for refresh_custom_records in self.custom_record_refreshers.values():
+            refresh_custom_records()
 
     def get_text(self, widget: tk.Text) -> str:
         return widget.get("1.0", "end").strip()
