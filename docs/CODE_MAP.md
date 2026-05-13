@@ -463,7 +463,7 @@ Co robi:
 
 - definiuje tytul aplikacji, nazwy plikow danych i ustawien,
 - laduje `app_name` z konfiguracji przez `ConfigService` i uzywa go jako tytulu okna,
-- pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, lista sekcji/kart oraz podgladem typu rekordu i pol,
+- pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, edycja istniejacych sekcji/kart oraz podgladem typu rekordu i pol,
 - porzadkuje okno ustawien w sekcje `Ogolne`, `Sekcje aplikacji`, `Typ rekordu` i `Pola`,
 - definiuje obecne statusy i priorytety,
 - definiuje motywy jasny i ciemny,
@@ -487,7 +487,7 @@ Ryzyka i niejasne obszary:
 - Modul UI nadal laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
 - Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
 - UI nadal zna konkretne kolumny aktualnego modelu danych przy budowaniu tabel i wypelnianiu formularza.
-- Szkielet ustawien zapisuje tylko nazwe aplikacji; sekcje/karty, typ rekordu i pola sa pokazywane read-only, a edycja kart, typow rekordow i pol nie jest jeszcze dostepna.
+- Szkielet ustawien zapisuje nazwe aplikacji oraz wybrane pola istniejacych sekcji/kart; typ rekordu i pola sa pokazywane read-only, a dodawanie/usuwanie sekcji oraz edycja typow rekordow i pol nie sa jeszcze dostepne.
 - Backup nadal korzysta bezposrednio z `self.db.conn`.
 - Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
 - Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
@@ -1284,3 +1284,37 @@ Nie dodano:
 - nowych tabel.
 
 Zmiana dotyczy tylko czytelnosci okna ustawien.
+
+## MVP-021 - Edycja istniejacych sekcji/kart
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+W oknie ustawien mozna teraz edytowac istniejace sekcje/karty w ograniczonym zakresie:
+
+- `name`,
+- `visible`,
+- `order`.
+
+Pola `id` i `type` pozostaja tylko do odczytu. Przycisk `Zapisz sekcje`:
+
+- odrzuca pusta nazwe sekcji,
+- wymaga liczby calkowitej w polu kolejnosci,
+- laduje pelna konfiguracje przez `ConfigService`,
+- waliduje konfiguracje po zmianach,
+- zapisuje `config/default_sections.json` przez `ConfigService.save_sections()`.
+
+Nie dodano:
+
+- dodawania sekcji,
+- usuwania sekcji,
+- edycji `id`,
+- edycji `type`,
+- dynamicznego przebudowywania glownego UI,
+- edycji pol,
+- edycji typow rekordow,
+- migracji bazy danych,
+- nowych tabel.
+
+Glowny UI nadal dziala jak wczesniej i nie jest jeszcze budowany dynamicznie na podstawie konfiguracji sekcji.

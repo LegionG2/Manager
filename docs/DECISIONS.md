@@ -462,3 +462,22 @@ Konsekwencje:
 - Podglady sekcji, typu rekordu i pol pozostaja read-only.
 - Nie dodano edycji sekcji, pol ani typow rekordow.
 - Nie zmieniono glownego UI, schematu SQLite, tabel ani zaleznosci.
+
+## 2026-05-13 - Sekcje mozna edytowac tylko w ograniczonym zakresie
+
+Decyzja:
+
+Okno ustawien pozwala edytowac istniejace sekcje/karty tylko w polach `name`, `visible` i `order`.
+
+Kontekst:
+
+Manager ma juz podglad sekcji i zapis konfiguracji. MVP-021 ma byc malym krokiem w strone edytora sekcji, ale bez dodawania/usuwania sekcji, bez edycji identyfikatorow i typow oraz bez dynamicznego przebudowywania glownego UI.
+
+Konsekwencje:
+
+- `id` i `type` sekcji pozostaja read-only.
+- Zapis sekcji trafia do `config/default_sections.json` przez `ConfigService.save_sections()`.
+- Przed zapisem uruchamiana jest walidacja konfiguracji.
+- Nie dodano tworzenia ani usuwania sekcji.
+- Glowny UI nie reaguje jeszcze dynamicznie na konfiguracje sekcji.
+- Nie zmieniono schematu SQLite, tabel, edycji pol ani edycji typow rekordow.

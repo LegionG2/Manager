@@ -348,23 +348,34 @@ class WorkshopApp(tk.Tk):
 
         sections_frame = ttk.LabelFrame(container, text="Sekcje aplikacji", style="Group.TLabelframe", padding=8)
         sections_frame.grid(row=2, column=0, sticky="ew", pady=(0, 8))
-        section_columns = ("name", "id", "type", "visible", "order")
-        sections_tree = ttk.Treeview(sections_frame, columns=section_columns, show="headings", height=5)
-        for column, heading, width in [
-            ("name", "Nazwa", 110),
-            ("id", "ID", 90),
-            ("type", "Typ", 90),
-            ("visible", "Widoczna", 75),
-            ("order", "Kolejnosc", 75),
-        ]:
-            sections_tree.heading(column, text=heading)
-            sections_tree.column(column, width=width, anchor="w", stretch=False)
+        for column, weight in [(0, 1), (1, 0), (2, 0), (3, 0), (4, 0)]:
+            sections_frame.columnconfigure(column, weight=weight)
+        for column, heading in enumerate(["Nazwa", "ID", "Typ", "Widoczna", "Kolejnosc"]):
+            ttk.Label(sections_frame, text=heading, style="Panel.TLabel").grid(row=0, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
+        section_editors = []
         if sections:
-            for section in sections:
-                sections_tree.insert("", "end", values=section)
+            for row_index, (name, section_id, section_type, visible, order) in enumerate(sections, start=1):
+                name_var = tk.StringVar(value=name)
+                visible_var = tk.BooleanVar(value=visible == "Tak")
+                order_var = tk.StringVar(value=order)
+                ttk.Entry(sections_frame, textvariable=name_var, width=18).grid(row=row_index, column=0, sticky="ew", padx=(0, 8), pady=2)
+                ttk.Label(sections_frame, text=section_id, style="TLabel").grid(row=row_index, column=1, sticky="w", padx=(0, 8), pady=2)
+                ttk.Label(sections_frame, text=section_type, style="TLabel").grid(row=row_index, column=2, sticky="w", padx=(0, 8), pady=2)
+                ttk.Checkbutton(sections_frame, variable=visible_var).grid(row=row_index, column=3, sticky="w", padx=(0, 8), pady=2)
+                ttk.Entry(sections_frame, textvariable=order_var, width=8).grid(row=row_index, column=4, sticky="w", pady=2)
+                section_editors.append({
+                    "id": section_id,
+                    "name_var": name_var,
+                    "visible_var": visible_var,
+                    "order_var": order_var,
+                })
         else:
-            sections_tree.insert("", "end", values=("Brak danych", "-", "-", "-", "-"))
-        sections_tree.grid(row=0, column=0, sticky="ew")
+            ttk.Label(sections_frame, text="Brak danych", style="TLabel").grid(row=1, column=0, columnspan=5, sticky="w", pady=2)
+        ttk.Button(
+            sections_frame,
+            text="Zapisz sekcje",
+            command=lambda: self.save_sections_settings(section_editors),
+        ).grid(row=len(sections) + 1 if sections else 2, column=0, sticky="w", pady=(8, 0))
 
         record_type_frame = ttk.LabelFrame(container, text="Typ rekordu", style="Group.TLabelframe", padding=8)
         record_type_frame.grid(row=3, column=0, sticky="ew", pady=(0, 8))
@@ -435,6 +446,55 @@ class WorkshopApp(tk.Tk):
         messagebox.showinfo("Ustawienia", "Nazwa aplikacji zostala zapisana.")
         if window is not None:
             window.destroy()
+        return True
+
+    def save_sections_settings(self, section_editors) -> bool:
+        if not section_editors:
+            messagebox.showerror("Ustawienia", "Brak sekcji do zapisania.")
+            return False
+
+        edited_sections = {}
+        for editor in section_editors:
+            name = editor["name_var"].get().strip()
+            if not name:
+                messagebox.showerror("Ustawienia", "Nazwa sekcji nie moze byc pusta.")
+                return False
+            try:
+                order = int(editor["order_var"].get().strip())
+            except ValueError:
+                messagebox.showerror("Ustawienia", "Kolejnosc sekcji musi byc liczba calkowita.")
+                return False
+            edited_sections[editor["id"]] = {
+                "name": name,
+                "visible": bool(editor["visible_var"].get()),
+                "order": order,
+            }
+
+        config_service = ConfigService()
+        try:
+            config = config_service.load_all()
+            updated_sections = [
+                replace(
+                    section,
+                    name=edited_sections[section.id]["name"],
+                    visible=edited_sections[section.id]["visible"],
+                    order=edited_sections[section.id]["order"],
+                )
+                if section.id in edited_sections
+                else section
+                for section in config.sections
+            ]
+            updated_config = replace(config, sections=updated_sections)
+            validation = config_service.validate_all(updated_config)
+            if not validation.is_valid:
+                messagebox.showerror("Ustawienia", "\n".join(validation.errors))
+                return False
+            config_service.save_sections(updated_sections)
+        except Exception as exc:
+            messagebox.showerror("Ustawienia", f"Nie udalo sie zapisac sekcji.\n\n{exc}")
+            return False
+
+        messagebox.showinfo("Ustawienia", "Sekcje zostaly zapisane.")
         return True
 
     def build_orders_tab(self):

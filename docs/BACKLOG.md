@@ -572,7 +572,37 @@ Nastepny bezpieczny krok:
 
 - przed dodaniem edytorow dopracowac walidacje relacji konfiguracji albo dodac pojedynczy edytowalny element w osobnym MVP.
 
-### MVP-021 - Fundament wyszukiwania i filtrowania
+### MVP-021 - Edycja istniejacych sekcji/kart
+
+Status: wykonane
+
+Cel:
+
+- dodac prosta edycje istniejacych sekcji/kart w ustawieniach,
+- pozwolic zmieniac tylko `name`, `visible` i `order`,
+- nie dodawac ani nie usuwac sekcji.
+
+Wynik MVP-021:
+
+- sekcja `Sekcje aplikacji` w oknie ustawien pokazuje edytowalne pola nazwy, widocznosci i kolejnosci,
+- `id` i `type` pozostaja tylko do odczytu,
+- przycisk `Zapisz sekcje` zapisuje zmiany do `config/default_sections.json`,
+- zapis korzysta z `ConfigService.save_sections()`,
+- przed zapisem uruchamiana jest walidacja konfiguracji,
+- dodawanie i usuwanie sekcji nie jest dostepne,
+- glowny UI nie jest dynamicznie przebudowywany na podstawie sekcji.
+
+Pozostale ryzyka:
+
+- zmiany sekcji sa widoczne w konfiguracji i ustawieniach, ale nie steruja jeszcze glownym UI,
+- edytor dodawania/usuwania sekcji pozostaje osobnym MVP,
+- edycja pol i typow rekordow pozostaje osobnymi MVP.
+
+Nastepny bezpieczny krok:
+
+- zaplanowac osobny MVP dla dynamicznego uzycia sekcji albo dla dodawania/usuwania sekcji.
+
+### MVP-022 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -581,7 +611,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-022 - Fundament archiwum
+### MVP-023 - Fundament archiwum
 
 Status: planowane
 
@@ -590,7 +620,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-023 - Fundament importu i eksportu
+### MVP-024 - Fundament importu i eksportu
 
 Status: planowane
 

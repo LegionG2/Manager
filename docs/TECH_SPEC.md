@@ -145,7 +145,7 @@ oraz pokazuje informacyjnie:
 - pola z `config/default_record_fields.json`,
 - informacje, ze edycja kart, typow rekordow i pol zostanie dodana pozniej.
 
-Zapis nazwy aplikacji korzysta z `ConfigService.save_app_config()` i trafia do `config/app_config.json`. Przed zapisem wykonywana jest walidacja konfiguracji. Podglad sekcji korzysta z `ConfigService` i pokazuje nazwe, id, typ, widocznosc oraz kolejnosc. Podglad typu rekordu pokazuje id, nazwe i przypisane pola. Podglad pol pokazuje id, etykiete, typ, wymagalnosc i opcje dla pol wyboru. Jesli konfiguracja nie zaladuje sie poprawnie, UI pokazuje fallback zamiast przerywac dzialanie aplikacji. Ten szkielet nie dodaje edytora kart, typow rekordow ani pol, nie przebudowuje dynamicznie UI i nie zmienia schematu bazy danych.
+Zapis nazwy aplikacji korzysta z `ConfigService.save_app_config()` i trafia do `config/app_config.json`. Przed zapisem wykonywana jest walidacja konfiguracji. Sekcje z `config/default_sections.json` mozna edytowac tylko w zakresie `name`, `visible` i `order`; `id` i `type` pozostaja read-only. Zapis sekcji korzysta z `ConfigService.save_sections()`. Podglad typu rekordu pokazuje id, nazwe i przypisane pola. Podglad pol pokazuje id, etykiete, typ, wymagalnosc i opcje dla pol wyboru. Jesli konfiguracja nie zaladuje sie poprawnie, UI pokazuje fallback zamiast przerywac dzialanie aplikacji. Ten szkielet nie dodaje dodawania/usuwania sekcji, edytora typow rekordow ani pol, nie przebudowuje dynamicznie UI i nie zmienia schematu bazy danych.
 
 ## Fundament sekcji/kart aplikacji
 
@@ -784,6 +784,16 @@ MVP-020 reorganized the existing settings modal without adding new features:
 - record type and fields previews remain read-only.
 
 This does not add section editing, field editing, record type editing, dynamic main UI rebuilding, database migration, new tables or new dependencies.
+
+## MVP-021 existing sections editing
+
+MVP-021 added limited editing for existing sections/tabs in the settings modal:
+
+- `name`, `visible` and `order` are editable,
+- `id` and `type` remain read-only,
+- `Zapisz sekcje` validates configuration and writes to `config/default_sections.json` through `ConfigService.save_sections()`.
+
+This does not add section creation, section deletion, id/type editing, dynamic main UI rebuilding, field editing, record type editing, database migration, new tables or new dependencies.
 
 ## Zasady techniczne
 
