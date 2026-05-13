@@ -515,7 +515,36 @@ Nastepny bezpieczny krok:
 
 - zaprojektowac osobny MVP dla edytora sekcji albo rozszerzyc walidacje konfiguracji sekcji.
 
-### MVP-019 - Fundament wyszukiwania i filtrowania
+### MVP-019 - Podglad typu rekordu i pol w ustawieniach
+
+Status: wykonane
+
+Cel:
+
+- pokazac skonfigurowany typ rekordu w oknie ustawien,
+- pokazac skonfigurowane pola rekordu w oknie ustawien,
+- zachowac podglad jako read-only.
+
+Wynik MVP-019:
+
+- okno ustawien pokazuje typ rekordu z `config/default_record_type.json`,
+- podglad typu pokazuje id, nazwe i przypisane pola,
+- okno ustawien pokazuje pola z `config/default_record_fields.json`,
+- lista pol pokazuje id, etykiete, typ, wymagalnosc i opcje dla pol wyboru,
+- podglad korzysta z centralnego `ConfigService`,
+- edycja nazwy aplikacji i podglad sekcji/kart zostaly zachowane.
+
+Pozostale ryzyka:
+
+- typu rekordu ani pol nie da sie jeszcze edytowac,
+- nie ma jeszcze dodawania ani usuwania pol,
+- glowny formularz i lista rekordow nie sa jeszcze dynamiczne.
+
+Nastepny bezpieczny krok:
+
+- zaprojektowac osobny MVP dla edycji pol albo rozszerzyc walidacje relacji typu rekordu z polami.
+
+### MVP-020 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -524,7 +553,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-020 - Fundament archiwum
+### MVP-021 - Fundament archiwum
 
 Status: planowane
 
@@ -533,7 +562,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-021 - Fundament importu i eksportu
+### MVP-022 - Fundament importu i eksportu
 
 Status: planowane
 

@@ -425,3 +425,22 @@ Konsekwencje:
 - Sekcje pozostaja read-only.
 - Edytor sekcji bedzie osobnym przyszlym MVP.
 - Nie zmieniono glownego UI, schematu SQLite, tabel, edytora pol ani edytora typow rekordow.
+
+## 2026-05-13 - Typ rekordu i pola w ustawieniach sa najpierw read-only
+
+Decyzja:
+
+Okno ustawien pokazuje skonfigurowany typ rekordu i pola, ale nie pozwala jeszcze ich edytowac.
+
+Kontekst:
+
+Manager ma juz `config/default_record_type.json`, `config/default_record_fields.json`, loadery konfiguracji i centralny `ConfigService`. MVP-019 ma pokazac uzytkownikowi, jakie dane sa przygotowane w konfiguracji, bez wprowadzania dynamicznego formularza, dynamicznej listy rekordow ani edytora pol.
+
+Konsekwencje:
+
+- Ustawienia pokazuja id, nazwe i przypisane pola typu rekordu.
+- Ustawienia pokazuja id, etykiete, typ, wymagalnosc i opcje pol.
+- Dane pochodza z `config/default_record_type.json` i `config/default_record_fields.json` przez `ConfigService`.
+- Typ rekordu i pola pozostaja read-only.
+- Edytor typu rekordu i edytor pol beda osobnymi przyszlymi MVP.
+- Nie zmieniono glownego UI, schematu SQLite, tabel ani zapisu rekordow.

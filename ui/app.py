@@ -252,7 +252,15 @@ class WorkshopApp(tk.Tk):
         self.build_orders_tab()
         self.build_archive_tab()
 
-    def load_settings_preview(self) -> tuple[list[tuple[str, str]], list[tuple[str, str, str, str, str]], str | None]:
+    def load_settings_preview(
+        self,
+    ) -> tuple[
+        list[tuple[str, str]],
+        list[tuple[str, str, str, str, str]],
+        list[tuple[str, str]],
+        list[tuple[str, str, str, str, str]],
+        str | None,
+    ]:
         try:
             config = ConfigService().load_all()
         except Exception as exc:
@@ -260,7 +268,7 @@ class WorkshopApp(tk.Tk):
                 ("Nazwa aplikacji", DEFAULT_APP_TITLE),
                 ("Aktywny typ rekordu", "Brak danych"),
                 ("Liczba sekcji/kart", "Brak danych"),
-            ], [], str(exc)
+            ], [], [], [], str(exc)
 
         sections = [
             (
@@ -272,15 +280,30 @@ class WorkshopApp(tk.Tk):
             )
             for section in sorted(config.sections, key=lambda item: item.order)
         ]
+        record_type = [
+            ("ID typu rekordu", config.record_type.id or "Brak danych"),
+            ("Nazwa typu rekordu", config.record_type.name or "Brak danych"),
+            ("Przypisane pola", ", ".join(config.record_type.fields) or "Brak danych"),
+        ]
+        fields = [
+            (
+                field.name,
+                field.label,
+                field.field_type.value,
+                "Tak" if field.required else "Nie",
+                ", ".join(f"{option.label} ({option.value})" for option in field.options) or "-",
+            )
+            for field in config.field_definitions
+        ]
 
         return [
             ("Nazwa aplikacji", config.app_config.app_name or DEFAULT_APP_TITLE),
             ("Aktywny typ rekordu", config.app_config.active_record_type_id or "Brak danych"),
             ("Liczba sekcji/kart", str(len(config.sections))),
-        ], sections, None
+        ], sections, record_type, fields, None
 
     def show_settings_preview(self):
-        rows, sections, error = self.load_settings_preview()
+        rows, sections, record_type, fields, error = self.load_settings_preview()
         values = dict(rows)
 
         window = tk.Toplevel(self)
@@ -345,7 +368,45 @@ class WorkshopApp(tk.Tk):
             sections_tree.insert("", "end", values=("Brak danych", "-", "-", "-", "-"))
         sections_tree.grid(row=sections_row + 1, column=0, columnspan=2, sticky="ew", pady=(0, 10))
 
-        buttons_row = sections_row + 2
+        record_type_row = sections_row + 2
+        ttk.Label(container, text="Typ rekordu", style="Panel.TLabel").grid(
+            row=record_type_row,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=(2, 4),
+        )
+        for index, (label, value) in enumerate(record_type, start=record_type_row + 1):
+            ttk.Label(container, text=f"{label}:", style="TLabel").grid(row=index, column=0, sticky="w", padx=(0, 16), pady=3)
+            ttk.Label(container, text=value, style="TLabel", wraplength=360).grid(row=index, column=1, sticky="w", pady=3)
+
+        fields_row = record_type_row + len(record_type) + 1
+        ttk.Label(container, text="Pola", style="Panel.TLabel").grid(
+            row=fields_row,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=(8, 4),
+        )
+        field_columns = ("id", "label", "type", "required", "options")
+        fields_tree = ttk.Treeview(container, columns=field_columns, show="headings", height=5)
+        for column, heading, width in [
+            ("id", "ID", 95),
+            ("label", "Etykieta", 120),
+            ("type", "Typ", 75),
+            ("required", "Wymagane", 75),
+            ("options", "Opcje", 185),
+        ]:
+            fields_tree.heading(column, text=heading)
+            fields_tree.column(column, width=width, anchor="w", stretch=False)
+        if fields:
+            for field in fields:
+                fields_tree.insert("", "end", values=field)
+        else:
+            fields_tree.insert("", "end", values=("Brak danych", "-", "-", "-", "-"))
+        fields_tree.grid(row=fields_row + 1, column=0, columnspan=2, sticky="ew", pady=(0, 10))
+
+        buttons_row = fields_row + 2
         ttk.Button(
             container,
             text="Zapisz",

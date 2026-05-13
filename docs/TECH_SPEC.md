@@ -134,9 +134,11 @@ oraz pokazuje informacyjnie:
 - aktywny typ rekordu,
 - liczbe sekcji/kart,
 - liste sekcji/kart z `config/default_sections.json`,
+- typ rekordu z `config/default_record_type.json`,
+- pola z `config/default_record_fields.json`,
 - informacje, ze edycja kart, typow rekordow i pol zostanie dodana pozniej.
 
-Zapis nazwy aplikacji korzysta z `ConfigService.save_app_config()` i trafia do `config/app_config.json`. Przed zapisem wykonywana jest walidacja konfiguracji. Podglad sekcji korzysta z `ConfigService` i pokazuje nazwe, id, typ, widocznosc oraz kolejnosc. Jesli konfiguracja nie zaladuje sie poprawnie, UI pokazuje fallback zamiast przerywac dzialanie aplikacji. Ten szkielet nie dodaje edytora kart, typow rekordow ani pol, nie przebudowuje dynamicznie UI i nie zmienia schematu bazy danych.
+Zapis nazwy aplikacji korzysta z `ConfigService.save_app_config()` i trafia do `config/app_config.json`. Przed zapisem wykonywana jest walidacja konfiguracji. Podglad sekcji korzysta z `ConfigService` i pokazuje nazwe, id, typ, widocznosc oraz kolejnosc. Podglad typu rekordu pokazuje id, nazwe i przypisane pola. Podglad pol pokazuje id, etykiete, typ, wymagalnosc i opcje dla pol wyboru. Jesli konfiguracja nie zaladuje sie poprawnie, UI pokazuje fallback zamiast przerywac dzialanie aplikacji. Ten szkielet nie dodaje edytora kart, typow rekordow ani pol, nie przebudowuje dynamicznie UI i nie zmienia schematu bazy danych.
 
 ## Fundament sekcji/kart aplikacji
 
@@ -753,6 +755,17 @@ MVP-018 added a read-only sections/tabs preview to the existing settings modal:
 - application name editing from MVP-017 remains unchanged.
 
 This does not add section editing, adding, deleting or dynamic rebuilding of the main UI. Section editor, field editor and record type editor remain separate future MVPs.
+
+## MVP-019 record type and fields preview
+
+MVP-019 added read-only previews for record type and fields to the existing settings modal:
+
+- record type is loaded through `ConfigService` from `config/default_record_type.json`,
+- record type preview shows id, name and assigned fields,
+- fields are loaded through `ConfigService` from `config/default_record_fields.json`,
+- fields preview shows id, label, field type, required flag and select options.
+
+This does not add record type editing, field editing, adding/removing fields, dynamic forms, dynamic record lists, database migration, new tables or main UI changes. Those remain separate future MVPs.
 
 ## Zasady techniczne
 

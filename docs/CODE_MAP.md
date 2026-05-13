@@ -463,7 +463,7 @@ Co robi:
 
 - definiuje tytul aplikacji, nazwy plikow danych i ustawien,
 - laduje `app_name` z konfiguracji przez `ConfigService` i uzywa go jako tytulu okna,
-- pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, podgladem podstawowej konfiguracji i lista sekcji/kart,
+- pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, lista sekcji/kart oraz podgladem typu rekordu i pol,
 - definiuje obecne statusy i priorytety,
 - definiuje motywy jasny i ciemny,
 - zarzadza ustawieniami lokalnymi przez JSON,
@@ -486,7 +486,7 @@ Ryzyka i niejasne obszary:
 - Modul UI nadal laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
 - Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
 - UI nadal zna konkretne kolumny aktualnego modelu danych przy budowaniu tabel i wypelnianiu formularza.
-- Szkielet ustawien zapisuje tylko nazwe aplikacji; sekcje/karty sa pokazywane read-only, a edycja kart, typow rekordow i pol nie jest jeszcze dostepna.
+- Szkielet ustawien zapisuje tylko nazwe aplikacji; sekcje/karty, typ rekordu i pola sa pokazywane read-only, a edycja kart, typow rekordow i pol nie jest jeszcze dostepna.
 - Backup nadal korzysta bezposrednio z `self.db.conn`.
 - Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
 - Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
@@ -1218,3 +1218,36 @@ Nie zmieniono:
 - schematu bazy danych.
 
 Edycja nazwy aplikacji z MVP-017 zostala zachowana. Edytor sekcji pozostaje osobnym przyszlym MVP.
+
+## MVP-019 - Podglad typu rekordu i pol w ustawieniach
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+Okno ustawien pokazuje teraz read-only podglad typu rekordu ladowanego przez `ConfigService` z `config/default_record_type.json`. Podglad pokazuje:
+
+- id typu rekordu,
+- nazwe typu rekordu,
+- liste przypisanych pol.
+
+Okno ustawien pokazuje tez read-only liste pol ladowanych przez `ConfigService` z `config/default_record_fields.json`. Lista pokazuje:
+
+- id pola,
+- etykiete,
+- typ pola,
+- czy pole jest wymagane,
+- opcje dla pol wyboru.
+
+Nie zmieniono:
+
+- edycji typu rekordu,
+- edycji pol,
+- dodawania pol,
+- usuwania pol,
+- dynamicznego formularza,
+- dynamicznej listy rekordow,
+- schematu bazy danych,
+- glownego UI.
+
+Edycja nazwy aplikacji i podglad sekcji/kart zostaly zachowane. Edytor typu rekordu i pol pozostaje osobnymi przyszlymi MVP.
