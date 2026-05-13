@@ -252,7 +252,7 @@ class WorkshopApp(tk.Tk):
         self.build_orders_tab()
         self.build_archive_tab()
 
-    def load_settings_preview(self) -> tuple[list[tuple[str, str]], str | None]:
+    def load_settings_preview(self) -> tuple[list[tuple[str, str]], list[tuple[str, str, str, str, str]], str | None]:
         try:
             config = ConfigService().load_all()
         except Exception as exc:
@@ -260,16 +260,27 @@ class WorkshopApp(tk.Tk):
                 ("Nazwa aplikacji", DEFAULT_APP_TITLE),
                 ("Aktywny typ rekordu", "Brak danych"),
                 ("Liczba sekcji/kart", "Brak danych"),
-            ], str(exc)
+            ], [], str(exc)
+
+        sections = [
+            (
+                section.name,
+                section.id,
+                section.type,
+                "Tak" if section.visible else "Nie",
+                str(section.order),
+            )
+            for section in sorted(config.sections, key=lambda item: item.order)
+        ]
 
         return [
             ("Nazwa aplikacji", config.app_config.app_name or DEFAULT_APP_TITLE),
             ("Aktywny typ rekordu", config.app_config.active_record_type_id or "Brak danych"),
             ("Liczba sekcji/kart", str(len(config.sections))),
-        ], None
+        ], sections, None
 
     def show_settings_preview(self):
-        rows, error = self.load_settings_preview()
+        rows, sections, error = self.load_settings_preview()
         values = dict(rows)
 
         window = tk.Toplevel(self)
@@ -307,13 +318,41 @@ class WorkshopApp(tk.Tk):
             sticky="w",
             pady=(12, 10),
         )
+
+        sections_row = message_row + 1
+        ttk.Label(container, text="Sekcje aplikacji", style="Panel.TLabel").grid(
+            row=sections_row,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=(2, 4),
+        )
+        section_columns = ("name", "id", "type", "visible", "order")
+        sections_tree = ttk.Treeview(container, columns=section_columns, show="headings", height=5)
+        for column, heading, width in [
+            ("name", "Nazwa", 110),
+            ("id", "ID", 90),
+            ("type", "Typ", 90),
+            ("visible", "Widoczna", 75),
+            ("order", "Kolejnosc", 75),
+        ]:
+            sections_tree.heading(column, text=heading)
+            sections_tree.column(column, width=width, anchor="w", stretch=False)
+        if sections:
+            for section in sections:
+                sections_tree.insert("", "end", values=section)
+        else:
+            sections_tree.insert("", "end", values=("Brak danych", "-", "-", "-", "-"))
+        sections_tree.grid(row=sections_row + 1, column=0, columnspan=2, sticky="ew", pady=(0, 10))
+
+        buttons_row = sections_row + 2
         ttk.Button(
             container,
             text="Zapisz",
             style="Primary.TButton",
             command=lambda: self.save_app_name(app_name_var.get(), window),
-        ).grid(row=message_row + 1, column=0, sticky="w")
-        ttk.Button(container, text="Zamknij", command=window.destroy).grid(row=message_row + 1, column=1, sticky="e")
+        ).grid(row=buttons_row, column=0, sticky="w")
+        ttk.Button(container, text="Zamknij", command=window.destroy).grid(row=buttons_row, column=1, sticky="e")
 
         window.update_idletasks()
         x = self.winfo_rootx() + max((self.winfo_width() - window.winfo_width()) // 2, 0)

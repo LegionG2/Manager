@@ -407,3 +407,21 @@ Konsekwencje:
 - Po poprawnym zapisie tytul obecnego okna jest aktualizowany.
 - Edycja kart, pol i typow rekordow pozostaje osobnymi MVP.
 - Nie zmieniono schematu SQLite, tabel, importu, eksportu ani glownych funkcji aplikacji.
+
+## 2026-05-13 - Sekcje w ustawieniach sa najpierw read-only
+
+Decyzja:
+
+Okno ustawien pokazuje liste sekcji/kart z konfiguracji, ale nie pozwala jeszcze ich edytowac.
+
+Kontekst:
+
+Manager ma juz konfiguracje sekcji w `config/default_sections.json`, loader sekcji i centralny `ConfigService`. MVP-018 ma zwiekszyc widocznosc tej konfiguracji w UI bez projektowania edytora sekcji, dodawania/usuwania kart ani dynamicznego przebudowywania glownego interfejsu.
+
+Konsekwencje:
+
+- Ustawienia pokazuja nazwe, id, typ, widocznosc i kolejnosc sekcji.
+- Dane sekcji sa ladowane przez `ConfigService` z `config/default_sections.json`.
+- Sekcje pozostaja read-only.
+- Edytor sekcji bedzie osobnym przyszlym MVP.
+- Nie zmieniono glownego UI, schematu SQLite, tabel, edytora pol ani edytora typow rekordow.

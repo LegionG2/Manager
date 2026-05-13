@@ -463,7 +463,7 @@ Co robi:
 
 - definiuje tytul aplikacji, nazwy plikow danych i ustawien,
 - laduje `app_name` z konfiguracji przez `ConfigService` i uzywa go jako tytulu okna,
-- pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji i podgladem podstawowej konfiguracji,
+- pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, podgladem podstawowej konfiguracji i lista sekcji/kart,
 - definiuje obecne statusy i priorytety,
 - definiuje motywy jasny i ciemny,
 - zarzadza ustawieniami lokalnymi przez JSON,
@@ -486,7 +486,7 @@ Ryzyka i niejasne obszary:
 - Modul UI nadal laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
 - Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
 - UI nadal zna konkretne kolumny aktualnego modelu danych przy budowaniu tabel i wypelnianiu formularza.
-- Szkielet ustawien zapisuje tylko nazwe aplikacji; edycja kart, typow rekordow i pol nie jest jeszcze dostepna.
+- Szkielet ustawien zapisuje tylko nazwe aplikacji; sekcje/karty sa pokazywane read-only, a edycja kart, typow rekordow i pol nie jest jeszcze dostepna.
 - Backup nadal korzysta bezposrednio z `self.db.conn`.
 - Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
 - Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
@@ -1190,3 +1190,31 @@ Nie zmieniono:
 - obecnych funkcji zapisu rekordow, edycji, usuwania, wyszukiwania i archiwum.
 
 Edycja kart, pol i typow rekordow pozostaje osobnymi MVP.
+
+## MVP-018 - Podglad sekcji/kart w ustawieniach
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+Okno ustawien pokazuje teraz read-only liste sekcji/kart ladowanych przez `ConfigService` z `config/default_sections.json`. Lista pokazuje:
+
+- nazwe,
+- id,
+- typ,
+- widocznosc,
+- kolejnosc.
+
+Jesli konfiguracja nie zaladuje sie poprawnie, okno pokazuje bezpieczny fallback zamiast crasha.
+
+Nie zmieniono:
+
+- edycji sekcji,
+- dodawania sekcji,
+- usuwania sekcji,
+- dynamicznego przebudowywania glownego UI,
+- edytora pol,
+- edytora typow rekordow,
+- schematu bazy danych.
+
+Edycja nazwy aplikacji z MVP-017 zostala zachowana. Edytor sekcji pozostaje osobnym przyszlym MVP.

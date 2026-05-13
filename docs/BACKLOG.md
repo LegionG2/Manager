@@ -487,7 +487,35 @@ Nastepny bezpieczny krok:
 
 - dodac osobny, maly MVP dla edycji sekcji albo rozszerzyc walidacje relacji miedzy plikami konfiguracji.
 
-### MVP-018 - Fundament wyszukiwania i filtrowania
+### MVP-018 - Podglad sekcji/kart w ustawieniach
+
+Status: wykonane
+
+Cel:
+
+- pokazac skonfigurowane sekcje/karty w oknie ustawien,
+- zachowac sekcje jako read-only,
+- nie zmieniac glownego UI ani schematu bazy.
+
+Wynik MVP-018:
+
+- okno ustawien pokazuje sekcje z `config/default_sections.json`,
+- podglad korzysta z centralnego `ConfigService`,
+- lista pokazuje nazwe, id, typ, widocznosc i kolejnosc,
+- przy problemie z ladowaniem konfiguracji pokazywany jest bezpieczny fallback,
+- edycja nazwy aplikacji z MVP-017 zostala zachowana.
+
+Pozostale ryzyka:
+
+- sekcji nie da sie jeszcze edytowac, dodawac ani usuwac,
+- glowny UI nie jest jeszcze przebudowywany dynamicznie na podstawie sekcji,
+- edytor sekcji, pol i typow rekordow pozostaje osobnymi MVP.
+
+Nastepny bezpieczny krok:
+
+- zaprojektowac osobny MVP dla edytora sekcji albo rozszerzyc walidacje konfiguracji sekcji.
+
+### MVP-019 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -496,7 +524,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-019 - Fundament archiwum
+### MVP-020 - Fundament archiwum
 
 Status: planowane
 
@@ -505,7 +533,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-020 - Fundament importu i eksportu
+### MVP-021 - Fundament importu i eksportu
 
 Status: planowane
 

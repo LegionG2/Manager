@@ -133,9 +133,10 @@ oraz pokazuje informacyjnie:
 
 - aktywny typ rekordu,
 - liczbe sekcji/kart,
+- liste sekcji/kart z `config/default_sections.json`,
 - informacje, ze edycja kart, typow rekordow i pol zostanie dodana pozniej.
 
-Zapis nazwy aplikacji korzysta z `ConfigService.save_app_config()` i trafia do `config/app_config.json`. Przed zapisem wykonywana jest walidacja konfiguracji. Jesli konfiguracja nie zaladuje sie poprawnie, UI pokazuje fallback zamiast przerywac dzialanie aplikacji. Ten szkielet nie dodaje edytora kart, typow rekordow ani pol, nie przebudowuje dynamicznie UI i nie zmienia schematu bazy danych.
+Zapis nazwy aplikacji korzysta z `ConfigService.save_app_config()` i trafia do `config/app_config.json`. Przed zapisem wykonywana jest walidacja konfiguracji. Podglad sekcji korzysta z `ConfigService` i pokazuje nazwe, id, typ, widocznosc oraz kolejnosc. Jesli konfiguracja nie zaladuje sie poprawnie, UI pokazuje fallback zamiast przerywac dzialanie aplikacji. Ten szkielet nie dodaje edytora kart, typow rekordow ani pol, nie przebudowuje dynamicznie UI i nie zmienia schematu bazy danych.
 
 ## Fundament sekcji/kart aplikacji
 
@@ -741,6 +742,17 @@ MVP-017 made application name the first editable settings value:
 - after a successful save, the current window title is updated.
 
 This does not add card editing, field editing, record type editing, dynamic UI rebuilding, database migration, new tables or new dependencies. Those remain separate MVPs.
+
+## MVP-018 sections preview in settings
+
+MVP-018 added a read-only sections/tabs preview to the existing settings modal:
+
+- sections are loaded through `ConfigService` from `config/default_sections.json`,
+- the preview shows section name, id, type, visibility and order,
+- configuration loading errors show a safe fallback instead of crashing the UI,
+- application name editing from MVP-017 remains unchanged.
+
+This does not add section editing, adding, deleting or dynamic rebuilding of the main UI. Section editor, field editor and record type editor remain separate future MVPs.
 
 ## Zasady techniczne
 
