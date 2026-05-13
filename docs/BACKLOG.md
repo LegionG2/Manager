@@ -611,7 +611,37 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-023 - Fundament archiwum
+### MVP-023 - Usuwanie niestandardowych sekcji/kart
+
+Status: wykonane
+
+Cel:
+
+- pozwolic usuwac sekcje niestandardowe z ustawien,
+- chronic sekcje bazowe przed przypadkowym usunieciem,
+- nie przebudowywac glownego UI dynamicznie.
+
+Wynik MVP-023:
+
+- w sekcji `Sekcje aplikacji` dodano przyciski usuwania,
+- sekcje bazowe `dashboard`, `records`, `archive` i `settings` sa chronione,
+- usuwanie wymaga potwierdzenia,
+- usuniecie zapisuje zmiane do `config/default_sections.json`,
+- zapis korzysta z `ConfigService.save_sections()`,
+- przed zapisem uruchamiana jest walidacja konfiguracji,
+- glowny UI nadal nie jest dynamicznie przebudowywany na podstawie sekcji.
+
+Pozostale ryzyka:
+
+- pelny system zarzadzania kartami pozostaje osobnymi MVP,
+- sekcje niestandardowe wplywaja teraz na konfiguracje i ustawienia, ale nie steruja jeszcze glownym UI,
+- dodawanie sekcji nie jest czescia tego MVP, jesli nie istnieje w danym stanie kodu.
+
+Nastepny bezpieczny krok:
+
+- zaplanowac osobny MVP dla pelnego zarzadzania sekcjami albo dynamicznego uzycia sekcji w glownym UI.
+
+### MVP-024 - Fundament archiwum
 
 Status: planowane
 
@@ -620,7 +650,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-024 - Fundament importu i eksportu
+### MVP-025 - Fundament importu i eksportu
 
 Status: planowane
 

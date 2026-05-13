@@ -11,6 +11,7 @@ from services.order_service import OrderService
 
 APP_TITLE = "Warsztat Manager Premium"
 DEFAULT_APP_TITLE = "Manager"
+BASE_SECTION_IDS = {"dashboard", "records", "archive", "settings"}
 DB_NAME = "warsztat_manager.db"
 SETTINGS_NAME = "settings.json"
 STATUSES = [
@@ -348,9 +349,9 @@ class WorkshopApp(tk.Tk):
 
         sections_frame = ttk.LabelFrame(container, text="Sekcje aplikacji", style="Group.TLabelframe", padding=8)
         sections_frame.grid(row=2, column=0, sticky="ew", pady=(0, 8))
-        for column, weight in [(0, 1), (1, 0), (2, 0), (3, 0), (4, 0)]:
+        for column, weight in [(0, 1), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0)]:
             sections_frame.columnconfigure(column, weight=weight)
-        for column, heading in enumerate(["Nazwa", "ID", "Typ", "Widoczna", "Kolejnosc"]):
+        for column, heading in enumerate(["Nazwa", "ID", "Typ", "Widoczna", "Kolejnosc", ""]):
             ttk.Label(sections_frame, text=heading, style="Panel.TLabel").grid(row=0, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
         section_editors = []
         if sections:
@@ -363,6 +364,14 @@ class WorkshopApp(tk.Tk):
                 ttk.Label(sections_frame, text=section_type, style="TLabel").grid(row=row_index, column=2, sticky="w", padx=(0, 8), pady=2)
                 ttk.Checkbutton(sections_frame, variable=visible_var).grid(row=row_index, column=3, sticky="w", padx=(0, 8), pady=2)
                 ttk.Entry(sections_frame, textvariable=order_var, width=8).grid(row=row_index, column=4, sticky="w", pady=2)
+                delete_button = ttk.Button(
+                    sections_frame,
+                    text="Usuń",
+                    command=lambda section_id=section_id, name=name: self.delete_section_settings(section_id, name, window),
+                )
+                delete_button.grid(row=row_index, column=5, sticky="w", padx=(8, 0), pady=2)
+                if section_id in BASE_SECTION_IDS:
+                    delete_button.configure(state="disabled")
                 section_editors.append({
                     "id": section_id,
                     "name_var": name_var,
@@ -495,6 +504,36 @@ class WorkshopApp(tk.Tk):
             return False
 
         messagebox.showinfo("Ustawienia", "Sekcje zostaly zapisane.")
+        return True
+
+    def delete_section_settings(self, section_id: str, section_name: str, window: tk.Toplevel | None = None) -> bool:
+        if section_id in BASE_SECTION_IDS:
+            messagebox.showinfo("Ustawienia", "Sekcje bazowe nie moga byc usuwane.")
+            return False
+        if not messagebox.askyesno("Ustawienia", f"Usunac sekcje \"{section_name}\"?"):
+            return False
+
+        config_service = ConfigService()
+        try:
+            config = config_service.load_all()
+            updated_sections = [section for section in config.sections if section.id != section_id]
+            if len(updated_sections) == len(config.sections):
+                messagebox.showerror("Ustawienia", "Nie znaleziono sekcji do usuniecia.")
+                return False
+            updated_config = replace(config, sections=updated_sections)
+            validation = config_service.validate_all(updated_config)
+            if not validation.is_valid:
+                messagebox.showerror("Ustawienia", "\n".join(validation.errors))
+                return False
+            config_service.save_sections(updated_sections)
+        except Exception as exc:
+            messagebox.showerror("Ustawienia", f"Nie udalo sie usunac sekcji.\n\n{exc}")
+            return False
+
+        messagebox.showinfo("Ustawienia", "Sekcja zostala usunieta.")
+        if window is not None:
+            window.destroy()
+            self.show_settings_preview()
         return True
 
     def build_orders_tab(self):

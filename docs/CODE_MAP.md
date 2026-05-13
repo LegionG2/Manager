@@ -463,7 +463,7 @@ Co robi:
 
 - definiuje tytul aplikacji, nazwy plikow danych i ustawien,
 - laduje `app_name` z konfiguracji przez `ConfigService` i uzywa go jako tytulu okna,
-- pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, edycja istniejacych sekcji/kart oraz podgladem typu rekordu i pol,
+- pokazuje subtelny przycisk ustawien z edycja nazwy aplikacji, edycja istniejacych sekcji/kart, usuwaniem niestandardowych sekcji oraz podgladem typu rekordu i pol,
 - porzadkuje okno ustawien w sekcje `Ogolne`, `Sekcje aplikacji`, `Typ rekordu` i `Pola`,
 - definiuje obecne statusy i priorytety,
 - definiuje motywy jasny i ciemny,
@@ -487,7 +487,7 @@ Ryzyka i niejasne obszary:
 - Modul UI nadal laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
 - Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
 - UI nadal zna konkretne kolumny aktualnego modelu danych przy budowaniu tabel i wypelnianiu formularza.
-- Szkielet ustawien zapisuje nazwe aplikacji oraz wybrane pola istniejacych sekcji/kart; typ rekordu i pola sa pokazywane read-only, a dodawanie/usuwanie sekcji oraz edycja typow rekordow i pol nie sa jeszcze dostepne.
+- Szkielet ustawien zapisuje nazwe aplikacji oraz wybrane pola istniejacych sekcji/kart; pozwala usuwac sekcje niestandardowe, chroni sekcje bazowe, a typ rekordu i pola sa pokazywane read-only.
 - Backup nadal korzysta bezposrednio z `self.db.conn`.
 - Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
 - Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
@@ -1318,3 +1318,36 @@ Nie dodano:
 - nowych tabel.
 
 Glowny UI nadal dziala jak wczesniej i nie jest jeszcze budowany dynamicznie na podstawie konfiguracji sekcji.
+
+## MVP-023 - Usuwanie niestandardowych sekcji/kart
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+W oknie ustawien mozna teraz usuwac sekcje niestandardowe. Sekcje bazowe sa chronione:
+
+- `dashboard`,
+- `records`,
+- `archive`,
+- `settings`.
+
+Usuwanie wymaga potwierdzenia. Po potwierdzeniu aplikacja:
+
+- laduje pelna konfiguracje przez `ConfigService`,
+- usuwa wybrana sekcje z listy sekcji,
+- waliduje konfiguracje,
+- zapisuje `config/default_sections.json` przez `ConfigService.save_sections()`,
+- odswieza okno ustawien.
+
+Nie dodano:
+
+- usuwania sekcji systemowych,
+- dynamicznego przebudowywania glownego UI,
+- edycji pol,
+- edycji typow rekordow,
+- migracji bazy danych,
+- nowych tabel,
+- presetow branzowych.
+
+Pelny system zarzadzania kartami bedzie rozwijany dalej.

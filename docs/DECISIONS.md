@@ -481,3 +481,22 @@ Konsekwencje:
 - Nie dodano tworzenia ani usuwania sekcji.
 - Glowny UI nie reaguje jeszcze dynamicznie na konfiguracje sekcji.
 - Nie zmieniono schematu SQLite, tabel, edycji pol ani edycji typow rekordow.
+
+## 2026-05-13 - Usuwanie sekcji dotyczy tylko sekcji niestandardowych
+
+Decyzja:
+
+Okno ustawien pozwala usuwac tylko niestandardowe sekcje/karty, a sekcje bazowe pozostaja chronione.
+
+Kontekst:
+
+Manager zaczyna miec podstawowe zarzadzanie sekcjami, ale glowne UI nie jest jeszcze budowane dynamicznie z konfiguracji. Usuwanie sekcji systemowych mogloby latwo uszkodzic przyszla nawigacje lub ustawienia, dlatego MVP-023 dopuszcza tylko ostrozne usuwanie sekcji spoza zestawu bazowego.
+
+Konsekwencje:
+
+- Chronione sekcje bazowe to `dashboard`, `records`, `archive` i `settings`.
+- Sekcje niestandardowe mozna usunac po potwierdzeniu.
+- Zapis trafia do `config/default_sections.json` przez `ConfigService.save_sections()`.
+- Przed zapisem uruchamiana jest walidacja konfiguracji.
+- Glowny UI nadal nie jest dynamicznie przebudowywany na podstawie sekcji.
+- Pelny system zarzadzania kartami bedzie rozwijany dalej.
