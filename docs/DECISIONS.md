@@ -369,3 +369,22 @@ Konsekwencje:
 - Reszta aplikacji nadal dziala na starym przejsciowym UI.
 - Nie zmieniono formularzy, tabel, zapisu, edycji, usuwania, wyszukiwania, schematu SQLite ani zaleznosci.
 - Pelny ekran ustawien i ikona zebatki pozostaja osobnym MVP.
+
+## 2026-05-13 - Ustawienia zaczynaja sie od read-only podgladu
+
+Decyzja:
+
+Dodano pierwszy widoczny szkielet ustawien jako subtelny przycisk `Ustawienia` i proste okno podgladu read-only.
+
+Kontekst:
+
+Manager ma docelowo pozwalac na konfiguracje nazwy aplikacji, sekcji, typow rekordow i pol. MVP-016 ma byc jednak tylko malym krokiem wizualnym i diagnostycznym, bez edycji, zapisu ustawien z UI, dynamicznego przebudowywania interfejsu i zmian w bazie danych.
+
+Konsekwencje:
+
+- Uzytkownik widzi zalazek przyszlych ustawien w obecnym UI.
+- Okno ustawien pokazuje nazwe aplikacji, aktywny typ rekordu i liczbe sekcji/kart.
+- Podglad korzysta z `ConfigService` i ma fallback przy bledzie ladowania konfiguracji.
+- Niczego nie da sie jeszcze edytowac ani zapisac z UI.
+- Nie dodano edytora nazwy aplikacji, kart, pol, migracji bazy, nowych tabel ani presetow branzowych.
+- Obecna aplikacja nadal dziala na starym przejsciowym UI.

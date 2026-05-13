@@ -219,7 +219,8 @@ class WorkshopApp(tk.Tk):
         top.columnconfigure(1, weight=1)
         ttk.Label(top, text="Warsztat Manager Premium", style="Title.TLabel").grid(row=0, column=0, sticky="w")
         ttk.Label(top, text="Prosty program warsztatowy z lokalnym zapisem danych", style="Sub.TLabel").grid(row=0, column=1, sticky="w", padx=(10, 0))
-        ttk.Checkbutton(top, text="Tryb ciemny", variable=self.theme_var, command=self.toggle_theme).grid(row=0, column=2, sticky="e")
+        ttk.Button(top, text="⚙", command=self.show_settings_preview).grid(row=0, column=2, sticky="e", padx=(8, 6))
+        ttk.Checkbutton(top, text="Tryb ciemny", variable=self.theme_var, command=self.toggle_theme).grid(row=0, column=3, sticky="e")
 
         self.summary_frame = ttk.Frame(self, padding=(8, 0, 8, 8))
         self.summary_frame.grid(row=1, column=0, sticky="ew")
@@ -249,6 +250,59 @@ class WorkshopApp(tk.Tk):
 
         self.build_orders_tab()
         self.build_archive_tab()
+
+    def load_settings_preview(self) -> tuple[list[tuple[str, str]], str | None]:
+        try:
+            config = ConfigService().load_all()
+        except Exception as exc:
+            return [
+                ("Nazwa aplikacji", DEFAULT_APP_TITLE),
+                ("Aktywny typ rekordu", "Brak danych"),
+                ("Liczba sekcji/kart", "Brak danych"),
+            ], str(exc)
+
+        return [
+            ("Nazwa aplikacji", config.app_config.app_name or DEFAULT_APP_TITLE),
+            ("Aktywny typ rekordu", config.app_config.active_record_type_id or "Brak danych"),
+            ("Liczba sekcji/kart", str(len(config.sections))),
+        ], None
+
+    def show_settings_preview(self):
+        rows, error = self.load_settings_preview()
+
+        window = tk.Toplevel(self)
+        window.title("Ustawienia")
+        window.transient(self)
+        window.resizable(False, False)
+        window.configure(bg=self.colors["window_bg"])
+
+        container = ttk.Frame(window, padding=16)
+        container.grid(row=0, column=0, sticky="nsew")
+        container.columnconfigure(1, weight=1)
+
+        ttk.Label(container, text="Ustawienia", style="Title.TLabel").grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
+        for index, (label, value) in enumerate(rows, start=1):
+            ttk.Label(container, text=f"{label}:", style="TLabel").grid(row=index, column=0, sticky="w", padx=(0, 16), pady=3)
+            ttk.Label(container, text=value, style="TLabel").grid(row=index, column=1, sticky="w", pady=3)
+
+        message_row = len(rows) + 1
+        note = "Podglad tylko do odczytu. Edycja ustawien zostanie dodana w osobnym etapie."
+        if error:
+            note = f"Nie udalo sie zaladowac konfiguracji. Pokazano fallback.\n{error}"
+        ttk.Label(container, text=note, style="Sub.TLabel", wraplength=360, justify="left").grid(
+            row=message_row,
+            column=0,
+            columnspan=2,
+            sticky="w",
+            pady=(12, 10),
+        )
+        ttk.Button(container, text="Zamknij", command=window.destroy).grid(row=message_row + 1, column=1, sticky="e")
+
+        window.update_idletasks()
+        x = self.winfo_rootx() + max((self.winfo_width() - window.winfo_width()) // 2, 0)
+        y = self.winfo_rooty() + max((self.winfo_height() - window.winfo_height()) // 2, 0)
+        window.geometry(f"+{x}+{y}")
+        window.grab_set()
 
     def build_orders_tab(self):
         main = ttk.Frame(self.orders_tab, padding=8)

@@ -463,6 +463,7 @@ Co robi:
 
 - definiuje tytul aplikacji, nazwy plikow danych i ustawien,
 - laduje `app_name` z konfiguracji przez `ConfigService` i uzywa go jako tytulu okna,
+- pokazuje subtelny przycisk `Ustawienia` z read-only podgladem podstawowej konfiguracji,
 - definiuje obecne statusy i priorytety,
 - definiuje motywy jasny i ciemny,
 - zarzadza ustawieniami lokalnymi przez JSON,
@@ -485,6 +486,7 @@ Ryzyka i niejasne obszary:
 - Modul UI nadal laczy wiele odpowiedzialnosci, co utrudnia bezpieczne zmiany.
 - Nazwy i model danych sa nadal zwiazane ze starsza aplikacja warsztatowa.
 - UI nadal zna konkretne kolumny aktualnego modelu danych przy budowaniu tabel i wypelnianiu formularza.
+- Szkielet ustawien jest tylko podgladem i nie zapisuje zmian.
 - Backup nadal korzysta bezposrednio z `self.db.conn`.
 - Niejasne, czy istnieja zewnetrzne dane uzytkownika, ktore musza byc migrowane.
 - Niejasne, jakie reczne scenariusze testowe sa obecnie najwazniejsze.
@@ -1133,3 +1135,30 @@ Nie zmieniono:
 - zaleznosci projektu.
 
 Nie dodano ekranu ustawien, ikony zebatki, edytora nazwy aplikacji, edytora kart, edytora pol ani dynamicznego UI. Reszta aplikacji nadal dziala na starym przejsciowym UI.
+
+## MVP-016 - Szkielet ustawien read-only
+
+Rozbudowano:
+
+- `ui/app.py`.
+
+Dodano subtelny przycisk `Ustawienia` w gornym pasku obecnego UI. Klikniecie otwiera proste okno podgladu ustawien. Okno korzysta z `ConfigService` i pokazuje:
+
+- nazwe aplikacji,
+- aktywny typ rekordu,
+- liczbe sekcji/kart,
+- informacje, ze edycja ustawien zostanie dodana pozniej.
+
+Jesli konfiguracja nie zaladuje sie poprawnie, okno pokazuje fallback zamiast crasha.
+
+Nie zmieniono:
+
+- zapisu ustawien z UI, bo go jeszcze nie ma,
+- edycji nazwy aplikacji,
+- edytora kart,
+- edytora pol,
+- dynamicznego przebudowywania UI,
+- schematu bazy danych,
+- obecnych funkcji formularzy, tabel, wyszukiwania i archiwum.
+
+Obecna aplikacja nadal dziala na starym przejsciowym UI. Pelny edytor ustawien pozostaje osobnym MVP.

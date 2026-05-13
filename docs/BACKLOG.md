@@ -429,7 +429,36 @@ Nastepny bezpieczny krok:
 
 - przygotowac osobny MVP dla ustawien albo kontynuowac male integracje konfiguracji bez zmiany schematu bazy.
 
-### MVP-016 - Fundament wyszukiwania i filtrowania
+### MVP-016 - Szkielet ustawien read-only
+
+Status: wykonane
+
+Cel:
+
+- dodac pierwszy subtelny widoczny zalazek przyszlych ustawien,
+- pokazac podstawowe informacje z konfiguracji bez edycji,
+- zachowac obecne UI, funkcje aplikacji i schemat bazy.
+
+Wynik MVP-016:
+
+- dodano subtelny przycisk `Ustawienia` w gornym pasku obecnego UI,
+- klikniecie otwiera proste okno podgladu ustawien,
+- okno pokazuje nazwe aplikacji, aktywny typ rekordu i liczbe sekcji/kart,
+- podglad korzysta z `ConfigService`,
+- przy bledzie ladowania konfiguracji pokazywany jest fallback zamiast crasha,
+- okno jest tylko read-only i nie zapisuje zmian.
+
+Pozostale ryzyka:
+
+- pelny edytor nazwy aplikacji, kart, typow rekordow i pol pozostaje osobnym MVP,
+- obecna aplikacja nadal dziala na starym przejsciowym UI,
+- konfiguracja nadal nie przebudowuje dynamicznie glownego interfejsu.
+
+Nastepny bezpieczny krok:
+
+- zaprojektowac osobny MVP dla edycji jednego ustawienia albo rozszerzyc read-only diagnostyke ustawien, nadal bez migracji bazy.
+
+### MVP-017 - Fundament wyszukiwania i filtrowania
 
 Status: planowane
 
@@ -438,7 +467,7 @@ Cel:
 - przygotowac wyszukiwanie niezalezne od jednej branzy,
 - zaprojektowac filtry dla konfigurowalnych pol i statusow.
 
-### MVP-017 - Fundament archiwum
+### MVP-018 - Fundament archiwum
 
 Status: planowane
 
@@ -447,7 +476,7 @@ Cel:
 - utrzymac mozliwosc archiwizacji rekordow,
 - oddzielic pojecie archiwum od obecnego modelu zlecen.
 
-### MVP-018 - Fundament importu i eksportu
+### MVP-019 - Fundament importu i eksportu
 
 Status: planowane
 

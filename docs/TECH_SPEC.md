@@ -121,6 +121,19 @@ Domyslna konfiguracja znajduje sie w `config/app_config.json`. Jest neutralna i 
 
 `services/app_config_service.py` zawiera `AppConfigService`, ktory wczytuje konfiguracje aplikacji z JSON i mapuje ja na obiekty domenowe. `app_name` z tej konfiguracji jest uzywany jako tytul okna aplikacji przez `ui/app.py`. Pozostale elementy konfiguracji aplikacji nie sa jeszcze podlaczone do obecnych kart ani bazy danych. Przyszly ekran ustawien i ikona zebatki sa osobnym MVP.
 
+## Szkielet ustawien
+
+`ui/app.py` zawiera pierwszy, subtelny szkielet ustawien. W gornym pasku UI znajduje sie przycisk `Ustawienia`, ktory otwiera proste okno podgladu read-only.
+
+Okno pokazuje:
+
+- nazwe aplikacji,
+- aktywny typ rekordu,
+- liczbe sekcji/kart,
+- informacje, ze edycja ustawien zostanie dodana pozniej.
+
+Podglad korzysta z `ConfigService`. Jesli konfiguracja nie zaladuje sie poprawnie, UI pokazuje fallback zamiast przerywac dzialanie aplikacji. Ten szkielet nie zapisuje ustawien, nie dodaje edytora nazwy aplikacji, kart ani pol, nie przebudowuje dynamicznie UI i nie zmienia schematu bazy danych.
+
 ## Fundament sekcji/kart aplikacji
 
 `domain/app_section.py` wprowadza neutralne pojecie `AppSectionDefinition`.
@@ -703,6 +716,17 @@ MVP-015 connected one small part of application configuration to the current UI:
 - the fallback title is `Manager` when configuration loading fails or the name is empty.
 
 This is the first small integration between configuration and UI. It does not add a settings screen, gear icon, name editor, dynamic UI, database migration or new dependency. The rest of the application still uses the old transitional UI and data model.
+
+## MVP-016 settings preview skeleton
+
+MVP-016 added a small read-only settings preview:
+
+- `ui/app.py` shows a subtle `Ustawienia` button in the top bar,
+- clicking it opens a simple modal with configuration details,
+- the modal shows application name, active record type and section/tab count,
+- the modal uses `ConfigService` and shows a fallback if configuration loading fails.
+
+This is only a skeleton. It does not allow editing, does not save configuration from UI, does not add a full settings screen, does not add card or field editors, does not dynamically rebuild the UI and does not change the database schema. The current application still runs on the old transitional UI.
 
 ## Zasady techniczne
 
