@@ -7,6 +7,7 @@ from datetime import datetime
 
 from data.database import Database
 from domain.app_section import AppSectionDefinition
+from domain.field_definition import FieldDefinition, FieldType
 from services.config_service import ConfigService
 from services.generic_record_service import GenericRecordService
 from services.order_service import OrderService
@@ -327,6 +328,7 @@ class WorkshopApp(tk.Tk):
         ttk.Label(wrapper, text=message, style="Sub.TLabel").pack(anchor="w")
 
     def build_custom_section_tab(self, parent, section: AppSectionDefinition):
+        field_definitions = self.load_custom_field_definitions()
         wrapper = ttk.Frame(parent, padding=16)
         wrapper.pack(fill="both", expand=True)
         wrapper.columnconfigure(0, weight=1)
@@ -337,26 +339,16 @@ class WorkshopApp(tk.Tk):
         form = ttk.Frame(wrapper)
         form.grid(row=1, column=0, sticky="ew", pady=(0, 12))
         form.columnconfigure(1, weight=1)
-        title_var = tk.StringVar()
-
-        ttk.Label(form, text="Tytuł", style="Panel.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=3)
-        title_entry = ttk.Entry(form, textvariable=title_var)
-        title_entry.grid(row=0, column=1, sticky="ew", pady=3)
-        self.bind_tab_navigation(title_entry)
-
-        ttk.Label(form, text="Opis", style="Panel.TLabel").grid(row=1, column=0, sticky="nw", padx=(0, 8), pady=3)
-        description_text = tk.Text(
-            form,
-            height=4,
-            relief="sunken",
-            borderwidth=1,
-            wrap="word",
-            bg=self.colors["entry_bg"],
-            fg=self.colors["text"],
-            insertbackground=self.colors["text"],
-        )
-        description_text.grid(row=1, column=1, sticky="ew", pady=3)
-        self.bind_tab_navigation(description_text)
+        field_widgets = {}
+        for row_index, field_definition in enumerate(field_definitions):
+            ttk.Label(form, text=field_definition.label, style="Panel.TLabel").grid(
+                row=row_index,
+                column=0,
+                sticky="w",
+                padx=(0, 8),
+                pady=3,
+            )
+            field_widgets[field_definition.name] = self.build_custom_field_widget(form, row_index, field_definition)
 
         list_label = ttk.Label(wrapper, text="Rekordy", style="Panel.TLabel")
         list_label.grid(row=2, column=0, sticky="w", pady=(0, 4))
@@ -366,18 +358,14 @@ class WorkshopApp(tk.Tk):
         table_wrap.rowconfigure(0, weight=1)
         table_wrap.columnconfigure(0, weight=1)
 
-        columns = ("id", "title", "description", "created_at")
+        columns = ("id", *[field_definition.name for field_definition in field_definitions], "created_at")
         tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="browse")
-        headings = {
-            "id": "ID",
-            "title": "Tytuł",
-            "description": "Opis",
-            "created_at": "Dodano",
-        }
-        widths = {"id": 60, "title": 220, "description": 420, "created_at": 160}
+        headings = {"id": "ID", "created_at": "Dodano"}
+        headings.update({field_definition.name: field_definition.label for field_definition in field_definitions})
+        widths = {"id": 60, "created_at": 160}
         for column in columns:
             tree.heading(column, text=headings[column])
-            tree.column(column, width=widths[column], minwidth=50, anchor="w")
+            tree.column(column, width=widths.get(column, 180), minwidth=50, anchor="w")
         tree.column("id", anchor="center")
         tree.grid(row=0, column=0, sticky="nsew")
 
@@ -394,36 +382,128 @@ class WorkshopApp(tk.Tk):
                 tree.insert(
                     "",
                     "end",
-                    values=(
-                        row["id"],
-                        data.get("title", ""),
-                        data.get("description", ""),
-                        row["created_at"] or "",
-                    ),
+                    values=(row["id"], *self.format_custom_record_values(field_definitions, data), row["created_at"] or ""),
                 )
 
         def add_custom_record():
-            title = title_var.get().strip()
-            description = description_text.get("1.0", "end").strip()
-            if not title:
-                messagebox.showerror(section.name, "Tytuł nie może być pusty.")
-                return
+            data = {}
+            for field_definition in field_definitions:
+                try:
+                    value = self.read_custom_field_value(field_definition, field_widgets[field_definition.name])
+                except ValueError as exc:
+                    messagebox.showerror(section.name, str(exc))
+                    return
+                data[field_definition.name] = value
             try:
                 self.generic_record_service.create_record(
                     section_id=section.id,
                     record_type_id=section.record_type_id,
-                    data={"title": title, "description": description},
+                    data=data,
                 )
             except Exception as exc:
                 messagebox.showerror(section.name, f"Nie udało się dodać rekordu.\n\n{exc}")
                 return
-            title_var.set("")
-            description_text.delete("1.0", "end")
+            for field_definition in field_definitions:
+                self.reset_custom_field_value(field_definition, field_widgets[field_definition.name])
             refresh_custom_records()
 
-        ttk.Button(form, text="Dodaj rekord", command=add_custom_record).grid(row=2, column=1, sticky="w", pady=(6, 0))
+        ttk.Button(form, text="Dodaj rekord", command=add_custom_record).grid(
+            row=len(field_definitions),
+            column=1,
+            sticky="w",
+            pady=(6, 0),
+        )
         self.custom_record_refreshers[section.id] = refresh_custom_records
         refresh_custom_records()
+
+    def load_custom_field_definitions(self) -> list[FieldDefinition]:
+        try:
+            fields = ConfigService().load_field_definitions()
+        except Exception:
+            return [
+                FieldDefinition(name="title", label="Title", field_type=FieldType.TEXT, required=True, default=""),
+                FieldDefinition(name="description", label="Description", field_type=FieldType.TEXT, required=False, default=""),
+            ]
+        return fields or [
+            FieldDefinition(name="title", label="Title", field_type=FieldType.TEXT, required=True, default=""),
+        ]
+
+    def build_custom_field_widget(self, parent, row_index: int, field_definition: FieldDefinition):
+        field_type = field_definition.field_type
+        if field_type == FieldType.BOOLEAN:
+            variable = tk.BooleanVar(value=bool(field_definition.default))
+            widget = ttk.Checkbutton(parent, variable=variable)
+            widget.grid(row=row_index, column=1, sticky="w", pady=3)
+            return {"widget": widget, "variable": variable}
+
+        if field_type == FieldType.SELECT:
+            options_by_label = {option.label: option.value for option in field_definition.options}
+            default_label = next(
+                (option.label for option in field_definition.options if option.value == field_definition.default),
+                field_definition.options[0].label if field_definition.options else "",
+            )
+            variable = tk.StringVar(value=default_label)
+            widget = ttk.Combobox(parent, textvariable=variable, values=list(options_by_label.keys()), state="readonly")
+            widget.grid(row=row_index, column=1, sticky="ew", pady=3)
+            self.bind_tab_navigation(widget)
+            return {"widget": widget, "variable": variable, "options_by_label": options_by_label}
+
+        variable = tk.StringVar(value="" if field_definition.default is None else str(field_definition.default))
+        widget = ttk.Entry(parent, textvariable=variable)
+        widget.grid(row=row_index, column=1, sticky="ew", pady=3)
+        self.bind_tab_navigation(widget)
+        return {"widget": widget, "variable": variable}
+
+    def read_custom_field_value(self, field_definition: FieldDefinition, field_widget: dict):
+        field_type = field_definition.field_type
+        variable = field_widget["variable"]
+        if field_type == FieldType.BOOLEAN:
+            return bool(variable.get())
+
+        raw_value = variable.get().strip()
+        if field_definition.required and not raw_value:
+            raise ValueError(f"Pole \"{field_definition.label}\" jest wymagane.")
+
+        if field_type == FieldType.NUMBER:
+            if not raw_value:
+                return None
+            try:
+                return float(raw_value.replace(",", "."))
+            except ValueError:
+                raise ValueError(f"Pole \"{field_definition.label}\" musi być liczbą.")
+
+        if field_type == FieldType.SELECT:
+            options_by_label = field_widget.get("options_by_label", {})
+            return options_by_label.get(raw_value, raw_value)
+
+        return raw_value
+
+    def reset_custom_field_value(self, field_definition: FieldDefinition, field_widget: dict):
+        variable = field_widget["variable"]
+        if field_definition.field_type == FieldType.BOOLEAN:
+            variable.set(bool(field_definition.default))
+        elif field_definition.field_type == FieldType.SELECT:
+            options_by_label = field_widget.get("options_by_label", {})
+            default_label = next(
+                (label for label, value in options_by_label.items() if value == field_definition.default),
+                next(iter(options_by_label), ""),
+            )
+            variable.set(default_label)
+        else:
+            variable.set("" if field_definition.default is None else str(field_definition.default))
+
+    def format_custom_record_values(self, field_definitions: list[FieldDefinition], data: dict) -> list[str]:
+        values = []
+        for field_definition in field_definitions:
+            value = data.get(field_definition.name, "")
+            if field_definition.field_type == FieldType.BOOLEAN:
+                values.append("Tak" if value else "Nie")
+            elif field_definition.field_type == FieldType.SELECT:
+                label_by_value = {option.value: option.label for option in field_definition.options}
+                values.append(label_by_value.get(str(value), "" if value is None else str(value)))
+            else:
+                values.append("" if value is None else str(value))
+        return values
 
     def load_settings_preview(
         self,
