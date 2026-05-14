@@ -116,6 +116,7 @@ class ConfigService:
             raw_field = {
                 "name": value.name,
                 "label": value.label,
+                "group_name": value.group_name,
                 "field_type": self._to_json_value(value.field_type),
                 "required": value.required,
                 "visible": value.visible,

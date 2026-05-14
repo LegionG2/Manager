@@ -22,6 +22,7 @@ class FieldConfigService:
         return FieldDefinition(
             name=str(raw_field["name"]),
             label=str(raw_field["label"]),
+            group_name=str(raw_field.get("group_name") or raw_field.get("group_id") or "Dane podstawowe"),
             field_type=FieldType(raw_field.get("field_type", FieldType.TEXT.value)),
             required=bool(raw_field.get("required", False)),
             visible=bool(raw_field.get("visible", True)),

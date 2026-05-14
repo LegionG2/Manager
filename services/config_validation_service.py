@@ -49,6 +49,8 @@ class ConfigValidationService:
                 seen_names.add(field_definition.name)
             if not self._has_text(field_definition.label):
                 errors.append(f"field_definitions[{index}].label is required.")
+            if not self._has_text(field_definition.group_name):
+                errors.append(f"field_definitions[{index}].group_name is required.")
             field_type = field_definition.field_type.value if isinstance(field_definition.field_type, FieldType) else field_definition.field_type
             if field_type not in allowed_types:
                 errors.append(f"field_definitions[{index}].field_type is invalid.")

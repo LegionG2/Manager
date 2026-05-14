@@ -21,6 +21,7 @@ class FieldOption:
 class FieldDefinition:
     name: str
     label: str
+    group_name: str = "Dane podstawowe"
     field_type: FieldType = FieldType.TEXT
     required: bool = False
     visible: bool = True
