@@ -334,12 +334,33 @@ class WorkshopApp(tk.Tk):
         wrapper = ttk.Frame(parent, padding=16)
         wrapper.pack(fill="both", expand=True)
         wrapper.columnconfigure(0, weight=1)
-        wrapper.rowconfigure(3, weight=1)
+        wrapper.rowconfigure(1, weight=1)
 
         ttk.Label(wrapper, text=section.name, style="Title.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 8))
 
-        form = ttk.Frame(wrapper)
-        form.grid(row=1, column=0, sticky="ew", pady=(0, 12))
+        paned = ttk.Panedwindow(wrapper, orient="horizontal")
+        paned.grid(row=1, column=0, sticky="nsew")
+
+        list_panel = ttk.Frame(paned, style="Panel.TFrame", padding=8)
+        list_panel.rowconfigure(1, weight=1)
+        list_panel.columnconfigure(0, weight=1)
+        paned.add(list_panel, weight=3)
+
+        details_panel = ttk.Frame(paned, style="Panel.TFrame", padding=8)
+        details_panel.columnconfigure(0, weight=1)
+        paned.add(details_panel, weight=2)
+
+        list_label = ttk.Label(list_panel, text="Rekordy", style="Panel.TLabel")
+        list_label.grid(row=0, column=0, sticky="w", pady=(0, 4))
+
+        table_wrap = ttk.Frame(list_panel)
+        table_wrap.grid(row=1, column=0, sticky="nsew")
+        table_wrap.rowconfigure(0, weight=1)
+        table_wrap.columnconfigure(0, weight=1)
+
+        ttk.Label(details_panel, text="Szczegóły", style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 4))
+        form = ttk.Frame(details_panel)
+        form.grid(row=1, column=0, sticky="ew")
         form.columnconfigure(1, weight=1)
         field_widgets = {}
         for row_index, field_definition in enumerate(field_definitions):
@@ -351,14 +372,6 @@ class WorkshopApp(tk.Tk):
                 pady=3,
             )
             field_widgets[field_definition.name] = self.build_custom_field_widget(form, row_index, field_definition)
-
-        list_label = ttk.Label(wrapper, text="Rekordy", style="Panel.TLabel")
-        list_label.grid(row=2, column=0, sticky="w", pady=(0, 4))
-
-        table_wrap = ttk.Frame(wrapper)
-        table_wrap.grid(row=3, column=0, sticky="nsew")
-        table_wrap.rowconfigure(0, weight=1)
-        table_wrap.columnconfigure(0, weight=1)
 
         columns = ("id", *[field_definition.name for field_definition in field_definitions], "created_at")
         tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="browse")
@@ -460,6 +473,7 @@ class WorkshopApp(tk.Tk):
                 return
             clear_custom_form()
             refresh_custom_records()
+            self.refresh_archive_table()
 
         actions = ttk.Frame(form)
         actions.grid(
@@ -1471,6 +1485,7 @@ class WorkshopApp(tk.Tk):
         root = ttk.Frame(self.archive_tab, padding=8)
         root.pack(fill="both", expand=True)
         root.rowconfigure(1, weight=1)
+        root.rowconfigure(3, weight=1)
         root.columnconfigure(0, weight=1)
 
         top = ttk.Frame(root, style="Panel.TFrame", padding=8)
@@ -1507,6 +1522,31 @@ class WorkshopApp(tk.Tk):
         self.archive_tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
+
+        ttk.Label(root, text="Archiwum sekcji własnych", style="Panel.TLabel").grid(row=2, column=0, sticky="w", pady=(8, 4))
+        custom_table_wrap = ttk.Frame(root, style="Panel.TFrame", padding=8)
+        custom_table_wrap.grid(row=3, column=0, sticky="nsew")
+        custom_table_wrap.rowconfigure(0, weight=1)
+        custom_table_wrap.columnconfigure(0, weight=1)
+
+        custom_columns = ("id", "section", "record_type", "data", "updated_at")
+        self.custom_archive_tree = ttk.Treeview(custom_table_wrap, columns=custom_columns, show="headings", selectmode="browse")
+        for col, title, width in [
+            ("id", "ID", 60),
+            ("section", "Sekcja", 180),
+            ("record_type", "Typ rekordu", 140),
+            ("data", "Dane", 520),
+            ("updated_at", "Aktualizacja", 180),
+        ]:
+            self.custom_archive_tree.heading(col, text=title)
+            self.custom_archive_tree.column(col, width=width, minwidth=max(70, width - 40), stretch=False, anchor="w")
+        self.custom_archive_tree.column("id", anchor="center")
+        self.custom_archive_tree.grid(row=0, column=0, sticky="nsew")
+        custom_vsb = ttk.Scrollbar(custom_table_wrap, orient="vertical", command=self.custom_archive_tree.yview)
+        custom_hsb = ttk.Scrollbar(custom_table_wrap, orient="horizontal", command=self.custom_archive_tree.xview)
+        self.custom_archive_tree.configure(yscrollcommand=custom_vsb.set, xscrollcommand=custom_hsb.set)
+        custom_vsb.grid(row=0, column=1, sticky="ns")
+        custom_hsb.grid(row=1, column=0, sticky="ew")
 
     def create_text_block(self, parent, title: str):
         c = self.colors
@@ -1697,6 +1737,50 @@ class WorkshopApp(tk.Tk):
                 "", "end", iid=str(row["id"]),
                 values=(row["id"], row["order_no"] or "", row["client_name"] or "", car, row["status"] or "", row["due_date"] or "", row["updated_at"] or "")
             )
+        self.refresh_custom_archive_table()
+
+    def refresh_custom_archive_table(self):
+        if not hasattr(self, "custom_archive_tree"):
+            return
+        for item in self.custom_archive_tree.get_children():
+            self.custom_archive_tree.delete(item)
+
+        try:
+            sections = ConfigService().load_sections()
+        except Exception:
+            sections = []
+
+        search_text = self.archive_search_var.get().strip().lower()
+        custom_sections = [section for section in sections if section.type == "custom"]
+        for section in custom_sections:
+            rows = self.generic_record_service.list_records(section.id, archived=1)
+            for row in rows:
+                data_text = self.format_custom_archive_data(self.generic_record_service.decode_data(row))
+                values = (
+                    row["id"],
+                    section.name,
+                    row["record_type_id"] or section.record_type_id or "",
+                    data_text,
+                    row["updated_at"] or "",
+                )
+                searchable = " ".join(str(value).lower() for value in values)
+                if search_text and search_text not in searchable:
+                    continue
+                self.custom_archive_tree.insert("", "end", values=values)
+
+    def format_custom_archive_data(self, data: dict) -> str:
+        if not data:
+            return ""
+        parts = []
+        for key, value in data.items():
+            if value is None:
+                display_value = ""
+            elif isinstance(value, bool):
+                display_value = "Tak" if value else "Nie"
+            else:
+                display_value = str(value)
+            parts.append(f"{key}: {display_value}")
+        return "; ".join(parts)
 
     def refresh_all_tables(self):
         self.refresh_table()
