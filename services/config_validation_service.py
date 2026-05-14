@@ -54,6 +54,8 @@ class ConfigValidationService:
                 errors.append(f"field_definitions[{index}].field_type is invalid.")
             if not isinstance(field_definition.required, bool):
                 errors.append(f"field_definitions[{index}].required must be boolean.")
+            if not isinstance(field_definition.visible, bool):
+                errors.append(f"field_definitions[{index}].visible must be boolean.")
             if not isinstance(field_definition.options, list):
                 errors.append(f"field_definitions[{index}].options must be a list.")
             else:

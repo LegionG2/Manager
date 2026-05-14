@@ -4,6 +4,7 @@
     "label": "Nazwa konkursu",
     "field_type": "text",
     "required": true,
+    "visible": true,
     "default": ""
   },
   {
@@ -11,6 +12,7 @@
     "label": "Description",
     "field_type": "text",
     "required": false,
+    "visible": true,
     "default": ""
   },
   {
@@ -18,6 +20,7 @@
     "label": "Status",
     "field_type": "select",
     "required": true,
+    "visible": true,
     "default": "",
     "options": [
       {
@@ -39,6 +42,7 @@
     "label": "Created date",
     "field_type": "date",
     "required": false,
+    "visible": true,
     "default": ""
   },
   {
@@ -46,6 +50,63 @@
     "label": "Organizator",
     "field_type": "text",
     "required": false,
+    "visible": true,
+    "default": ""
+  },
+  {
+    "name": "Konkurs_title",
+    "label": "Nazwa",
+    "field_type": "text",
+    "required": true,
+    "visible": true,
+    "default": ""
+  },
+  {
+    "name": "Konkurs_description",
+    "label": "Organizator",
+    "field_type": "text",
+    "required": false,
+    "visible": true,
+    "default": ""
+  },
+  {
+    "name": "Siemaszko_title",
+    "label": "Title",
+    "field_type": "text",
+    "required": true,
+    "visible": true,
+    "default": ""
+  },
+  {
+    "name": "Siemaszko_description",
+    "label": "Description",
+    "field_type": "text",
+    "required": false,
+    "visible": true,
+    "default": ""
+  },
+  {
+    "name": "Data",
+    "label": "Data",
+    "field_type": "text",
+    "required": false,
+    "visible": true,
+    "default": ""
+  },
+  {
+    "name": "Filmy_title",
+    "label": "Title",
+    "field_type": "text",
+    "required": true,
+    "visible": true,
+    "default": ""
+  },
+  {
+    "name": "Filmy_description",
+    "label": "Description",
+    "field_type": "text",
+    "required": false,
+    "visible": true,
     "default": ""
   }
 ]

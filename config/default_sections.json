@@ -30,10 +30,27 @@
     "order": 3
   },
   {
-    "id": "Kon",
-    "name": "Konkursy",
+    "id": "Konkurs",
+    "name": "Konkurs",
     "type": "custom",
+    "record_type_id": "Konkurs",
     "visible": true,
     "order": 5
+  },
+  {
+    "id": "Siemaszko",
+    "name": "Siemaszko",
+    "type": "custom",
+    "record_type_id": "Siemaszko",
+    "visible": true,
+    "order": 6
+  },
+  {
+    "id": "Filmy",
+    "name": "Filmy",
+    "type": "custom",
+    "record_type_id": "Filmy",
+    "visible": true,
+    "order": 7
   }
 ]

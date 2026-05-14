@@ -24,6 +24,7 @@ class FieldConfigService:
             label=str(raw_field["label"]),
             field_type=FieldType(raw_field.get("field_type", FieldType.TEXT.value)),
             required=bool(raw_field.get("required", False)),
+            visible=bool(raw_field.get("visible", True)),
             default=raw_field.get("default"),
             options=options,
         )

@@ -8,6 +8,7 @@ from datetime import datetime
 from data.database import Database
 from domain.app_section import AppSectionDefinition
 from domain.field_definition import FieldDefinition, FieldOption, FieldType
+from domain.record_type import RecordTypeDefinition
 from services.config_service import ConfigService
 from services.generic_record_service import GenericRecordService
 from services.order_service import OrderService
@@ -328,7 +329,8 @@ class WorkshopApp(tk.Tk):
         ttk.Label(wrapper, text=message, style="Sub.TLabel").pack(anchor="w")
 
     def build_custom_section_tab(self, parent, section: AppSectionDefinition):
-        field_definitions = self.load_custom_field_definitions()
+        record_type_id, field_definitions = self.load_custom_field_definitions(section)
+        field_definitions = [field for field in field_definitions if field.visible]
         wrapper = ttk.Frame(parent, padding=16)
         wrapper.pack(fill="both", expand=True)
         wrapper.columnconfigure(0, weight=1)
@@ -397,7 +399,7 @@ class WorkshopApp(tk.Tk):
             try:
                 self.generic_record_service.create_record(
                     section_id=section.id,
-                    record_type_id=section.record_type_id,
+                    record_type_id=record_type_id,
                     data=data,
                 )
             except Exception as exc:
@@ -416,17 +418,86 @@ class WorkshopApp(tk.Tk):
         self.custom_record_refreshers[section.id] = refresh_custom_records
         refresh_custom_records()
 
-    def load_custom_field_definitions(self) -> list[FieldDefinition]:
+    def load_custom_field_definitions(self, section: AppSectionDefinition | None = None) -> tuple[str, list[FieldDefinition]]:
         try:
-            fields = ConfigService().load_field_definitions()
+            config = ConfigService().load_all()
         except Exception:
-            return [
+            return "default", [
                 FieldDefinition(name="title", label="Title", field_type=FieldType.TEXT, required=True, default=""),
                 FieldDefinition(name="description", label="Description", field_type=FieldType.TEXT, required=False, default=""),
             ]
-        return fields or [
-            FieldDefinition(name="title", label="Title", field_type=FieldType.TEXT, required=True, default=""),
+        section_record_type_id = self.effective_section_record_type_id(section) if section else ""
+        record_type_id = section_record_type_id or config.app_config.active_record_type_id or config.record_type.id
+        record_type = self.find_record_type(config.record_types, record_type_id)
+        if record_type is None:
+            record_type = self.create_default_record_type(record_type_id)
+
+        fields_by_name = {field.name: field for field in config.field_definitions}
+        selected_fields = [
+            fields_by_name[field_name]
+            for field_name in record_type.fields
+            if field_name in fields_by_name
         ]
+        if not selected_fields:
+            selected_fields = self.create_default_fields_for_record_type(record_type.id)
+        return record_type.id, selected_fields
+
+    def find_record_type(self, record_types: list[RecordTypeDefinition], record_type_id: str) -> RecordTypeDefinition | None:
+        for record_type in record_types:
+            if record_type.id == record_type_id:
+                return record_type
+        return None
+
+    def generated_record_type_id(self, section_id: str) -> str:
+        return section_id.strip() or "custom"
+
+    def effective_section_record_type_id(self, section: AppSectionDefinition) -> str:
+        record_type_id = (section.record_type_id or "").strip()
+        if section.type == "custom" and (not record_type_id or record_type_id == "default"):
+            return self.generated_record_type_id(section.id)
+        return record_type_id
+
+    def default_field_id(self, record_type_id: str, suffix: str) -> str:
+        return f"{self.generated_record_type_id(record_type_id)}_{suffix}"
+
+    def create_default_record_type(self, record_type_id: str) -> RecordTypeDefinition:
+        clean_id = self.generated_record_type_id(record_type_id)
+        return RecordTypeDefinition(
+            id=clean_id,
+            name=clean_id.replace("_", " ").title(),
+            description="Custom section record type",
+            fields=[
+                self.default_field_id(clean_id, "title"),
+                self.default_field_id(clean_id, "description"),
+            ],
+        )
+
+    def create_default_fields_for_record_type(self, record_type_id: str) -> list[FieldDefinition]:
+        return [
+            FieldDefinition(name=self.default_field_id(record_type_id, "title"), label="Title", field_type=FieldType.TEXT, required=True, visible=True, default=""),
+            FieldDefinition(name=self.default_field_id(record_type_id, "description"), label="Description", field_type=FieldType.TEXT, required=False, visible=True, default=""),
+        ]
+
+    def ensure_record_types_for_sections(
+        self,
+        field_definitions: list[FieldDefinition],
+        record_types: list[RecordTypeDefinition],
+        sections: list[AppSectionDefinition],
+    ) -> tuple[list[FieldDefinition], list[RecordTypeDefinition]]:
+        fields_by_name = {field.name: field for field in field_definitions}
+        record_types_by_id = {record_type.id: record_type for record_type in record_types}
+
+        for section in sections:
+            if section.type != "custom":
+                continue
+            record_type_id = section.record_type_id or self.generated_record_type_id(section.id)
+            if record_type_id not in record_types_by_id:
+                record_type = self.create_default_record_type(record_type_id)
+                record_types_by_id[record_type.id] = record_type
+                for field in self.create_default_fields_for_record_type(record_type.id):
+                    fields_by_name.setdefault(field.name, field)
+
+        return list(fields_by_name.values()), list(record_types_by_id.values())
 
     def build_custom_field_widget(self, parent, row_index: int, field_definition: FieldDefinition):
         field_type = field_definition.field_type
@@ -528,6 +599,7 @@ class WorkshopApp(tk.Tk):
                 section.name,
                 section.id,
                 section.type,
+                self.effective_section_record_type_id(section) if section.type == "custom" else (section.record_type_id or ""),
                 "Tak" if section.visible else "Nie",
                 str(section.order),
             )
@@ -544,6 +616,7 @@ class WorkshopApp(tk.Tk):
                 field.label,
                 field.field_type.value,
                 "Tak" if field.required else "Nie",
+                "Tak" if field.visible else "Nie",
                 ", ".join(option.label for option in field.options),
             )
             for field in config.field_definitions
@@ -555,9 +628,52 @@ class WorkshopApp(tk.Tk):
             ("Liczba sekcji/kart", str(len(config.sections))),
         ], sections, record_type, fields, None
 
-    def show_settings_preview(self):
+    def field_rows_for_record_type(self, config, record_type_id: str):
+        record_type = self.find_record_type(config.record_types, record_type_id)
+        if record_type is None:
+            record_type = self.create_default_record_type(record_type_id)
+            fields = self.create_default_fields_for_record_type(record_type.id)
+        else:
+            fields_by_name = {field.name: field for field in config.field_definitions}
+            fields = [
+                fields_by_name[field_name]
+                for field_name in record_type.fields
+                if field_name in fields_by_name
+            ]
+        return [
+            (
+                field.name,
+                field.label,
+                field.field_type.value,
+                "Tak" if field.required else "Nie",
+                "Tak" if field.visible else "Nie",
+                ", ".join(option.label for option in field.options),
+            )
+            for field in fields
+        ]
+
+    def show_settings_preview(self, selected_record_type_id: str | None = None):
         rows, sections, record_type, fields, error = self.load_settings_preview()
         values = dict(rows)
+        try:
+            settings_config = ConfigService().load_all()
+            custom_record_type_ids = [
+                self.effective_section_record_type_id(section)
+                for section in settings_config.sections
+                if section.type == "custom"
+            ]
+            record_type_choices = [record_type.id for record_type in settings_config.record_types]
+            for record_type_id in custom_record_type_ids:
+                if record_type_id not in record_type_choices:
+                    record_type_choices.append(record_type_id)
+            selected_record_type_id = selected_record_type_id or (custom_record_type_ids[0] if custom_record_type_ids else settings_config.record_type.id)
+            if selected_record_type_id not in record_type_choices:
+                record_type_choices.append(selected_record_type_id)
+            fields = self.field_rows_for_record_type(settings_config, selected_record_type_id)
+        except Exception:
+            settings_config = None
+            record_type_choices = ["default"]
+            selected_record_type_id = "default"
 
         window = tk.Toplevel(self)
         window.title("Ustawienia")
@@ -601,40 +717,47 @@ class WorkshopApp(tk.Tk):
 
         sections_frame = ttk.LabelFrame(container, text="Sekcje aplikacji", style="Group.TLabelframe", padding=8)
         sections_frame.grid(row=2, column=0, sticky="ew", pady=(0, 8))
-        for column, weight in [(0, 1), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0)]:
+        for column, weight in [(0, 1), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0)]:
             sections_frame.columnconfigure(column, weight=weight)
-        for column, heading in enumerate(["Nazwa", "ID", "Typ", "Widoczna", "Kolejnosc", ""]):
+        for column, heading in enumerate(["Nazwa", "ID", "Typ", "Typ rekordu", "Widoczna", "Kolejnosc", ""]):
             ttk.Label(sections_frame, text=heading, style="Panel.TLabel").grid(row=0, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
         section_editors = []
         if sections:
-            for row_index, (name, section_id, section_type, visible, order) in enumerate(sections, start=1):
+            for row_index, (name, section_id, section_type, record_type_id, visible, order) in enumerate(sections, start=1):
                 name_var = tk.StringVar(value=name)
+                record_type_var = tk.StringVar(value=record_type_id)
                 visible_var = tk.BooleanVar(value=visible == "Tak")
                 order_var = tk.StringVar(value=order)
                 ttk.Entry(sections_frame, textvariable=name_var, width=18).grid(row=row_index, column=0, sticky="ew", padx=(0, 8), pady=2)
                 ttk.Label(sections_frame, text=section_id, style="TLabel").grid(row=row_index, column=1, sticky="w", padx=(0, 8), pady=2)
                 ttk.Label(sections_frame, text=section_type, style="TLabel").grid(row=row_index, column=2, sticky="w", padx=(0, 8), pady=2)
-                ttk.Checkbutton(sections_frame, variable=visible_var).grid(row=row_index, column=3, sticky="w", padx=(0, 8), pady=2)
-                ttk.Entry(sections_frame, textvariable=order_var, width=8).grid(row=row_index, column=4, sticky="w", pady=2)
+                if section_type == "custom":
+                    ttk.Entry(sections_frame, textvariable=record_type_var, width=12).grid(row=row_index, column=3, sticky="w", padx=(0, 8), pady=2)
+                else:
+                    ttk.Label(sections_frame, text=record_type_id or "-", style="TLabel").grid(row=row_index, column=3, sticky="w", padx=(0, 8), pady=2)
+                ttk.Checkbutton(sections_frame, variable=visible_var).grid(row=row_index, column=4, sticky="w", padx=(0, 8), pady=2)
+                ttk.Entry(sections_frame, textvariable=order_var, width=8).grid(row=row_index, column=5, sticky="w", pady=2)
                 delete_button = ttk.Button(
                     sections_frame,
                     text="Usuń",
                     command=lambda section_id=section_id, name=name: self.delete_section_settings(section_id, name, window),
                 )
-                delete_button.grid(row=row_index, column=5, sticky="w", padx=(8, 0), pady=2)
+                delete_button.grid(row=row_index, column=6, sticky="w", padx=(8, 0), pady=2)
                 if section_id in BASE_SECTION_IDS:
                     delete_button.configure(state="disabled")
                 section_editors.append({
                     "id": section_id,
+                    "type": section_type,
                     "name_var": name_var,
+                    "record_type_var": record_type_var,
                     "visible_var": visible_var,
                     "order_var": order_var,
                 })
         else:
-            ttk.Label(sections_frame, text="Brak danych", style="TLabel").grid(row=1, column=0, columnspan=5, sticky="w", pady=2)
+            ttk.Label(sections_frame, text="Brak danych", style="TLabel").grid(row=1, column=0, columnspan=7, sticky="w", pady=2)
         add_row = len(sections) + 1 if sections else 2
         next_order = add_row
-        for _name, _section_id, _section_type, _visible, order in sections:
+        for _name, _section_id, _section_type, _record_type_id, _visible, order in sections:
             try:
                 next_order = max(next_order, int(order) + 1)
             except ValueError:
@@ -643,19 +766,21 @@ class WorkshopApp(tk.Tk):
             "id_var": tk.StringVar(),
             "name_var": tk.StringVar(),
             "type_var": tk.StringVar(value="custom"),
+            "record_type_var": tk.StringVar(),
             "visible_var": tk.BooleanVar(value=True),
             "order_var": tk.StringVar(value=str(next_order)),
         }
         ttk.Entry(sections_frame, textvariable=new_section_vars["name_var"], width=18).grid(row=add_row, column=0, sticky="ew", padx=(0, 8), pady=(8, 2))
         ttk.Entry(sections_frame, textvariable=new_section_vars["id_var"], width=14).grid(row=add_row, column=1, sticky="w", padx=(0, 8), pady=(8, 2))
         ttk.Entry(sections_frame, textvariable=new_section_vars["type_var"], width=12).grid(row=add_row, column=2, sticky="w", padx=(0, 8), pady=(8, 2))
-        ttk.Checkbutton(sections_frame, variable=new_section_vars["visible_var"]).grid(row=add_row, column=3, sticky="w", padx=(0, 8), pady=(8, 2))
-        ttk.Entry(sections_frame, textvariable=new_section_vars["order_var"], width=8).grid(row=add_row, column=4, sticky="w", pady=(8, 2))
+        ttk.Entry(sections_frame, textvariable=new_section_vars["record_type_var"], width=12).grid(row=add_row, column=3, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Checkbutton(sections_frame, variable=new_section_vars["visible_var"]).grid(row=add_row, column=4, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Entry(sections_frame, textvariable=new_section_vars["order_var"], width=8).grid(row=add_row, column=5, sticky="w", pady=(8, 2))
         ttk.Button(
             sections_frame,
             text="Dodaj sekcje",
             command=lambda: self.add_section_settings(new_section_vars, window),
-        ).grid(row=add_row, column=5, sticky="w", padx=(8, 0), pady=(8, 2))
+        ).grid(row=add_row, column=6, sticky="w", padx=(8, 0), pady=(8, 2))
         ttk.Button(
             sections_frame,
             text="Zapisz sekcje",
@@ -671,55 +796,78 @@ class WorkshopApp(tk.Tk):
 
         fields_frame = ttk.LabelFrame(container, text="Pola", style="Group.TLabelframe", padding=8)
         fields_frame.grid(row=4, column=0, sticky="ew", pady=(0, 10))
-        for column, weight in [(0, 0), (1, 1), (2, 0), (3, 0), (4, 1)]:
+        for column, weight in [(0, 0), (1, 1), (2, 0), (3, 0), (4, 0), (5, 1)]:
             fields_frame.columnconfigure(column, weight=weight)
-        for column, heading in enumerate(["ID", "Etykieta", "Typ", "Wymagane", "Opcje select"]):
-            ttk.Label(fields_frame, text=heading, style="Panel.TLabel").grid(row=0, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
+        selected_record_type_var = tk.StringVar(value=selected_record_type_id)
+        ttk.Label(fields_frame, text="Pola dla sekcji:", style="Panel.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=(0, 6))
+        record_type_combo = ttk.Combobox(fields_frame, textvariable=selected_record_type_var, values=record_type_choices, state="readonly", width=18)
+        record_type_combo.grid(
+            row=0,
+            column=1,
+            sticky="w",
+            padx=(0, 8),
+            pady=(0, 6),
+        )
+        record_type_combo.bind("<<ComboboxSelected>>", lambda event: (window.destroy(), self.show_settings_preview(selected_record_type_var.get())))
+        ttk.Label(fields_frame, text="Wybierz sekcję, której pola chcesz edytować.", style="Sub.TLabel").grid(
+            row=0,
+            column=2,
+            columnspan=4,
+            sticky="w",
+            pady=(0, 6),
+        )
+        for column, heading in enumerate(["ID", "Etykieta", "Typ", "Wymagane", "Widoczne", "Opcje select"]):
+            ttk.Label(fields_frame, text=heading, style="Panel.TLabel").grid(row=1, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
         field_editors = []
         field_type_values = [field_type.value for field_type in FieldType]
         if fields:
-            for row_index, (field_id, label, field_type, required, options) in enumerate(fields, start=1):
+            for row_index, (field_id, label, field_type, required, visible, options) in enumerate(fields, start=2):
                 label_var = tk.StringVar(value=label)
                 type_var = tk.StringVar(value=field_type)
                 required_var = tk.BooleanVar(value=required == "Tak")
+                visible_var = tk.BooleanVar(value=visible == "Tak")
                 options_var = tk.StringVar(value=options)
                 ttk.Label(fields_frame, text=field_id, style="TLabel").grid(row=row_index, column=0, sticky="w", padx=(0, 8), pady=2)
                 ttk.Entry(fields_frame, textvariable=label_var, width=20).grid(row=row_index, column=1, sticky="ew", padx=(0, 8), pady=2)
                 ttk.Combobox(fields_frame, textvariable=type_var, values=field_type_values, state="readonly", width=10).grid(row=row_index, column=2, sticky="w", padx=(0, 8), pady=2)
                 ttk.Checkbutton(fields_frame, variable=required_var).grid(row=row_index, column=3, sticky="w", padx=(0, 8), pady=2)
-                ttk.Entry(fields_frame, textvariable=options_var, width=24).grid(row=row_index, column=4, sticky="ew", pady=2)
+                ttk.Checkbutton(fields_frame, variable=visible_var).grid(row=row_index, column=4, sticky="w", padx=(0, 8), pady=2)
+                ttk.Entry(fields_frame, textvariable=options_var, width=24).grid(row=row_index, column=5, sticky="ew", pady=2)
                 field_editors.append({
                     "id": field_id,
                     "label_var": label_var,
                     "type_var": type_var,
                     "required_var": required_var,
+                    "visible_var": visible_var,
                     "options_var": options_var,
                 })
         else:
-            ttk.Label(fields_frame, text="Brak danych", style="TLabel").grid(row=1, column=0, columnspan=5, sticky="w", pady=2)
+            ttk.Label(fields_frame, text="Brak danych", style="TLabel").grid(row=2, column=0, columnspan=6, sticky="w", pady=2)
 
-        add_field_row = len(fields) + 1 if fields else 2
+        add_field_row = len(fields) + 2 if fields else 3
         new_field_vars = {
             "id_var": tk.StringVar(),
             "label_var": tk.StringVar(),
             "type_var": tk.StringVar(value=FieldType.TEXT.value),
             "required_var": tk.BooleanVar(value=False),
+            "visible_var": tk.BooleanVar(value=True),
             "options_var": tk.StringVar(),
         }
         ttk.Entry(fields_frame, textvariable=new_field_vars["id_var"], width=14).grid(row=add_field_row, column=0, sticky="w", padx=(0, 8), pady=(8, 2))
         ttk.Entry(fields_frame, textvariable=new_field_vars["label_var"], width=20).grid(row=add_field_row, column=1, sticky="ew", padx=(0, 8), pady=(8, 2))
         ttk.Combobox(fields_frame, textvariable=new_field_vars["type_var"], values=field_type_values, state="readonly", width=10).grid(row=add_field_row, column=2, sticky="w", padx=(0, 8), pady=(8, 2))
         ttk.Checkbutton(fields_frame, variable=new_field_vars["required_var"]).grid(row=add_field_row, column=3, sticky="w", padx=(0, 8), pady=(8, 2))
-        ttk.Entry(fields_frame, textvariable=new_field_vars["options_var"], width=24).grid(row=add_field_row, column=4, sticky="ew", pady=(8, 2))
+        ttk.Checkbutton(fields_frame, variable=new_field_vars["visible_var"]).grid(row=add_field_row, column=4, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Entry(fields_frame, textvariable=new_field_vars["options_var"], width=24).grid(row=add_field_row, column=5, sticky="ew", pady=(8, 2))
         ttk.Button(
             fields_frame,
             text="Dodaj pole",
-            command=lambda: self.add_field_settings(new_field_vars, window),
+            command=lambda: self.add_field_settings(new_field_vars, selected_record_type_var.get(), window),
         ).grid(row=add_field_row + 1, column=0, sticky="w", pady=(8, 0))
         ttk.Button(
             fields_frame,
             text="Zapisz pola",
-            command=lambda: self.save_field_settings(field_editors, window),
+            command=lambda: self.save_field_settings(field_editors, selected_record_type_var.get(), window),
         ).grid(row=add_field_row + 1, column=1, sticky="w", pady=(8, 0))
 
         buttons = ttk.Frame(container)
@@ -775,9 +923,12 @@ class WorkshopApp(tk.Tk):
         edited_sections = {}
         for editor in section_editors:
             name = editor["name_var"].get().strip()
+            record_type_id = editor["record_type_var"].get().strip()
             if not name:
                 messagebox.showerror("Ustawienia", "Nazwa sekcji nie moze byc pusta.")
                 return False
+            if editor["type"] == "custom" and (not record_type_id or record_type_id == "default"):
+                record_type_id = self.generated_record_type_id(editor["id"])
             try:
                 order = int(editor["order_var"].get().strip())
             except ValueError:
@@ -785,6 +936,7 @@ class WorkshopApp(tk.Tk):
                 return False
             edited_sections[editor["id"]] = {
                 "name": name,
+                "record_type_id": record_type_id if editor["type"] == "custom" else None,
                 "visible": bool(editor["visible_var"].get()),
                 "order": order,
             }
@@ -796,6 +948,7 @@ class WorkshopApp(tk.Tk):
                 replace(
                     section,
                     name=edited_sections[section.id]["name"],
+                    record_type_id=edited_sections[section.id]["record_type_id"] if section.type == "custom" else section.record_type_id,
                     visible=edited_sections[section.id]["visible"],
                     order=edited_sections[section.id]["order"],
                 )
@@ -803,11 +956,23 @@ class WorkshopApp(tk.Tk):
                 else section
                 for section in config.sections
             ]
-            updated_config = replace(config, sections=updated_sections)
+            updated_fields, updated_record_types = self.ensure_record_types_for_sections(
+                config.field_definitions,
+                config.record_types,
+                updated_sections,
+            )
+            updated_config = replace(
+                config,
+                field_definitions=updated_fields,
+                record_types=updated_record_types,
+                sections=updated_sections,
+            )
             validation = config_service.validate_all(updated_config)
             if not validation.is_valid:
                 messagebox.showerror("Ustawienia", "\n".join(validation.errors))
                 return False
+            config_service.save_field_definitions(updated_fields)
+            config_service.save_record_types(updated_record_types)
             config_service.save_sections(updated_sections)
         except Exception as exc:
             messagebox.showerror("Ustawienia", f"Nie udalo sie zapisac sekcji.\n\n{exc}")
@@ -820,12 +985,12 @@ class WorkshopApp(tk.Tk):
             self.show_settings_preview()
         return True
 
-    def save_field_settings(self, field_editors, window: tk.Toplevel | None = None) -> bool:
+    def save_field_settings(self, field_editors, record_type_id: str, window: tk.Toplevel | None = None) -> bool:
         if not field_editors:
             messagebox.showerror("Ustawienia", "Brak pól do zapisania.")
             return False
 
-        updated_fields = []
+        edited_fields = []
         for editor in field_editors:
             label = editor["label_var"].get().strip()
             field_type = editor["type_var"].get().strip()
@@ -833,12 +998,13 @@ class WorkshopApp(tk.Tk):
                 messagebox.showerror("Ustawienia", "Etykieta pola nie może być pusta.")
                 return False
             try:
-                updated_fields.append(
+                edited_fields.append(
                     FieldDefinition(
                         name=editor["id"],
                         label=label,
                         field_type=FieldType(field_type),
                         required=bool(editor["required_var"].get()),
+                        visible=bool(editor["visible_var"].get()),
                         default="",
                         options=self.parse_field_options(editor["options_var"].get()),
                     )
@@ -847,9 +1013,28 @@ class WorkshopApp(tk.Tk):
                 messagebox.showerror("Ustawienia", str(exc))
                 return False
 
-        return self.save_field_definitions(updated_fields, window, "Pola zostały zapisane.")
+        config_service = ConfigService()
+        try:
+            config = config_service.load_all()
+            fields_by_name = {field.name: field for field in config.field_definitions}
+            for field in edited_fields:
+                fields_by_name[field.name] = field
+            record_type = self.find_record_type(config.record_types, record_type_id) or self.create_default_record_type(record_type_id)
+            updated_record_type = replace(record_type, fields=[field.name for field in edited_fields])
+            updated_record_types = [
+                updated_record_type if item.id == updated_record_type.id else item
+                for item in config.record_types
+            ]
+            if not any(item.id == updated_record_type.id for item in updated_record_types):
+                updated_record_types.append(updated_record_type)
+            updated_fields = list(fields_by_name.values())
+        except Exception as exc:
+            messagebox.showerror("Ustawienia", f"Nie udało się zapisać pól.\n\n{exc}")
+            return False
 
-    def add_field_settings(self, new_field_vars, window: tk.Toplevel | None = None) -> bool:
+        return self.save_field_definitions(updated_fields, updated_record_types, window, "Pola zostały zapisane.")
+
+    def add_field_settings(self, new_field_vars, record_type_id: str, window: tk.Toplevel | None = None) -> bool:
         field_id = new_field_vars["id_var"].get().strip()
         label = new_field_vars["label_var"].get().strip()
         field_type = new_field_vars["type_var"].get().strip()
@@ -866,15 +1051,24 @@ class WorkshopApp(tk.Tk):
             if any(field.name == field_id for field in config.field_definitions):
                 messagebox.showerror("Ustawienia", "Pole o takim ID już istnieje.")
                 return False
+            record_type = self.find_record_type(config.record_types, record_type_id) or self.create_default_record_type(record_type_id)
             new_field = FieldDefinition(
                 name=field_id,
                 label=label,
                 field_type=FieldType(field_type),
                 required=bool(new_field_vars["required_var"].get()),
+                visible=bool(new_field_vars["visible_var"].get()),
                 default="",
                 options=self.parse_field_options(new_field_vars["options_var"].get()),
             )
             updated_fields = [*config.field_definitions, new_field]
+            updated_record_type = replace(record_type, fields=[*record_type.fields, new_field.name])
+            updated_record_types = [
+                updated_record_type if item.id == updated_record_type.id else item
+                for item in config.record_types
+            ]
+            if not any(item.id == updated_record_type.id for item in updated_record_types):
+                updated_record_types.append(updated_record_type)
         except ValueError as exc:
             messagebox.showerror("Ustawienia", str(exc))
             return False
@@ -882,18 +1076,26 @@ class WorkshopApp(tk.Tk):
             messagebox.showerror("Ustawienia", f"Nie udało się dodać pola.\n\n{exc}")
             return False
 
-        return self.save_field_definitions(updated_fields, window, "Pole zostało dodane.")
+        return self.save_field_definitions(updated_fields, updated_record_types, window, "Pole zostało dodane.")
 
-    def save_field_definitions(self, field_definitions: list[FieldDefinition], window: tk.Toplevel | None, success_message: str) -> bool:
+    def save_field_definitions(
+        self,
+        field_definitions: list[FieldDefinition],
+        record_types: list[RecordTypeDefinition],
+        window: tk.Toplevel | None,
+        success_message: str,
+    ) -> bool:
         config_service = ConfigService()
         try:
             config = config_service.load_all()
-            updated_config = replace(config, field_definitions=field_definitions)
+            selected_record_type = self.find_record_type(record_types, config.record_type.id) or config.record_type
+            updated_config = replace(config, field_definitions=field_definitions, record_type=selected_record_type, record_types=record_types)
             validation = config_service.validate_all(updated_config)
             if not validation.is_valid:
                 messagebox.showerror("Ustawienia", "\n".join(validation.errors))
                 return False
             config_service.save_field_definitions(field_definitions)
+            config_service.save_record_types(record_types)
         except Exception as exc:
             messagebox.showerror("Ustawienia", f"Nie udało się zapisać pól.\n\n{exc}")
             return False
@@ -928,6 +1130,7 @@ class WorkshopApp(tk.Tk):
         section_id = new_section_vars["id_var"].get().strip()
         name = new_section_vars["name_var"].get().strip()
         section_type = new_section_vars["type_var"].get().strip()
+        record_type_id = new_section_vars["record_type_var"].get().strip()
         if not section_id:
             messagebox.showerror("Ustawienia", "ID sekcji nie moze byc puste.")
             return False
@@ -937,6 +1140,8 @@ class WorkshopApp(tk.Tk):
         if not section_type:
             messagebox.showerror("Ustawienia", "Typ sekcji nie moze byc pusty.")
             return False
+        if section_type == "custom" and (not record_type_id or record_type_id == "default"):
+            record_type_id = self.generated_record_type_id(section_id)
         try:
             order = int(new_section_vars["order_var"].get().strip())
         except ValueError:
@@ -954,15 +1159,28 @@ class WorkshopApp(tk.Tk):
                     id=section_id,
                     name=name,
                     type=section_type,
+                    record_type_id=record_type_id if section_type == "custom" else None,
                     visible=bool(new_section_vars["visible_var"].get()),
                     order=order,
                 )
             ]
-            updated_config = replace(config, sections=updated_sections)
+            updated_fields, updated_record_types = self.ensure_record_types_for_sections(
+                config.field_definitions,
+                config.record_types,
+                updated_sections,
+            )
+            updated_config = replace(
+                config,
+                field_definitions=updated_fields,
+                record_types=updated_record_types,
+                sections=updated_sections,
+            )
             validation = config_service.validate_all(updated_config)
             if not validation.is_valid:
                 messagebox.showerror("Ustawienia", "\n".join(validation.errors))
                 return False
+            config_service.save_field_definitions(updated_fields)
+            config_service.save_record_types(updated_record_types)
             config_service.save_sections(updated_sections)
         except Exception as exc:
             messagebox.showerror("Ustawienia", f"Nie udalo sie dodac sekcji.\n\n{exc}")

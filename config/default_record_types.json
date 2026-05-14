@@ -1,0 +1,41 @@
+[
+  {
+    "id": "default",
+    "name": "Default record",
+    "fields": [
+      "title",
+      "description",
+      "status",
+      "created_date"
+    ],
+    "description": "Generic default record type"
+  },
+  {
+    "id": "Konkurs",
+    "name": "Konkurs",
+    "fields": [
+      "Konkurs_title",
+      "Konkurs_description",
+      "Data"
+    ],
+    "description": "Custom section record type"
+  },
+  {
+    "id": "Siemaszko",
+    "name": "Siemaszko",
+    "fields": [
+      "Siemaszko_title",
+      "Siemaszko_description"
+    ],
+    "description": "Custom section record type"
+  },
+  {
+    "id": "Filmy",
+    "name": "Filmy",
+    "fields": [
+      "Filmy_title",
+      "Filmy_description"
+    ],
+    "description": "Custom section record type"
+  }
+]

@@ -10,6 +10,13 @@ class RecordTypeConfigService:
             raw_record_type = json.load(f)
         return self._record_type_from_dict(raw_record_type)
 
+    def load_record_types(self, path: str | Path) -> list[RecordTypeDefinition]:
+        with open(path, "r", encoding="utf-8") as f:
+            raw_record_types = json.load(f)
+        if not isinstance(raw_record_types, list):
+            raise ValueError("Record types configuration must be a list.")
+        return [self._record_type_from_dict(raw_record_type) for raw_record_type in raw_record_types]
+
     def _record_type_from_dict(self, raw_record_type) -> RecordTypeDefinition:
         if not isinstance(raw_record_type, dict):
             raise ValueError("Record type configuration must be an object.")

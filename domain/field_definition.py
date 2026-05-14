@@ -23,5 +23,6 @@ class FieldDefinition:
     label: str
     field_type: FieldType = FieldType.TEXT
     required: bool = False
+    visible: bool = True
     default: Any = None
     options: list[FieldOption] = field(default_factory=list)
