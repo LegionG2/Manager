@@ -1,7 +1,7 @@
 [
   {
     "name": "title",
-    "label": "Title",
+    "label": "Nazwa konkursu",
     "field_type": "text",
     "required": true,
     "default": ""
@@ -18,7 +18,7 @@
     "label": "Status",
     "field_type": "select",
     "required": true,
-    "default": "new",
+    "default": "",
     "options": [
       {
         "value": "new",
@@ -38,6 +38,13 @@
     "name": "created_date",
     "label": "Created date",
     "field_type": "date",
+    "required": false,
+    "default": ""
+  },
+  {
+    "name": "Organizator",
+    "label": "Organizator",
+    "field_type": "text",
     "required": false,
     "default": ""
   }

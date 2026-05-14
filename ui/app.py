@@ -7,7 +7,7 @@ from datetime import datetime
 
 from data.database import Database
 from domain.app_section import AppSectionDefinition
-from domain.field_definition import FieldDefinition, FieldType
+from domain.field_definition import FieldDefinition, FieldOption, FieldType
 from services.config_service import ConfigService
 from services.generic_record_service import GenericRecordService
 from services.order_service import OrderService
@@ -544,7 +544,7 @@ class WorkshopApp(tk.Tk):
                 field.label,
                 field.field_type.value,
                 "Tak" if field.required else "Nie",
-                ", ".join(f"{option.label} ({option.value})" for option in field.options) or "-",
+                ", ".join(option.label for option in field.options),
             )
             for field in config.field_definitions
         ]
@@ -671,23 +671,56 @@ class WorkshopApp(tk.Tk):
 
         fields_frame = ttk.LabelFrame(container, text="Pola", style="Group.TLabelframe", padding=8)
         fields_frame.grid(row=4, column=0, sticky="ew", pady=(0, 10))
-        field_columns = ("id", "label", "type", "required", "options")
-        fields_tree = ttk.Treeview(fields_frame, columns=field_columns, show="headings", height=5)
-        for column, heading, width in [
-            ("id", "ID", 95),
-            ("label", "Etykieta", 120),
-            ("type", "Typ", 75),
-            ("required", "Wymagane", 75),
-            ("options", "Opcje", 185),
-        ]:
-            fields_tree.heading(column, text=heading)
-            fields_tree.column(column, width=width, anchor="w", stretch=False)
+        for column, weight in [(0, 0), (1, 1), (2, 0), (3, 0), (4, 1)]:
+            fields_frame.columnconfigure(column, weight=weight)
+        for column, heading in enumerate(["ID", "Etykieta", "Typ", "Wymagane", "Opcje select"]):
+            ttk.Label(fields_frame, text=heading, style="Panel.TLabel").grid(row=0, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
+        field_editors = []
+        field_type_values = [field_type.value for field_type in FieldType]
         if fields:
-            for field in fields:
-                fields_tree.insert("", "end", values=field)
+            for row_index, (field_id, label, field_type, required, options) in enumerate(fields, start=1):
+                label_var = tk.StringVar(value=label)
+                type_var = tk.StringVar(value=field_type)
+                required_var = tk.BooleanVar(value=required == "Tak")
+                options_var = tk.StringVar(value=options)
+                ttk.Label(fields_frame, text=field_id, style="TLabel").grid(row=row_index, column=0, sticky="w", padx=(0, 8), pady=2)
+                ttk.Entry(fields_frame, textvariable=label_var, width=20).grid(row=row_index, column=1, sticky="ew", padx=(0, 8), pady=2)
+                ttk.Combobox(fields_frame, textvariable=type_var, values=field_type_values, state="readonly", width=10).grid(row=row_index, column=2, sticky="w", padx=(0, 8), pady=2)
+                ttk.Checkbutton(fields_frame, variable=required_var).grid(row=row_index, column=3, sticky="w", padx=(0, 8), pady=2)
+                ttk.Entry(fields_frame, textvariable=options_var, width=24).grid(row=row_index, column=4, sticky="ew", pady=2)
+                field_editors.append({
+                    "id": field_id,
+                    "label_var": label_var,
+                    "type_var": type_var,
+                    "required_var": required_var,
+                    "options_var": options_var,
+                })
         else:
-            fields_tree.insert("", "end", values=("Brak danych", "-", "-", "-", "-"))
-        fields_tree.grid(row=0, column=0, sticky="ew")
+            ttk.Label(fields_frame, text="Brak danych", style="TLabel").grid(row=1, column=0, columnspan=5, sticky="w", pady=2)
+
+        add_field_row = len(fields) + 1 if fields else 2
+        new_field_vars = {
+            "id_var": tk.StringVar(),
+            "label_var": tk.StringVar(),
+            "type_var": tk.StringVar(value=FieldType.TEXT.value),
+            "required_var": tk.BooleanVar(value=False),
+            "options_var": tk.StringVar(),
+        }
+        ttk.Entry(fields_frame, textvariable=new_field_vars["id_var"], width=14).grid(row=add_field_row, column=0, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Entry(fields_frame, textvariable=new_field_vars["label_var"], width=20).grid(row=add_field_row, column=1, sticky="ew", padx=(0, 8), pady=(8, 2))
+        ttk.Combobox(fields_frame, textvariable=new_field_vars["type_var"], values=field_type_values, state="readonly", width=10).grid(row=add_field_row, column=2, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Checkbutton(fields_frame, variable=new_field_vars["required_var"]).grid(row=add_field_row, column=3, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Entry(fields_frame, textvariable=new_field_vars["options_var"], width=24).grid(row=add_field_row, column=4, sticky="ew", pady=(8, 2))
+        ttk.Button(
+            fields_frame,
+            text="Dodaj pole",
+            command=lambda: self.add_field_settings(new_field_vars, window),
+        ).grid(row=add_field_row + 1, column=0, sticky="w", pady=(8, 0))
+        ttk.Button(
+            fields_frame,
+            text="Zapisz pola",
+            command=lambda: self.save_field_settings(field_editors, window),
+        ).grid(row=add_field_row + 1, column=1, sticky="w", pady=(8, 0))
 
         buttons = ttk.Frame(container)
         buttons.grid(row=5, column=0, sticky="ew")
@@ -786,6 +819,110 @@ class WorkshopApp(tk.Tk):
             window.destroy()
             self.show_settings_preview()
         return True
+
+    def save_field_settings(self, field_editors, window: tk.Toplevel | None = None) -> bool:
+        if not field_editors:
+            messagebox.showerror("Ustawienia", "Brak pól do zapisania.")
+            return False
+
+        updated_fields = []
+        for editor in field_editors:
+            label = editor["label_var"].get().strip()
+            field_type = editor["type_var"].get().strip()
+            if not label:
+                messagebox.showerror("Ustawienia", "Etykieta pola nie może być pusta.")
+                return False
+            try:
+                updated_fields.append(
+                    FieldDefinition(
+                        name=editor["id"],
+                        label=label,
+                        field_type=FieldType(field_type),
+                        required=bool(editor["required_var"].get()),
+                        default="",
+                        options=self.parse_field_options(editor["options_var"].get()),
+                    )
+                )
+            except ValueError as exc:
+                messagebox.showerror("Ustawienia", str(exc))
+                return False
+
+        return self.save_field_definitions(updated_fields, window, "Pola zostały zapisane.")
+
+    def add_field_settings(self, new_field_vars, window: tk.Toplevel | None = None) -> bool:
+        field_id = new_field_vars["id_var"].get().strip()
+        label = new_field_vars["label_var"].get().strip()
+        field_type = new_field_vars["type_var"].get().strip()
+        if not field_id:
+            messagebox.showerror("Ustawienia", "ID pola nie może być puste.")
+            return False
+        if not label:
+            messagebox.showerror("Ustawienia", "Etykieta pola nie może być pusta.")
+            return False
+
+        config_service = ConfigService()
+        try:
+            config = config_service.load_all()
+            if any(field.name == field_id for field in config.field_definitions):
+                messagebox.showerror("Ustawienia", "Pole o takim ID już istnieje.")
+                return False
+            new_field = FieldDefinition(
+                name=field_id,
+                label=label,
+                field_type=FieldType(field_type),
+                required=bool(new_field_vars["required_var"].get()),
+                default="",
+                options=self.parse_field_options(new_field_vars["options_var"].get()),
+            )
+            updated_fields = [*config.field_definitions, new_field]
+        except ValueError as exc:
+            messagebox.showerror("Ustawienia", str(exc))
+            return False
+        except Exception as exc:
+            messagebox.showerror("Ustawienia", f"Nie udało się dodać pola.\n\n{exc}")
+            return False
+
+        return self.save_field_definitions(updated_fields, window, "Pole zostało dodane.")
+
+    def save_field_definitions(self, field_definitions: list[FieldDefinition], window: tk.Toplevel | None, success_message: str) -> bool:
+        config_service = ConfigService()
+        try:
+            config = config_service.load_all()
+            updated_config = replace(config, field_definitions=field_definitions)
+            validation = config_service.validate_all(updated_config)
+            if not validation.is_valid:
+                messagebox.showerror("Ustawienia", "\n".join(validation.errors))
+                return False
+            config_service.save_field_definitions(field_definitions)
+        except Exception as exc:
+            messagebox.showerror("Ustawienia", f"Nie udało się zapisać pól.\n\n{exc}")
+            return False
+
+        self.refresh_configured_tabs()
+        messagebox.showinfo("Ustawienia", success_message)
+        if window is not None:
+            window.destroy()
+            self.show_settings_preview()
+        return True
+
+    def parse_field_options(self, raw_options: str) -> list[FieldOption]:
+        options = []
+        seen_values = set()
+        for raw_option in raw_options.split(","):
+            label = raw_option.strip()
+            if not label:
+                continue
+            value = self.option_value_from_label(label)
+            if value in seen_values:
+                continue
+            seen_values.add(value)
+            options.append(FieldOption(value=value, label=label))
+        return options
+
+    def option_value_from_label(self, label: str) -> str:
+        value = label.strip().lower().replace(" ", "_")
+        value = "".join(character for character in value if character.isalnum() or character == "_")
+        return value or "option"
 
     def add_section_settings(self, new_section_vars, window: tk.Toplevel | None = None) -> bool:
         section_id = new_section_vars["id_var"].get().strip()
