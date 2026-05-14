@@ -25,7 +25,9 @@
     "name": "Siemaszko",
     "fields": [
       "Siemaszko_title",
-      "Siemaszko_description"
+      "Siemaszko_description",
+      "Dobranoc",
+      "Hejo"
     ],
     "description": "Custom section record type"
   },
@@ -34,7 +36,8 @@
     "name": "Filmy",
     "fields": [
       "Filmy_title",
-      "Filmy_description"
+      "Filmy_description",
+      "Aktor"
     ],
     "description": "Custom section record type"
   }

@@ -16,6 +16,7 @@ from services.order_service import OrderService
 DEFAULT_APP_TITLE = "Manager"
 APP_TITLE = DEFAULT_APP_TITLE
 BASE_SECTION_IDS = {"dashboard", "records", "archive", "settings"}
+DEFAULT_FIELD_GROUP_NAME = "Dane podstawowe"
 DB_NAME = "warsztat_manager.db"
 SETTINGS_NAME = "settings.json"
 STATUSES = [
@@ -361,17 +362,24 @@ class WorkshopApp(tk.Tk):
         ttk.Label(details_panel, text="Szczegóły", style="Panel.TLabel").grid(row=0, column=0, sticky="w", pady=(0, 4))
         form = ttk.Frame(details_panel)
         form.grid(row=1, column=0, sticky="ew")
-        form.columnconfigure(1, weight=1)
+        form.columnconfigure(0, weight=1)
         field_widgets = {}
-        for row_index, field_definition in enumerate(field_definitions):
-            ttk.Label(form, text=field_definition.label, style="Panel.TLabel").grid(
-                row=row_index,
-                column=0,
-                sticky="w",
-                padx=(0, 8),
-                pady=3,
-            )
-            field_widgets[field_definition.name] = self.build_custom_field_widget(form, row_index, field_definition)
+        grouped_fields = self.group_custom_fields(field_definitions)
+        current_row = 0
+        for group_name, group_fields in grouped_fields:
+            group_frame = ttk.LabelFrame(form, text=group_name, style="Group.TLabelframe", padding=8)
+            group_frame.grid(row=current_row, column=0, sticky="ew", pady=(0, 8))
+            group_frame.columnconfigure(1, weight=1)
+            for field_row, field_definition in enumerate(group_fields):
+                ttk.Label(group_frame, text=field_definition.label, style="Panel.TLabel").grid(
+                    row=field_row,
+                    column=0,
+                    sticky="w",
+                    padx=(0, 8),
+                    pady=3,
+                )
+                field_widgets[field_definition.name] = self.build_custom_field_widget(group_frame, field_row, field_definition)
+            current_row += 1
 
         columns = ("id", *[field_definition.name for field_definition in field_definitions], "created_at")
         tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="browse")
@@ -477,8 +485,8 @@ class WorkshopApp(tk.Tk):
 
         actions = ttk.Frame(form)
         actions.grid(
-            row=len(field_definitions),
-            column=1,
+            row=current_row,
+            column=0,
             sticky="w",
             pady=(6, 0),
         )
@@ -547,9 +555,22 @@ class WorkshopApp(tk.Tk):
 
     def create_default_fields_for_record_type(self, record_type_id: str) -> list[FieldDefinition]:
         return [
-            FieldDefinition(name=self.default_field_id(record_type_id, "title"), label="Title", field_type=FieldType.TEXT, required=True, visible=True, default=""),
-            FieldDefinition(name=self.default_field_id(record_type_id, "description"), label="Description", field_type=FieldType.TEXT, required=False, visible=True, default=""),
+            FieldDefinition(name=self.default_field_id(record_type_id, "title"), label="Title", group_name=DEFAULT_FIELD_GROUP_NAME, field_type=FieldType.TEXT, required=True, visible=True, default=""),
+            FieldDefinition(name=self.default_field_id(record_type_id, "description"), label="Description", group_name=DEFAULT_FIELD_GROUP_NAME, field_type=FieldType.TEXT, required=False, visible=True, default=""),
         ]
+
+    def group_custom_fields(self, field_definitions: list[FieldDefinition]) -> list[tuple[str, list[FieldDefinition]]]:
+        grouped_fields = []
+        group_indexes = {}
+        for field_definition in field_definitions:
+            group_name = field_definition.group_name.strip() if field_definition.group_name else DEFAULT_FIELD_GROUP_NAME
+            if not group_name:
+                group_name = DEFAULT_FIELD_GROUP_NAME
+            if group_name not in group_indexes:
+                group_indexes[group_name] = len(grouped_fields)
+                grouped_fields.append((group_name, []))
+            grouped_fields[group_indexes[group_name]][1].append(field_definition)
+        return grouped_fields
 
     def ensure_record_types_for_sections(
         self,
@@ -666,7 +687,7 @@ class WorkshopApp(tk.Tk):
         list[tuple[str, str]],
         list[tuple[str, str, str, str, str]],
         list[tuple[str, str]],
-        list[tuple[str, str, str, str, str]],
+        list[tuple[str, str, str, str, str, str, str]],
         str | None,
     ]:
         try:
@@ -698,6 +719,7 @@ class WorkshopApp(tk.Tk):
             (
                 field.name,
                 field.label,
+                field.group_name or DEFAULT_FIELD_GROUP_NAME,
                 field.field_type.value,
                 "Tak" if field.required else "Nie",
                 "Tak" if field.visible else "Nie",
@@ -728,6 +750,7 @@ class WorkshopApp(tk.Tk):
             (
                 field.name,
                 field.label,
+                field.group_name or DEFAULT_FIELD_GROUP_NAME,
                 field.field_type.value,
                 "Tak" if field.required else "Nie",
                 "Tak" if field.visible else "Nie",
@@ -880,7 +903,7 @@ class WorkshopApp(tk.Tk):
 
         fields_frame = ttk.LabelFrame(container, text="Pola", style="Group.TLabelframe", padding=8)
         fields_frame.grid(row=4, column=0, sticky="ew", pady=(0, 10))
-        for column, weight in [(0, 0), (1, 1), (2, 0), (3, 0), (4, 0), (5, 1)]:
+        for column, weight in [(0, 0), (1, 1), (2, 1), (3, 0), (4, 0), (5, 0), (6, 1)]:
             fields_frame.columnconfigure(column, weight=weight)
         selected_record_type_var = tk.StringVar(value=selected_record_type_id)
         ttk.Label(fields_frame, text="Pola dla sekcji:", style="Panel.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=(0, 6))
@@ -896,42 +919,46 @@ class WorkshopApp(tk.Tk):
         ttk.Label(fields_frame, text="Wybierz sekcję, której pola chcesz edytować.", style="Sub.TLabel").grid(
             row=0,
             column=2,
-            columnspan=4,
+            columnspan=5,
             sticky="w",
             pady=(0, 6),
         )
-        for column, heading in enumerate(["ID", "Etykieta", "Typ", "Wymagane", "Widoczne", "Opcje select"]):
+        for column, heading in enumerate(["ID", "Etykieta", "Grupa", "Typ", "Wymagane", "Widoczne", "Opcje select"]):
             ttk.Label(fields_frame, text=heading, style="Panel.TLabel").grid(row=1, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
         field_editors = []
         field_type_values = [field_type.value for field_type in FieldType]
         if fields:
-            for row_index, (field_id, label, field_type, required, visible, options) in enumerate(fields, start=2):
+            for row_index, (field_id, label, group_name, field_type, required, visible, options) in enumerate(fields, start=2):
                 label_var = tk.StringVar(value=label)
+                group_var = tk.StringVar(value=group_name or DEFAULT_FIELD_GROUP_NAME)
                 type_var = tk.StringVar(value=field_type)
                 required_var = tk.BooleanVar(value=required == "Tak")
                 visible_var = tk.BooleanVar(value=visible == "Tak")
                 options_var = tk.StringVar(value=options)
                 ttk.Label(fields_frame, text=field_id, style="TLabel").grid(row=row_index, column=0, sticky="w", padx=(0, 8), pady=2)
                 ttk.Entry(fields_frame, textvariable=label_var, width=20).grid(row=row_index, column=1, sticky="ew", padx=(0, 8), pady=2)
-                ttk.Combobox(fields_frame, textvariable=type_var, values=field_type_values, state="readonly", width=10).grid(row=row_index, column=2, sticky="w", padx=(0, 8), pady=2)
-                ttk.Checkbutton(fields_frame, variable=required_var).grid(row=row_index, column=3, sticky="w", padx=(0, 8), pady=2)
-                ttk.Checkbutton(fields_frame, variable=visible_var).grid(row=row_index, column=4, sticky="w", padx=(0, 8), pady=2)
-                ttk.Entry(fields_frame, textvariable=options_var, width=24).grid(row=row_index, column=5, sticky="ew", pady=2)
+                ttk.Entry(fields_frame, textvariable=group_var, width=18).grid(row=row_index, column=2, sticky="ew", padx=(0, 8), pady=2)
+                ttk.Combobox(fields_frame, textvariable=type_var, values=field_type_values, state="readonly", width=10).grid(row=row_index, column=3, sticky="w", padx=(0, 8), pady=2)
+                ttk.Checkbutton(fields_frame, variable=required_var).grid(row=row_index, column=4, sticky="w", padx=(0, 8), pady=2)
+                ttk.Checkbutton(fields_frame, variable=visible_var).grid(row=row_index, column=5, sticky="w", padx=(0, 8), pady=2)
+                ttk.Entry(fields_frame, textvariable=options_var, width=24).grid(row=row_index, column=6, sticky="ew", pady=2)
                 field_editors.append({
                     "id": field_id,
                     "label_var": label_var,
+                    "group_var": group_var,
                     "type_var": type_var,
                     "required_var": required_var,
                     "visible_var": visible_var,
                     "options_var": options_var,
                 })
         else:
-            ttk.Label(fields_frame, text="Brak danych", style="TLabel").grid(row=2, column=0, columnspan=6, sticky="w", pady=2)
+            ttk.Label(fields_frame, text="Brak danych", style="TLabel").grid(row=2, column=0, columnspan=7, sticky="w", pady=2)
 
         add_field_row = len(fields) + 2 if fields else 3
         new_field_vars = {
             "id_var": tk.StringVar(),
             "label_var": tk.StringVar(),
+            "group_var": tk.StringVar(value=DEFAULT_FIELD_GROUP_NAME),
             "type_var": tk.StringVar(value=FieldType.TEXT.value),
             "required_var": tk.BooleanVar(value=False),
             "visible_var": tk.BooleanVar(value=True),
@@ -939,10 +966,11 @@ class WorkshopApp(tk.Tk):
         }
         ttk.Entry(fields_frame, textvariable=new_field_vars["id_var"], width=14).grid(row=add_field_row, column=0, sticky="w", padx=(0, 8), pady=(8, 2))
         ttk.Entry(fields_frame, textvariable=new_field_vars["label_var"], width=20).grid(row=add_field_row, column=1, sticky="ew", padx=(0, 8), pady=(8, 2))
-        ttk.Combobox(fields_frame, textvariable=new_field_vars["type_var"], values=field_type_values, state="readonly", width=10).grid(row=add_field_row, column=2, sticky="w", padx=(0, 8), pady=(8, 2))
-        ttk.Checkbutton(fields_frame, variable=new_field_vars["required_var"]).grid(row=add_field_row, column=3, sticky="w", padx=(0, 8), pady=(8, 2))
-        ttk.Checkbutton(fields_frame, variable=new_field_vars["visible_var"]).grid(row=add_field_row, column=4, sticky="w", padx=(0, 8), pady=(8, 2))
-        ttk.Entry(fields_frame, textvariable=new_field_vars["options_var"], width=24).grid(row=add_field_row, column=5, sticky="ew", pady=(8, 2))
+        ttk.Entry(fields_frame, textvariable=new_field_vars["group_var"], width=18).grid(row=add_field_row, column=2, sticky="ew", padx=(0, 8), pady=(8, 2))
+        ttk.Combobox(fields_frame, textvariable=new_field_vars["type_var"], values=field_type_values, state="readonly", width=10).grid(row=add_field_row, column=3, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Checkbutton(fields_frame, variable=new_field_vars["required_var"]).grid(row=add_field_row, column=4, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Checkbutton(fields_frame, variable=new_field_vars["visible_var"]).grid(row=add_field_row, column=5, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Entry(fields_frame, textvariable=new_field_vars["options_var"], width=24).grid(row=add_field_row, column=6, sticky="ew", pady=(8, 2))
         ttk.Button(
             fields_frame,
             text="Dodaj pole",
@@ -1077,6 +1105,7 @@ class WorkshopApp(tk.Tk):
         edited_fields = []
         for editor in field_editors:
             label = editor["label_var"].get().strip()
+            group_name = editor["group_var"].get().strip() or DEFAULT_FIELD_GROUP_NAME
             field_type = editor["type_var"].get().strip()
             if not label:
                 messagebox.showerror("Ustawienia", "Etykieta pola nie może być pusta.")
@@ -1086,6 +1115,7 @@ class WorkshopApp(tk.Tk):
                     FieldDefinition(
                         name=editor["id"],
                         label=label,
+                        group_name=group_name,
                         field_type=FieldType(field_type),
                         required=bool(editor["required_var"].get()),
                         visible=bool(editor["visible_var"].get()),
@@ -1116,11 +1146,12 @@ class WorkshopApp(tk.Tk):
             messagebox.showerror("Ustawienia", f"Nie udało się zapisać pól.\n\n{exc}")
             return False
 
-        return self.save_field_definitions(updated_fields, updated_record_types, window, "Pola zostały zapisane.")
+        return self.save_field_definitions(updated_fields, updated_record_types, window, "Pola zostały zapisane.", record_type_id)
 
     def add_field_settings(self, new_field_vars, record_type_id: str, window: tk.Toplevel | None = None) -> bool:
         field_id = new_field_vars["id_var"].get().strip()
         label = new_field_vars["label_var"].get().strip()
+        group_name = new_field_vars["group_var"].get().strip() or DEFAULT_FIELD_GROUP_NAME
         field_type = new_field_vars["type_var"].get().strip()
         if not field_id:
             messagebox.showerror("Ustawienia", "ID pola nie może być puste.")
@@ -1139,6 +1170,7 @@ class WorkshopApp(tk.Tk):
             new_field = FieldDefinition(
                 name=field_id,
                 label=label,
+                group_name=group_name,
                 field_type=FieldType(field_type),
                 required=bool(new_field_vars["required_var"].get()),
                 visible=bool(new_field_vars["visible_var"].get()),
@@ -1160,7 +1192,7 @@ class WorkshopApp(tk.Tk):
             messagebox.showerror("Ustawienia", f"Nie udało się dodać pola.\n\n{exc}")
             return False
 
-        return self.save_field_definitions(updated_fields, updated_record_types, window, "Pole zostało dodane.")
+        return self.save_field_definitions(updated_fields, updated_record_types, window, "Pole zostało dodane.", record_type_id)
 
     def save_field_definitions(
         self,
@@ -1168,6 +1200,7 @@ class WorkshopApp(tk.Tk):
         record_types: list[RecordTypeDefinition],
         window: tk.Toplevel | None,
         success_message: str,
+        selected_record_type_id: str | None = None,
     ) -> bool:
         config_service = ConfigService()
         try:
@@ -1188,7 +1221,7 @@ class WorkshopApp(tk.Tk):
         messagebox.showinfo("Ustawienia", success_message)
         if window is not None:
             window.destroy()
-            self.show_settings_preview()
+            self.show_settings_preview(selected_record_type_id)
         return True
 
     def parse_field_options(self, raw_options: str) -> list[FieldOption]:
