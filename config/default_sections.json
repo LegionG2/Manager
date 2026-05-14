@@ -20,7 +20,7 @@
     "type": "archive",
     "record_type_id": "default",
     "visible": true,
-    "order": 2
+    "order": 10
   },
   {
     "id": "settings",

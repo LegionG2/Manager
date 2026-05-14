@@ -362,6 +362,7 @@ class WorkshopApp(tk.Tk):
 
         columns = ("id", *[field_definition.name for field_definition in field_definitions], "created_at")
         tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="browse")
+        editing_record = {"id": None}
         headings = {"id": "ID", "created_at": "Dodano"}
         headings.update({field_definition.name: field_definition.label for field_definition in field_definitions})
         widths = {"id": 60, "created_at": 160}
@@ -384,10 +385,43 @@ class WorkshopApp(tk.Tk):
                 tree.insert(
                     "",
                     "end",
+                    iid=str(row["id"]),
                     values=(row["id"], *self.format_custom_record_values(field_definitions, data), row["created_at"] or ""),
                 )
 
-        def add_custom_record():
+        def clear_custom_form():
+            editing_record["id"] = None
+            for field_definition in field_definitions:
+                self.reset_custom_field_value(field_definition, field_widgets[field_definition.name])
+            submit_button.configure(text="Dodaj rekord")
+            archive_button.configure(state="disabled")
+            for item in tree.selection():
+                tree.selection_remove(item)
+
+        def selected_custom_record_id():
+            selected = tree.selection()
+            if not selected:
+                return None
+            try:
+                return int(selected[0])
+            except ValueError:
+                return None
+
+        def load_selected_custom_record(event=None):
+            record_id = selected_custom_record_id()
+            if record_id is None:
+                return
+            row = self.generic_record_service.fetch_record(record_id)
+            if row is None:
+                return
+            data = self.generic_record_service.decode_data(row)
+            for field_definition in field_definitions:
+                self.set_custom_field_value(field_definition, field_widgets[field_definition.name], data.get(field_definition.name))
+            editing_record["id"] = record_id
+            submit_button.configure(text="Zapisz zmiany")
+            archive_button.configure(state="normal")
+
+        def submit_custom_record():
             data = {}
             for field_definition in field_definitions:
                 try:
@@ -397,24 +431,49 @@ class WorkshopApp(tk.Tk):
                     return
                 data[field_definition.name] = value
             try:
-                self.generic_record_service.create_record(
-                    section_id=section.id,
-                    record_type_id=record_type_id,
-                    data=data,
-                )
+                if editing_record["id"] is None:
+                    self.generic_record_service.create_record(
+                        section_id=section.id,
+                        record_type_id=record_type_id,
+                        data=data,
+                    )
+                else:
+                    row = self.generic_record_service.fetch_record(editing_record["id"])
+                    existing_data = self.generic_record_service.decode_data(row)
+                    existing_data.update(data)
+                    self.generic_record_service.update_record(editing_record["id"], existing_data, record_type_id=record_type_id)
             except Exception as exc:
-                messagebox.showerror(section.name, f"Nie udało się dodać rekordu.\n\n{exc}")
+                messagebox.showerror(section.name, f"Nie udało się zapisać rekordu.\n\n{exc}")
                 return
-            for field_definition in field_definitions:
-                self.reset_custom_field_value(field_definition, field_widgets[field_definition.name])
+            clear_custom_form()
             refresh_custom_records()
 
-        ttk.Button(form, text="Dodaj rekord", command=add_custom_record).grid(
+        def archive_custom_record():
+            record_id = editing_record["id"] or selected_custom_record_id()
+            if record_id is None:
+                messagebox.showerror(section.name, "Wybierz rekord do archiwizacji.")
+                return
+            try:
+                self.generic_record_service.set_archived(record_id, True)
+            except Exception as exc:
+                messagebox.showerror(section.name, f"Nie udało się zarchiwizować rekordu.\n\n{exc}")
+                return
+            clear_custom_form()
+            refresh_custom_records()
+
+        actions = ttk.Frame(form)
+        actions.grid(
             row=len(field_definitions),
             column=1,
             sticky="w",
             pady=(6, 0),
         )
+        submit_button = ttk.Button(actions, text="Dodaj rekord", command=submit_custom_record)
+        submit_button.pack(side="left")
+        ttk.Button(actions, text="Anuluj edycję", command=clear_custom_form).pack(side="left", padx=(8, 0))
+        archive_button = ttk.Button(actions, text="Archiwizuj rekord", command=archive_custom_record, state="disabled")
+        archive_button.pack(side="left", padx=(8, 0))
+        tree.bind("<<TreeviewSelect>>", load_selected_custom_record)
         self.custom_record_refreshers[section.id] = refresh_custom_records
         refresh_custom_records()
 
@@ -562,6 +621,17 @@ class WorkshopApp(tk.Tk):
             variable.set(default_label)
         else:
             variable.set("" if field_definition.default is None else str(field_definition.default))
+
+    def set_custom_field_value(self, field_definition: FieldDefinition, field_widget: dict, value):
+        variable = field_widget["variable"]
+        if field_definition.field_type == FieldType.BOOLEAN:
+            variable.set(bool(value))
+        elif field_definition.field_type == FieldType.SELECT:
+            options_by_label = field_widget.get("options_by_label", {})
+            label_by_value = {option_value: label for label, option_value in options_by_label.items()}
+            variable.set(label_by_value.get(value, "" if value is None else str(value)))
+        else:
+            variable.set("" if value is None else str(value))
 
     def format_custom_record_values(self, field_definitions: list[FieldDefinition], data: dict) -> list[str]:
         values = []
