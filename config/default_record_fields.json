@@ -62,10 +62,24 @@
     "name": "Konkurs_title",
     "label": "Nazwa",
     "group_name": "Dane podstawowe",
-    "field_type": "text",
+    "field_type": "select",
     "required": true,
     "visible": true,
-    "default": ""
+    "default": "",
+    "options": [
+      {
+        "value": "grupa",
+        "label": "Grupa"
+      },
+      {
+        "value": "solo",
+        "label": "solo"
+      },
+      {
+        "value": "inne",
+        "label": "inne"
+      }
+    ]
   },
   {
     "name": "Konkurs_description",

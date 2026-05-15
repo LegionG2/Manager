@@ -637,9 +637,22 @@ class WorkshopApp(tk.Tk):
             except ValueError:
                 raise ValueError(f"Pole \"{field_definition.label}\" musi być liczbą.")
 
+        if field_type == FieldType.DATE:
+            if not raw_value:
+                return None
+            try:
+                datetime.strptime(raw_value, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError(f"Pole \"{field_definition.label}\" musi mieć format YYYY-MM-DD.")
+            return raw_value
+
         if field_type == FieldType.SELECT:
             options_by_label = field_widget.get("options_by_label", {})
-            return options_by_label.get(raw_value, raw_value)
+            if not raw_value:
+                return None
+            if raw_value not in options_by_label:
+                raise ValueError(f"Pole \"{field_definition.label}\" musi mieć wartość z listy opcji.")
+            return options_by_label[raw_value]
 
         return raw_value
 
@@ -769,10 +782,9 @@ class WorkshopApp(tk.Tk):
                 for section in settings_config.sections
                 if section.type == "custom"
             ]
-            record_type_choices = [record_type.id for record_type in settings_config.record_types]
-            for record_type_id in custom_record_type_ids:
-                if record_type_id not in record_type_choices:
-                    record_type_choices.append(record_type_id)
+            record_type_choices = list(dict.fromkeys(custom_record_type_ids))
+            if not record_type_choices:
+                record_type_choices = [settings_config.record_type.id]
             selected_record_type_id = selected_record_type_id or (custom_record_type_ids[0] if custom_record_type_ids else settings_config.record_type.id)
             if selected_record_type_id not in record_type_choices:
                 record_type_choices.append(selected_record_type_id)
@@ -826,11 +838,16 @@ class WorkshopApp(tk.Tk):
         sections_frame.grid(row=2, column=0, sticky="ew", pady=(0, 8))
         for column, weight in [(0, 1), (1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0)]:
             sections_frame.columnconfigure(column, weight=weight)
+        ttk.Label(
+            sections_frame,
+            text="Sekcje systemowe (dashboard, records, archive, settings) są chronione i nie są zwykłymi sekcjami danych.",
+            style="Sub.TLabel",
+        ).grid(row=0, column=0, columnspan=7, sticky="w", pady=(0, 6))
         for column, heading in enumerate(["Nazwa", "ID", "Typ", "Typ rekordu", "Widoczna", "Kolejnosc", ""]):
-            ttk.Label(sections_frame, text=heading, style="Panel.TLabel").grid(row=0, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
+            ttk.Label(sections_frame, text=heading, style="Panel.TLabel").grid(row=1, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
         section_editors = []
         if sections:
-            for row_index, (name, section_id, section_type, record_type_id, visible, order) in enumerate(sections, start=1):
+            for row_index, (name, section_id, section_type, record_type_id, visible, order) in enumerate(sections, start=2):
                 name_var = tk.StringVar(value=name)
                 record_type_var = tk.StringVar(value=record_type_id)
                 visible_var = tk.BooleanVar(value=visible == "Tak")
@@ -852,6 +869,7 @@ class WorkshopApp(tk.Tk):
                 delete_button.grid(row=row_index, column=6, sticky="w", padx=(8, 0), pady=2)
                 if section_id in BASE_SECTION_IDS:
                     delete_button.configure(state="disabled")
+                    delete_button.configure(text="Chroniona")
                 section_editors.append({
                     "id": section_id,
                     "type": section_type,
@@ -861,9 +879,9 @@ class WorkshopApp(tk.Tk):
                     "order_var": order_var,
                 })
         else:
-            ttk.Label(sections_frame, text="Brak danych", style="TLabel").grid(row=1, column=0, columnspan=7, sticky="w", pady=2)
-        add_row = len(sections) + 1 if sections else 2
-        next_order = add_row
+            ttk.Label(sections_frame, text="Brak danych", style="TLabel").grid(row=2, column=0, columnspan=7, sticky="w", pady=2)
+        add_row = len(sections) + 2 if sections else 3
+        next_order = len(sections) + 1
         for _name, _section_id, _section_type, _record_type_id, _visible, order in sections:
             try:
                 next_order = max(next_order, int(order) + 1)
@@ -906,7 +924,7 @@ class WorkshopApp(tk.Tk):
         for column, weight in [(0, 0), (1, 1), (2, 1), (3, 0), (4, 0), (5, 0), (6, 1)]:
             fields_frame.columnconfigure(column, weight=weight)
         selected_record_type_var = tk.StringVar(value=selected_record_type_id)
-        ttk.Label(fields_frame, text="Pola dla sekcji:", style="Panel.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=(0, 6))
+        ttk.Label(fields_frame, text="Pola dla sekcji danych:", style="Panel.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=(0, 6))
         record_type_combo = ttk.Combobox(fields_frame, textvariable=selected_record_type_var, values=record_type_choices, state="readonly", width=18)
         record_type_combo.grid(
             row=0,
@@ -916,13 +934,11 @@ class WorkshopApp(tk.Tk):
             pady=(0, 6),
         )
         record_type_combo.bind("<<ComboboxSelected>>", lambda event: (window.destroy(), self.show_settings_preview(selected_record_type_var.get())))
-        ttk.Label(fields_frame, text="Wybierz sekcję, której pola chcesz edytować.", style="Sub.TLabel").grid(
-            row=0,
-            column=2,
-            columnspan=5,
-            sticky="w",
-            pady=(0, 6),
-        )
+        ttk.Label(
+            fields_frame,
+            text="Wybierz sekcję custom/danych, której pola chcesz edytować. Sekcje systemowe nie mają edytowalnych pól.",
+            style="Sub.TLabel",
+        ).grid(row=0, column=2, columnspan=5, sticky="w", pady=(0, 6))
         for column, heading in enumerate(["ID", "Etykieta", "Grupa", "Typ", "Wymagane", "Widoczne", "Opcje select"]):
             ttk.Label(fields_frame, text=heading, style="Panel.TLabel").grid(row=1, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
         field_editors = []
@@ -1022,7 +1038,7 @@ class WorkshopApp(tk.Tk):
         self.app_title = app_name
         self.title(self.app_title)
         self.header_title_label.configure(text=self.app_title)
-        messagebox.showinfo("Ustawienia", "Nazwa aplikacji zostala zapisana.")
+        messagebox.showinfo("Ustawienia", "Wszystkie zmiany zostały zapisane.")
         if window is not None:
             window.destroy()
         return True
