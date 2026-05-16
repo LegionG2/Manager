@@ -120,6 +120,8 @@ class ConfigService:
                 "field_type": self._to_json_value(value.field_type),
                 "required": value.required,
                 "visible": value.visible,
+                "visible_in_form": value.visible_in_form,
+                "visible_in_table": value.visible_in_table,
                 "default": self._to_json_value(value.default),
             }
             if value.options:

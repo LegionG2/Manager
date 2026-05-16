@@ -25,5 +25,7 @@ class FieldDefinition:
     field_type: FieldType = FieldType.TEXT
     required: bool = False
     visible: bool = True
+    visible_in_form: bool = True
+    visible_in_table: bool = True
     default: Any = None
     options: list[FieldOption] = field(default_factory=list)

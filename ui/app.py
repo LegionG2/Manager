@@ -331,7 +331,8 @@ class WorkshopApp(tk.Tk):
 
     def build_custom_section_tab(self, parent, section: AppSectionDefinition):
         record_type_id, field_definitions = self.load_custom_field_definitions(section)
-        field_definitions = [field for field in field_definitions if field.visible]
+        form_fields = [field for field in field_definitions if field.visible_in_form]
+        table_fields = [field for field in field_definitions if field.visible_in_table]
         wrapper = ttk.Frame(parent, padding=16)
         wrapper.pack(fill="both", expand=True)
         wrapper.columnconfigure(0, weight=1)
@@ -343,7 +344,7 @@ class WorkshopApp(tk.Tk):
         paned.grid(row=1, column=0, sticky="nsew")
 
         list_panel = ttk.Frame(paned, style="Panel.TFrame", padding=8)
-        list_panel.rowconfigure(1, weight=1)
+        list_panel.rowconfigure(2, weight=1)
         list_panel.columnconfigure(0, weight=1)
         paned.add(list_panel, weight=3)
 
@@ -354,8 +355,16 @@ class WorkshopApp(tk.Tk):
         list_label = ttk.Label(list_panel, text="Rekordy", style="Panel.TLabel")
         list_label.grid(row=0, column=0, sticky="w", pady=(0, 4))
 
+        search_bar = ttk.Frame(list_panel)
+        search_bar.grid(row=1, column=0, sticky="ew", pady=(0, 6))
+        search_var = tk.StringVar()
+        ttk.Label(search_bar, text="Szukaj:", style="TLabel").grid(row=0, column=0, sticky="w", padx=(0, 6))
+        search_entry = ttk.Entry(search_bar, textvariable=search_var, width=32)
+        search_entry.grid(row=0, column=1, sticky="w", padx=(0, 6))
+        self.bind_tab_navigation(search_entry)
+
         table_wrap = ttk.Frame(list_panel)
-        table_wrap.grid(row=1, column=0, sticky="nsew")
+        table_wrap.grid(row=2, column=0, sticky="nsew")
         table_wrap.rowconfigure(0, weight=1)
         table_wrap.columnconfigure(0, weight=1)
 
@@ -364,7 +373,7 @@ class WorkshopApp(tk.Tk):
         form.grid(row=1, column=0, sticky="ew")
         form.columnconfigure(0, weight=1)
         field_widgets = {}
-        grouped_fields = self.group_custom_fields(field_definitions)
+        grouped_fields = self.group_custom_fields(form_fields)
         current_row = 0
         for group_name, group_fields in grouped_fields:
             group_frame = ttk.LabelFrame(form, text=group_name, style="Group.TLabelframe", padding=8)
@@ -381,11 +390,11 @@ class WorkshopApp(tk.Tk):
                 field_widgets[field_definition.name] = self.build_custom_field_widget(group_frame, field_row, field_definition)
             current_row += 1
 
-        columns = ("id", *[field_definition.name for field_definition in field_definitions], "created_at")
+        columns = ("id", *[field_definition.name for field_definition in table_fields], "created_at")
         tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="browse")
         editing_record = {"id": None}
         headings = {"id": "ID", "created_at": "Dodano"}
-        headings.update({field_definition.name: field_definition.label for field_definition in field_definitions})
+        headings.update({field_definition.name: field_definition.label for field_definition in table_fields})
         widths = {"id": 60, "created_at": 160}
         for column in columns:
             tree.heading(column, text=headings[column])
@@ -400,19 +409,26 @@ class WorkshopApp(tk.Tk):
         def refresh_custom_records():
             for item in tree.get_children():
                 tree.delete(item)
+            search_text = search_var.get().strip().lower()
             rows = self.generic_record_service.list_records(section.id, archived=0)
             for row in rows:
                 data = self.generic_record_service.decode_data(row)
+                if search_text and not self.custom_record_matches_search(table_fields, data, search_text):
+                    continue
                 tree.insert(
                     "",
                     "end",
                     iid=str(row["id"]),
-                    values=(row["id"], *self.format_custom_record_values(field_definitions, data), row["created_at"] or ""),
+                    values=(row["id"], *self.format_custom_record_values(table_fields, data), row["created_at"] or ""),
                 )
+
+        def clear_custom_search():
+            search_var.set("")
+            refresh_custom_records()
 
         def clear_custom_form():
             editing_record["id"] = None
-            for field_definition in field_definitions:
+            for field_definition in form_fields:
                 self.reset_custom_field_value(field_definition, field_widgets[field_definition.name])
             submit_button.configure(text="Dodaj rekord")
             archive_button.configure(state="disabled")
@@ -436,7 +452,7 @@ class WorkshopApp(tk.Tk):
             if row is None:
                 return
             data = self.generic_record_service.decode_data(row)
-            for field_definition in field_definitions:
+            for field_definition in form_fields:
                 self.set_custom_field_value(field_definition, field_widgets[field_definition.name], data.get(field_definition.name))
             editing_record["id"] = record_id
             submit_button.configure(text="Zapisz zmiany")
@@ -444,7 +460,7 @@ class WorkshopApp(tk.Tk):
 
         def submit_custom_record():
             data = {}
-            for field_definition in field_definitions:
+            for field_definition in form_fields:
                 try:
                     value = self.read_custom_field_value(field_definition, field_widgets[field_definition.name])
                 except ValueError as exc:
@@ -495,6 +511,8 @@ class WorkshopApp(tk.Tk):
         ttk.Button(actions, text="Anuluj edycję", command=clear_custom_form).pack(side="left", padx=(8, 0))
         archive_button = ttk.Button(actions, text="Archiwizuj rekord", command=archive_custom_record, state="disabled")
         archive_button.pack(side="left", padx=(8, 0))
+        ttk.Button(search_bar, text="Wyczyść", command=clear_custom_search).grid(row=0, column=2, sticky="e")
+        search_entry.bind("<KeyRelease>", lambda event: refresh_custom_records())
         tree.bind("<<TreeviewSelect>>", load_selected_custom_record)
         self.custom_record_refreshers[section.id] = refresh_custom_records
         refresh_custom_records()
@@ -694,13 +712,19 @@ class WorkshopApp(tk.Tk):
                 values.append("" if value is None else str(value))
         return values
 
+    def custom_record_matches_search(self, field_definitions: list[FieldDefinition], data: dict, search_text: str) -> bool:
+        for value in self.format_custom_record_values(field_definitions, data):
+            if search_text in value.lower():
+                return True
+        return False
+
     def load_settings_preview(
         self,
     ) -> tuple[
         list[tuple[str, str]],
         list[tuple[str, str, str, str, str]],
         list[tuple[str, str]],
-        list[tuple[str, str, str, str, str, str, str]],
+        list[tuple[str, str, str, str, str, str, str, str]],
         str | None,
     ]:
         try:
@@ -735,7 +759,8 @@ class WorkshopApp(tk.Tk):
                 field.group_name or DEFAULT_FIELD_GROUP_NAME,
                 field.field_type.value,
                 "Tak" if field.required else "Nie",
-                "Tak" if field.visible else "Nie",
+                "Tak" if field.visible_in_form else "Nie",
+                "Tak" if field.visible_in_table else "Nie",
                 ", ".join(option.label for option in field.options),
             )
             for field in config.field_definitions
@@ -766,7 +791,8 @@ class WorkshopApp(tk.Tk):
                 field.group_name or DEFAULT_FIELD_GROUP_NAME,
                 field.field_type.value,
                 "Tak" if field.required else "Nie",
-                "Tak" if field.visible else "Nie",
+                "Tak" if field.visible_in_form else "Nie",
+                "Tak" if field.visible_in_table else "Nie",
                 ", ".join(option.label for option in field.options),
             )
             for field in fields
@@ -921,7 +947,7 @@ class WorkshopApp(tk.Tk):
 
         fields_frame = ttk.LabelFrame(container, text="Pola", style="Group.TLabelframe", padding=8)
         fields_frame.grid(row=4, column=0, sticky="ew", pady=(0, 10))
-        for column, weight in [(0, 0), (1, 1), (2, 1), (3, 0), (4, 0), (5, 0), (6, 1)]:
+        for column, weight in [(0, 0), (1, 1), (2, 1), (3, 0), (4, 0), (5, 0), (6, 0), (7, 1)]:
             fields_frame.columnconfigure(column, weight=weight)
         selected_record_type_var = tk.StringVar(value=selected_record_type_id)
         ttk.Label(fields_frame, text="Pola dla sekcji danych:", style="Panel.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=(0, 6))
@@ -938,37 +964,40 @@ class WorkshopApp(tk.Tk):
             fields_frame,
             text="Wybierz sekcję custom/danych, której pola chcesz edytować. Sekcje systemowe nie mają edytowalnych pól.",
             style="Sub.TLabel",
-        ).grid(row=0, column=2, columnspan=5, sticky="w", pady=(0, 6))
-        for column, heading in enumerate(["ID", "Etykieta", "Grupa", "Typ", "Wymagane", "Widoczne", "Opcje select"]):
+        ).grid(row=0, column=2, columnspan=6, sticky="w", pady=(0, 6))
+        for column, heading in enumerate(["ID", "Etykieta", "Grupa", "Typ", "Wymagane", "Formularz", "Tabela", "Opcje select"]):
             ttk.Label(fields_frame, text=heading, style="Panel.TLabel").grid(row=1, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
         field_editors = []
         field_type_values = [field_type.value for field_type in FieldType]
         if fields:
-            for row_index, (field_id, label, group_name, field_type, required, visible, options) in enumerate(fields, start=2):
+            for row_index, (field_id, label, group_name, field_type, required, visible_in_form, visible_in_table, options) in enumerate(fields, start=2):
                 label_var = tk.StringVar(value=label)
                 group_var = tk.StringVar(value=group_name or DEFAULT_FIELD_GROUP_NAME)
                 type_var = tk.StringVar(value=field_type)
                 required_var = tk.BooleanVar(value=required == "Tak")
-                visible_var = tk.BooleanVar(value=visible == "Tak")
+                visible_in_form_var = tk.BooleanVar(value=visible_in_form == "Tak")
+                visible_in_table_var = tk.BooleanVar(value=visible_in_table == "Tak")
                 options_var = tk.StringVar(value=options)
                 ttk.Label(fields_frame, text=field_id, style="TLabel").grid(row=row_index, column=0, sticky="w", padx=(0, 8), pady=2)
                 ttk.Entry(fields_frame, textvariable=label_var, width=20).grid(row=row_index, column=1, sticky="ew", padx=(0, 8), pady=2)
                 ttk.Entry(fields_frame, textvariable=group_var, width=18).grid(row=row_index, column=2, sticky="ew", padx=(0, 8), pady=2)
                 ttk.Combobox(fields_frame, textvariable=type_var, values=field_type_values, state="readonly", width=10).grid(row=row_index, column=3, sticky="w", padx=(0, 8), pady=2)
                 ttk.Checkbutton(fields_frame, variable=required_var).grid(row=row_index, column=4, sticky="w", padx=(0, 8), pady=2)
-                ttk.Checkbutton(fields_frame, variable=visible_var).grid(row=row_index, column=5, sticky="w", padx=(0, 8), pady=2)
-                ttk.Entry(fields_frame, textvariable=options_var, width=24).grid(row=row_index, column=6, sticky="ew", pady=2)
+                ttk.Checkbutton(fields_frame, variable=visible_in_form_var).grid(row=row_index, column=5, sticky="w", padx=(0, 8), pady=2)
+                ttk.Checkbutton(fields_frame, variable=visible_in_table_var).grid(row=row_index, column=6, sticky="w", padx=(0, 8), pady=2)
+                ttk.Entry(fields_frame, textvariable=options_var, width=24).grid(row=row_index, column=7, sticky="ew", pady=2)
                 field_editors.append({
                     "id": field_id,
                     "label_var": label_var,
                     "group_var": group_var,
                     "type_var": type_var,
                     "required_var": required_var,
-                    "visible_var": visible_var,
+                    "visible_in_form_var": visible_in_form_var,
+                    "visible_in_table_var": visible_in_table_var,
                     "options_var": options_var,
                 })
         else:
-            ttk.Label(fields_frame, text="Brak danych", style="TLabel").grid(row=2, column=0, columnspan=7, sticky="w", pady=2)
+            ttk.Label(fields_frame, text="Brak danych", style="TLabel").grid(row=2, column=0, columnspan=8, sticky="w", pady=2)
 
         add_field_row = len(fields) + 2 if fields else 3
         new_field_vars = {
@@ -977,7 +1006,8 @@ class WorkshopApp(tk.Tk):
             "group_var": tk.StringVar(value=DEFAULT_FIELD_GROUP_NAME),
             "type_var": tk.StringVar(value=FieldType.TEXT.value),
             "required_var": tk.BooleanVar(value=False),
-            "visible_var": tk.BooleanVar(value=True),
+            "visible_in_form_var": tk.BooleanVar(value=True),
+            "visible_in_table_var": tk.BooleanVar(value=True),
             "options_var": tk.StringVar(),
         }
         ttk.Entry(fields_frame, textvariable=new_field_vars["id_var"], width=14).grid(row=add_field_row, column=0, sticky="w", padx=(0, 8), pady=(8, 2))
@@ -985,8 +1015,9 @@ class WorkshopApp(tk.Tk):
         ttk.Entry(fields_frame, textvariable=new_field_vars["group_var"], width=18).grid(row=add_field_row, column=2, sticky="ew", padx=(0, 8), pady=(8, 2))
         ttk.Combobox(fields_frame, textvariable=new_field_vars["type_var"], values=field_type_values, state="readonly", width=10).grid(row=add_field_row, column=3, sticky="w", padx=(0, 8), pady=(8, 2))
         ttk.Checkbutton(fields_frame, variable=new_field_vars["required_var"]).grid(row=add_field_row, column=4, sticky="w", padx=(0, 8), pady=(8, 2))
-        ttk.Checkbutton(fields_frame, variable=new_field_vars["visible_var"]).grid(row=add_field_row, column=5, sticky="w", padx=(0, 8), pady=(8, 2))
-        ttk.Entry(fields_frame, textvariable=new_field_vars["options_var"], width=24).grid(row=add_field_row, column=6, sticky="ew", pady=(8, 2))
+        ttk.Checkbutton(fields_frame, variable=new_field_vars["visible_in_form_var"]).grid(row=add_field_row, column=5, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Checkbutton(fields_frame, variable=new_field_vars["visible_in_table_var"]).grid(row=add_field_row, column=6, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Entry(fields_frame, textvariable=new_field_vars["options_var"], width=24).grid(row=add_field_row, column=7, sticky="ew", pady=(8, 2))
         ttk.Button(
             fields_frame,
             text="Dodaj pole",
@@ -1123,6 +1154,8 @@ class WorkshopApp(tk.Tk):
             label = editor["label_var"].get().strip()
             group_name = editor["group_var"].get().strip() or DEFAULT_FIELD_GROUP_NAME
             field_type = editor["type_var"].get().strip()
+            visible_in_form = bool(editor["visible_in_form_var"].get())
+            visible_in_table = bool(editor["visible_in_table_var"].get())
             if not label:
                 messagebox.showerror("Ustawienia", "Etykieta pola nie może być pusta.")
                 return False
@@ -1134,7 +1167,9 @@ class WorkshopApp(tk.Tk):
                         group_name=group_name,
                         field_type=FieldType(field_type),
                         required=bool(editor["required_var"].get()),
-                        visible=bool(editor["visible_var"].get()),
+                        visible=visible_in_form and visible_in_table,
+                        visible_in_form=visible_in_form,
+                        visible_in_table=visible_in_table,
                         default="",
                         options=self.parse_field_options(editor["options_var"].get()),
                     )
@@ -1169,6 +1204,8 @@ class WorkshopApp(tk.Tk):
         label = new_field_vars["label_var"].get().strip()
         group_name = new_field_vars["group_var"].get().strip() or DEFAULT_FIELD_GROUP_NAME
         field_type = new_field_vars["type_var"].get().strip()
+        visible_in_form = bool(new_field_vars["visible_in_form_var"].get())
+        visible_in_table = bool(new_field_vars["visible_in_table_var"].get())
         if not field_id:
             messagebox.showerror("Ustawienia", "ID pola nie może być puste.")
             return False
@@ -1189,7 +1226,9 @@ class WorkshopApp(tk.Tk):
                 group_name=group_name,
                 field_type=FieldType(field_type),
                 required=bool(new_field_vars["required_var"].get()),
-                visible=bool(new_field_vars["visible_var"].get()),
+                visible=visible_in_form and visible_in_table,
+                visible_in_form=visible_in_form,
+                visible_in_table=visible_in_table,
                 default="",
                 options=self.parse_field_options(new_field_vars["options_var"].get()),
             )
@@ -1572,7 +1611,11 @@ class WorkshopApp(tk.Tk):
         vsb.grid(row=0, column=1, sticky="ns")
         hsb.grid(row=1, column=0, sticky="ew")
 
-        ttk.Label(root, text="Archiwum sekcji własnych", style="Panel.TLabel").grid(row=2, column=0, sticky="w", pady=(8, 4))
+        custom_archive_top = ttk.Frame(root)
+        custom_archive_top.grid(row=2, column=0, sticky="ew", pady=(8, 4))
+        custom_archive_top.columnconfigure(0, weight=1)
+        ttk.Label(custom_archive_top, text="Archiwum sekcji własnych", style="Panel.TLabel").grid(row=0, column=0, sticky="w")
+        ttk.Button(custom_archive_top, text="Przywróć rekord custom", command=self.restore_archived_custom_record).grid(row=0, column=1, sticky="e")
         custom_table_wrap = ttk.Frame(root, style="Panel.TFrame", padding=8)
         custom_table_wrap.grid(row=3, column=0, sticky="nsew")
         custom_table_wrap.rowconfigure(0, weight=1)
@@ -1815,7 +1858,7 @@ class WorkshopApp(tk.Tk):
                 searchable = " ".join(str(value).lower() for value in values)
                 if search_text and search_text not in searchable:
                     continue
-                self.custom_archive_tree.insert("", "end", values=values)
+                self.custom_archive_tree.insert("", "end", iid=str(row["id"]), values=values)
 
     def format_custom_archive_data(self, data: dict) -> str:
         if not data:
@@ -1977,6 +2020,38 @@ class WorkshopApp(tk.Tk):
         self.order_service.restore_order(order_id)
         self.refresh_all_tables()
         self.load_order_to_form(order_id)
+
+    def restore_archived_custom_record(self):
+        if not hasattr(self, "custom_archive_tree"):
+            return
+        selection = self.custom_archive_tree.selection()
+        if not selection:
+            messagebox.showwarning(APP_TITLE, "Wybierz rekord custom z archiwum.")
+            return
+        values = self.custom_archive_tree.item(selection[0], "values")
+        try:
+            record_id = int(values[0])
+        except (IndexError, TypeError, ValueError):
+            messagebox.showerror(APP_TITLE, "Nie udało się odczytać ID rekordu custom.")
+            return
+
+        row = self.generic_record_service.fetch_record(record_id)
+        if row is None:
+            messagebox.showerror(APP_TITLE, "Nie znaleziono rekordu custom.")
+            self.refresh_custom_archive_table()
+            return
+
+        section_id = row["section_id"]
+        try:
+            self.generic_record_service.set_archived(record_id, False)
+        except Exception as exc:
+            messagebox.showerror(APP_TITLE, f"Nie udało się przywrócić rekordu custom.\n\n{exc}")
+            return
+
+        self.refresh_archive_table()
+        refresh_custom_records = self.custom_record_refreshers.get(section_id)
+        if refresh_custom_records:
+            refresh_custom_records()
 
     def export_csv(self):
         filepath = filedialog.asksaveasfilename(
