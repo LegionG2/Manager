@@ -10,12 +10,16 @@ class FieldConfigService:
             raw_fields = json.load(f)
         if not isinstance(raw_fields, list):
             raise ValueError("Field configuration must be a list.")
-        return [self._field_from_dict(raw_field) for raw_field in raw_fields]
+        return [self._field_from_dict(raw_field, index) for index, raw_field in enumerate(raw_fields)]
 
-    def _field_from_dict(self, raw_field) -> FieldDefinition:
+    def _field_from_dict(self, raw_field, index: int = 0) -> FieldDefinition:
         if not isinstance(raw_field, dict):
             raise ValueError("Each field definition must be an object.")
         legacy_visible = bool(raw_field.get("visible", True))
+        try:
+            order = int(raw_field.get("order", index))
+        except (TypeError, ValueError):
+            order = index
         options = [
             FieldOption(value=str(raw_option["value"]), label=str(raw_option["label"]))
             for raw_option in raw_field.get("options", [])
@@ -29,6 +33,7 @@ class FieldConfigService:
             visible=legacy_visible,
             visible_in_form=bool(raw_field.get("visible_in_form", legacy_visible)),
             visible_in_table=bool(raw_field.get("visible_in_table", legacy_visible)),
+            order=order,
             default=raw_field.get("default"),
             options=options,
         )

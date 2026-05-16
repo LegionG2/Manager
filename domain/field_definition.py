@@ -27,5 +27,6 @@ class FieldDefinition:
     visible: bool = True
     visible_in_form: bool = True
     visible_in_table: bool = True
+    order: int = 0
     default: Any = None
     options: list[FieldOption] = field(default_factory=list)
