@@ -5,6 +5,7 @@ from typing import Any
 
 class FieldType(str, Enum):
     TEXT = "text"
+    LONG_TEXT = "long_text"
     NUMBER = "number"
     DATE = "date"
     BOOLEAN = "boolean"

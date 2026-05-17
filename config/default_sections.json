@@ -3,7 +3,7 @@
     "id": "dashboard",
     "name": "Blokowisko",
     "type": "dashboard",
-    "visible": true,
+    "visible": false,
     "order": 0
   },
   {
@@ -26,31 +26,15 @@
     "id": "settings",
     "name": "Settings",
     "type": "settings",
-    "visible": true,
+    "visible": false,
     "order": 3
   },
   {
-    "id": "Konkurs",
-    "name": "Konkurs",
+    "id": "konkursy",
+    "name": "Konkursy",
     "type": "custom",
-    "record_type_id": "Konkurs",
+    "record_type_id": "konkursy",
     "visible": true,
-    "order": 5
-  },
-  {
-    "id": "Siemaszko",
-    "name": "Siemaszko",
-    "type": "custom",
-    "record_type_id": "Siemaszko",
-    "visible": true,
-    "order": 6
-  },
-  {
-    "id": "Filmy",
-    "name": "Filmy",
-    "type": "custom",
-    "record_type_id": "Filmy",
-    "visible": true,
-    "order": 7
+    "order": 11
   }
 ]

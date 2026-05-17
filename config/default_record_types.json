@@ -16,7 +16,9 @@
     "fields": [
       "Konkurs_title",
       "Konkurs_description",
-      "Data"
+      "Data",
+      "Wykonanie",
+      "Nagroda"
     ],
     "description": "Custom section record type"
   },
@@ -38,6 +40,17 @@
       "Filmy_title",
       "Filmy_description",
       "Aktor"
+    ],
+    "description": "Custom section record type"
+  },
+  {
+    "id": "konkursy",
+    "name": "Konkursy",
+    "fields": [
+      "konkursy_title",
+      "konkursy_description",
+      "Data zakończenia",
+      "Zasady"
     ],
     "description": "Custom section record type"
   }

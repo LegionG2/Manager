@@ -6,6 +6,9 @@
     "field_type": "text",
     "required": true,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 0,
     "default": ""
   },
   {
@@ -15,6 +18,9 @@
     "field_type": "text",
     "required": false,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 1,
     "default": ""
   },
   {
@@ -24,6 +30,9 @@
     "field_type": "select",
     "required": true,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 2,
     "default": "",
     "options": [
       {
@@ -47,6 +56,9 @@
     "field_type": "date",
     "required": false,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 3,
     "default": ""
   },
   {
@@ -56,15 +68,21 @@
     "field_type": "text",
     "required": false,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 4,
     "default": ""
   },
   {
     "name": "Konkurs_title",
     "label": "Nazwa",
     "group_name": "Dane podstawowe",
-    "field_type": "select",
+    "field_type": "boolean",
     "required": true,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 5,
     "default": "",
     "options": [
       {
@@ -88,6 +106,9 @@
     "field_type": "text",
     "required": false,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 6,
     "default": ""
   },
   {
@@ -97,6 +118,9 @@
     "field_type": "text",
     "required": true,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 7,
     "default": ""
   },
   {
@@ -106,6 +130,9 @@
     "field_type": "text",
     "required": false,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 8,
     "default": ""
   },
   {
@@ -115,6 +142,9 @@
     "field_type": "text",
     "required": false,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 9,
     "default": ""
   },
   {
@@ -124,6 +154,9 @@
     "field_type": "text",
     "required": true,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 10,
     "default": ""
   },
   {
@@ -133,6 +166,9 @@
     "field_type": "text",
     "required": false,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 11,
     "default": ""
   },
   {
@@ -142,6 +178,9 @@
     "field_type": "text",
     "required": false,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 12,
     "default": ""
   },
   {
@@ -151,6 +190,9 @@
     "field_type": "text",
     "required": false,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 13,
     "default": ""
   },
   {
@@ -160,6 +202,95 @@
     "field_type": "text",
     "required": false,
     "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 14,
+    "default": ""
+  },
+  {
+    "name": "Wykonanie",
+    "label": "Wykonanie",
+    "group_name": "Dane podstawowe",
+    "field_type": "boolean",
+    "required": false,
+    "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 40,
+    "default": "",
+    "options": [
+      {
+        "value": "tak",
+        "label": "tak"
+      },
+      {
+        "value": "nie",
+        "label": "nie"
+      },
+      {
+        "value": "być_może",
+        "label": "być może"
+      }
+    ]
+  },
+  {
+    "name": "Nagroda",
+    "label": "Nagroda",
+    "group_name": "Dane podstawowe",
+    "field_type": "number",
+    "required": false,
+    "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 50,
+    "default": ""
+  },
+  {
+    "name": "konkursy_title",
+    "label": "Organizator",
+    "group_name": "Dane podstawowe",
+    "field_type": "text",
+    "required": true,
+    "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 10,
+    "default": ""
+  },
+  {
+    "name": "konkursy_description",
+    "label": "Data rozpoczęcia",
+    "group_name": "Data",
+    "field_type": "date",
+    "required": false,
+    "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 20,
+    "default": ""
+  },
+  {
+    "name": "Data zakończenia",
+    "label": "Data zakończenia",
+    "group_name": "Data",
+    "field_type": "date",
+    "required": false,
+    "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 30,
+    "default": ""
+  },
+  {
+    "name": "Zasady",
+    "label": "Zasady",
+    "group_name": "Zasady",
+    "field_type": "long_text",
+    "required": false,
+    "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "order": 40,
     "default": ""
   }
 ]
