@@ -393,13 +393,36 @@ class WorkshopApp(tk.Tk):
         columns = ("id", *[field_definition.name for field_definition in table_fields], "created_at")
         tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="browse")
         editing_record = {"id": None}
+        sort_state = {"column": None, "descending": False}
+        table_fields_by_name = {field_definition.name: field_definition for field_definition in table_fields}
         headings = {"id": "ID", "created_at": "Dodano"}
         headings.update({field_definition.name: field_definition.label for field_definition in table_fields})
         widths = {"id": 60, "created_at": 160}
+
+        def update_custom_headings():
+            for heading_column in columns:
+                heading_text = headings[heading_column]
+                if sort_state["column"] == heading_column:
+                    heading_text = f"{heading_text} {'↓' if sort_state['descending'] else '↑'}"
+                tree.heading(
+                    heading_column,
+                    text=heading_text,
+                    command=lambda column=heading_column: sort_custom_records(column),
+                )
+
+        def sort_custom_records(column: str):
+            if sort_state["column"] == column:
+                sort_state["descending"] = not sort_state["descending"]
+            else:
+                sort_state["column"] = column
+                sort_state["descending"] = False
+            update_custom_headings()
+            refresh_custom_records()
+
         for column in columns:
-            tree.heading(column, text=headings[column])
             tree.column(column, width=widths.get(column, 180), minwidth=50, anchor="w")
         tree.column("id", anchor="center")
+        update_custom_headings()
         tree.grid(row=0, column=0, sticky="nsew")
 
         vsb = ttk.Scrollbar(table_wrap, orient="vertical", command=tree.yview)
@@ -411,10 +434,18 @@ class WorkshopApp(tk.Tk):
                 tree.delete(item)
             search_text = search_var.get().strip().lower()
             rows = self.generic_record_service.list_records(section.id, archived=0)
+            visible_rows = []
             for row in rows:
                 data = self.generic_record_service.decode_data(row)
                 if search_text and not self.custom_record_matches_search(table_fields, data, search_text):
                     continue
+                visible_rows.append((row, data))
+            if sort_state["column"]:
+                visible_rows.sort(
+                    key=lambda item: self.custom_record_sort_value(sort_state["column"], item[0], item[1], table_fields_by_name),
+                    reverse=sort_state["descending"],
+                )
+            for row, data in visible_rows:
                 tree.insert(
                     "",
                     "end",
@@ -720,6 +751,29 @@ class WorkshopApp(tk.Tk):
             if search_text in value.lower():
                 return True
         return False
+
+    def custom_record_sort_value(self, column: str, row, data: dict, fields_by_name: dict[str, FieldDefinition]):
+        if column == "id":
+            return (0, int(row["id"]))
+        if column == "created_at":
+            return (0, row["created_at"] or "")
+
+        field_definition = fields_by_name.get(column)
+        value = data.get(column)
+        if value is None or value == "":
+            return (1, "")
+        if field_definition is None:
+            return (0, str(value).lower())
+        if field_definition.field_type == FieldType.NUMBER:
+            try:
+                return (0, float(str(value).replace(",", ".")))
+            except ValueError:
+                return (1, str(value).lower())
+        if field_definition.field_type == FieldType.BOOLEAN:
+            return (0, 1 if value else 0)
+        if field_definition.field_type == FieldType.SELECT:
+            return (0, self.format_custom_record_values([field_definition], data)[0].lower())
+        return (0, str(value).lower())
 
     def load_settings_preview(
         self,
