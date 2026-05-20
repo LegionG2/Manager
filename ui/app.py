@@ -701,8 +701,12 @@ class WorkshopApp(tk.Tk):
             return {"widget": widget, "variable": variable, "options_by_label": options_by_label}
 
         if field_type == FieldType.LONG_TEXT:
+            field_frame = ttk.Frame(parent)
+            field_frame.grid(row=row_index, column=1, sticky="ew", pady=3)
+            field_frame.columnconfigure(0, weight=1)
+
             widget = tk.Text(
-                parent,
+                field_frame,
                 height=5,
                 wrap="word",
                 relief="sunken",
@@ -711,10 +715,16 @@ class WorkshopApp(tk.Tk):
                 fg=self.colors["text"],
                 insertbackground=self.colors["text"],
             )
-            widget.grid(row=row_index, column=1, sticky="ew", pady=3)
+            widget.grid(row=0, column=0, sticky="ew")
+            ttk.Button(
+                field_frame,
+                text="Powiększ",
+                command=lambda text_widget=widget, label=field_definition.label: self.open_long_text_editor(text_widget, label),
+            ).grid(row=1, column=0, sticky="w", pady=(4, 0))
             if field_definition.default is not None:
                 widget.insert("1.0", str(field_definition.default))
             self.bind_tab_navigation(widget)
+            self.bind_text_editing(widget)
             return {"widget": widget}
 
         variable = tk.StringVar(value="" if field_definition.default is None else str(field_definition.default))
@@ -2075,6 +2085,95 @@ class WorkshopApp(tk.Tk):
         widget.configure(takefocus=True)
         widget.bind("<Tab>", self.focus_next_widget)
         widget.bind("<Shift-Tab>", self.focus_prev_widget)
+
+    def bind_text_editing(self, widget):
+        widget.bind("<Control-v>", self.paste_text_widget)
+        widget.bind("<Control-V>", self.paste_text_widget)
+        widget.bind("<Control-c>", self.copy_text_widget)
+        widget.bind("<Control-C>", self.copy_text_widget)
+        widget.bind("<Control-x>", self.cut_text_widget)
+        widget.bind("<Control-X>", self.cut_text_widget)
+        widget.bind("<Control-a>", self.select_all_text_widget)
+        widget.bind("<Control-A>", self.select_all_text_widget)
+
+        menu = tk.Menu(widget, tearoff=0)
+        menu.add_command(label="Kopiuj", command=lambda: widget.event_generate("<<Copy>>"))
+        menu.add_command(label="Wklej", command=lambda: widget.event_generate("<<Paste>>"))
+        menu.add_command(label="Wytnij", command=lambda: widget.event_generate("<<Cut>>"))
+        menu.add_separator()
+        menu.add_command(label="Zaznacz wszystko", command=lambda: self.select_all_text_widget_for(widget))
+        widget.bind("<Button-3>", lambda event: self.show_text_context_menu(event, menu))
+
+    def copy_text_widget(self, event):
+        event.widget.event_generate("<<Copy>>")
+        return "break"
+
+    def paste_text_widget(self, event):
+        event.widget.event_generate("<<Paste>>")
+        return "break"
+
+    def cut_text_widget(self, event):
+        event.widget.event_generate("<<Cut>>")
+        return "break"
+
+    def select_all_text_widget(self, event):
+        self.select_all_text_widget_for(event.widget)
+        return "break"
+
+    def select_all_text_widget_for(self, widget):
+        widget.tag_add("sel", "1.0", "end-1c")
+        widget.mark_set("insert", "end-1c")
+        widget.see("insert")
+
+    def show_text_context_menu(self, event, menu):
+        event.widget.focus_set()
+        menu.tk_popup(event.x_root, event.y_root)
+        menu.grab_release()
+        return "break"
+
+    def open_long_text_editor(self, source_widget, field_label: str):
+        c = self.colors
+        window = tk.Toplevel(self)
+        window.title(field_label)
+        window.geometry("720x520")
+        window.minsize(520, 360)
+        window.transient(self)
+        window.grab_set()
+        window.configure(bg=c["window_bg"])
+
+        body = ttk.Frame(window, padding=12)
+        body.pack(fill="both", expand=True)
+        body.rowconfigure(0, weight=1)
+        body.columnconfigure(0, weight=1)
+
+        editor = tk.Text(
+            body,
+            height=18,
+            wrap="word",
+            relief="sunken",
+            borderwidth=1,
+            bg=c["entry_bg"],
+            fg=c["text"],
+            insertbackground=c["text"],
+        )
+        editor.grid(row=0, column=0, sticky="nsew")
+        scrollbar = ttk.Scrollbar(body, orient="vertical", command=editor.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        editor.configure(yscrollcommand=scrollbar.set)
+        editor.insert("1.0", source_widget.get("1.0", "end-1c"))
+        self.bind_text_editing(editor)
+        editor.focus_set()
+
+        actions = ttk.Frame(body)
+        actions.grid(row=1, column=0, columnspan=2, sticky="e", pady=(10, 0))
+
+        def save_text():
+            source_widget.delete("1.0", "end")
+            source_widget.insert("1.0", editor.get("1.0", "end-1c"))
+            window.destroy()
+
+        ttk.Button(actions, text="Zapisz", style="Primary.TButton", command=save_text).pack(side="left", padx=(0, 8))
+        ttk.Button(actions, text="Anuluj", command=window.destroy).pack(side="left")
 
     def focus_next_widget(self, event):
         event.widget.tk_focusNext().focus_set()
