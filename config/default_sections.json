@@ -36,5 +36,13 @@
     "record_type_id": "konkursy",
     "visible": true,
     "order": 11
+  },
+  {
+    "id": "CS",
+    "name": "Konta CS",
+    "type": "custom",
+    "record_type_id": "CS",
+    "visible": true,
+    "order": 12
   }
 ]

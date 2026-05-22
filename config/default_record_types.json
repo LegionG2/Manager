@@ -53,5 +53,16 @@
       "Zasady"
     ],
     "description": "Custom section record type"
+  },
+  {
+    "id": "CS",
+    "name": "Cs",
+    "fields": [
+      "CS_title",
+      "CS_description",
+      "Drop",
+      "Tydzień"
+    ],
+    "description": "Custom section record type"
   }
 ]

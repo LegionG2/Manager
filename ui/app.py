@@ -1126,7 +1126,7 @@ class WorkshopApp(tk.Tk):
 
         fields_frame = ttk.LabelFrame(container, text="Pola", style="Group.TLabelframe", padding=8)
         fields_frame.grid(row=4, column=0, sticky="ew", pady=(0, 10))
-        for column, weight in [(0, 0), (1, 1), (2, 1), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 1)]:
+        for column, weight in [(0, 0), (1, 1), (2, 1), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 1), (9, 0)]:
             fields_frame.columnconfigure(column, weight=weight)
         selected_record_type_var = tk.StringVar(value=selected_record_type_id)
         ttk.Label(fields_frame, text="Pola dla sekcji danych:", style="Panel.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=(0, 6))
@@ -1143,9 +1143,10 @@ class WorkshopApp(tk.Tk):
             fields_frame,
             text="Wybierz sekcję custom/danych, której pola chcesz edytować. Sekcje systemowe nie mają edytowalnych pól.",
             style="Sub.TLabel",
-        ).grid(row=0, column=2, columnspan=7, sticky="w", pady=(0, 6))
+        ).grid(row=0, column=2, columnspan=8, sticky="w", pady=(0, 6))
         for column, heading in enumerate(["ID", "Etykieta", "Grupa", "Kolejność", "Typ", "Wymagane", "Formularz", "Tabela", "Opcje select"]):
             ttk.Label(fields_frame, text=heading, style="Panel.TLabel").grid(row=1, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
+        ttk.Label(fields_frame, text="Akcje", style="Panel.TLabel").grid(row=1, column=9, sticky="w", padx=(0, 8), pady=(0, 4))
         field_editors = []
         field_type_values = [field_type.value for field_type in FieldType]
         if fields:
@@ -1167,6 +1168,15 @@ class WorkshopApp(tk.Tk):
                 ttk.Checkbutton(fields_frame, variable=visible_in_form_var).grid(row=row_index, column=6, sticky="w", padx=(0, 8), pady=2)
                 ttk.Checkbutton(fields_frame, variable=visible_in_table_var).grid(row=row_index, column=7, sticky="w", padx=(0, 8), pady=2)
                 ttk.Entry(fields_frame, textvariable=options_var, width=24).grid(row=row_index, column=8, sticky="ew", pady=2)
+                ttk.Button(
+                    fields_frame,
+                    text="Usuń",
+                    command=lambda current_field_id=field_id: self.delete_field_settings(
+                        current_field_id,
+                        selected_record_type_var.get(),
+                        window,
+                    ),
+                ).grid(row=row_index, column=9, sticky="w", padx=(8, 0), pady=2)
                 field_editors.append({
                     "id": field_id,
                     "label_var": label_var,
@@ -1179,7 +1189,7 @@ class WorkshopApp(tk.Tk):
                     "options_var": options_var,
                 })
         else:
-            ttk.Label(fields_frame, text="Brak danych", style="TLabel").grid(row=2, column=0, columnspan=9, sticky="w", pady=2)
+            ttk.Label(fields_frame, text="Brak danych", style="TLabel").grid(row=2, column=0, columnspan=10, sticky="w", pady=2)
 
         add_field_row = len(fields) + 2 if fields else 3
         new_field_vars = {
@@ -1652,6 +1662,41 @@ class WorkshopApp(tk.Tk):
             return False
 
         return self.save_field_definitions(updated_fields, updated_record_types, window, "Pole zostało dodane.", record_type_id)
+
+    def delete_field_settings(self, field_id: str, record_type_id: str, window: tk.Toplevel | None = None) -> bool:
+        if not messagebox.askyesno(
+            "Ustawienia",
+            f"Czy na pewno usunąć pole \"{field_id}\" z tej sekcji?\n\nDane zapisane wcześniej w rekordach nie zostaną skasowane.",
+        ):
+            return False
+
+        config_service = ConfigService()
+        try:
+            config = config_service.load_all()
+            record_type = self.find_record_type(config.record_types, record_type_id)
+            if record_type is None or field_id not in record_type.fields:
+                messagebox.showerror("Ustawienia", "Nie znaleziono pola w aktualnej sekcji.")
+                return False
+
+            updated_record_type = replace(
+                record_type,
+                fields=[name for name in record_type.fields if name != field_id],
+            )
+            updated_record_types = [
+                updated_record_type if item.id == updated_record_type.id else item
+                for item in config.record_types
+            ]
+            field_still_used = any(field_id in item.fields for item in updated_record_types)
+            updated_fields = [
+                field
+                for field in config.field_definitions
+                if field_still_used or field.name != field_id
+            ]
+        except Exception as exc:
+            messagebox.showerror("Ustawienia", f"Nie udało się usunąć pola.\n\n{exc}")
+            return False
+
+        return self.save_field_definitions(updated_fields, updated_record_types, window, "Pole zostało usunięte.", record_type_id)
 
     def save_field_definitions(
         self,
