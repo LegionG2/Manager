@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $mainPath = Join-Path $repoRoot "main.py"
 $shortcutPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Manager.lnk"
 
@@ -41,9 +41,9 @@ if (-not $targetPath) {
 
 $wshShell = New-Object -ComObject WScript.Shell
 $shortcut = $wshShell.CreateShortcut($shortcutPath)
-$shortcut.TargetPath = $targetPath
-$shortcut.Arguments = $arguments
-$shortcut.WorkingDirectory = $repoRoot
+$shortcut.TargetPath = [string]$targetPath
+$shortcut.Arguments = [string]$arguments
+$shortcut.WorkingDirectory = [string]$repoRoot
 $shortcut.Description = "Uruchom Manager"
 $shortcut.IconLocation = "$targetPath,0"
 $shortcut.Save()
