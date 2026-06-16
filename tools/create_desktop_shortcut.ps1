@@ -2,41 +2,63 @@ $ErrorActionPreference = "Stop"
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $mainPath = Join-Path $repoRoot "main.py"
+$vbsPath = Join-Path $repoRoot "Start_Manager.vbs"
 $shortcutPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Manager.lnk"
+$assetsDir = Join-Path $repoRoot "assets"
+$iconPath = Join-Path $assetsDir "manager.ico"
 
 if (-not (Test-Path $mainPath)) {
     throw "Nie znaleziono main.py w: $repoRoot"
 }
 
+if (-not (Test-Path $assetsDir)) {
+    New-Item -ItemType Directory -Path $assetsDir | Out-Null
+}
+
+$iconBase64 = @"
+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
+"@
+
+if (-not (Test-Path $iconPath)) {
+    $iconBytes = [Convert]::FromBase64String(($iconBase64 -replace "\s", ""))
+    [IO.File]::WriteAllBytes($iconPath, $iconBytes)
+}
+
 $targetPath = $null
 $arguments = $null
 
-$venvPythonw = Join-Path $repoRoot ".venv\Scripts\pythonw.exe"
-if (Test-Path $venvPythonw) {
-    $targetPath = $venvPythonw
-    $arguments = "`"$mainPath`""
+$wscriptPath = Join-Path $env:WINDIR "System32\wscript.exe"
+if ((Test-Path $vbsPath) -and (Test-Path $wscriptPath)) {
+    $targetPath = $wscriptPath
+    $arguments = "`"$vbsPath`""
 } else {
-    $pythonw = Get-Command "pythonw.exe" -ErrorAction SilentlyContinue
-    if ($pythonw) {
-        $targetPath = $pythonw.Source
+    $venvPythonw = Join-Path $repoRoot ".venv\Scripts\pythonw.exe"
+    if (Test-Path $venvPythonw) {
+        $targetPath = $venvPythonw
         $arguments = "`"$mainPath`""
     } else {
-        $pyw = Get-Command "pyw.exe" -ErrorAction SilentlyContinue
-        if ($pyw) {
-            $targetPath = $pyw.Source
-            $arguments = "-3 `"$mainPath`""
+        $pythonw = Get-Command "pythonw.exe" -ErrorAction SilentlyContinue
+        if ($pythonw) {
+            $targetPath = $pythonw.Source
+            $arguments = "`"$mainPath`""
         } else {
-            $python = Get-Command "python.exe" -ErrorAction SilentlyContinue
-            if ($python) {
-                $targetPath = $python.Source
-                $arguments = "`"$mainPath`""
+            $pyw = Get-Command "pyw.exe" -ErrorAction SilentlyContinue
+            if ($pyw) {
+                $targetPath = $pyw.Source
+                $arguments = "-3 `"$mainPath`""
+            } else {
+                $python = Get-Command "python.exe" -ErrorAction SilentlyContinue
+                if ($python) {
+                    $targetPath = $python.Source
+                    $arguments = "`"$mainPath`""
+                }
             }
         }
     }
 }
 
 if (-not $targetPath) {
-    throw "Nie znaleziono pythonw.exe, pyw.exe ani python.exe."
+    throw "Nie znaleziono Start_Manager.vbs, pythonw.exe, pyw.exe ani python.exe."
 }
 
 $wshShell = New-Object -ComObject WScript.Shell
@@ -45,9 +67,10 @@ $shortcut.TargetPath = [string]$targetPath
 $shortcut.Arguments = [string]$arguments
 $shortcut.WorkingDirectory = [string]$repoRoot
 $shortcut.Description = "Uruchom Manager"
-$shortcut.IconLocation = "$targetPath,0"
+$shortcut.IconLocation = "$iconPath,0"
 $shortcut.Save()
 
 Write-Host "Utworzono skrót:" $shortcutPath
 Write-Host "Target:" $targetPath
 Write-Host "Arguments:" $arguments
+Write-Host "Icon:" $iconPath
