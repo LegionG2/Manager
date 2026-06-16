@@ -50,7 +50,9 @@
       "konkursy_title",
       "konkursy_description",
       "Data zakończenia",
-      "Zasady"
+      "Zasady",
+      "Wpływ",
+      "Płatność"
     ],
     "description": "Custom section record type"
   },
@@ -61,7 +63,8 @@
       "CS_title",
       "CS_description",
       "Drop",
-      "Tydzień"
+      "Tydzień",
+      "a"
     ],
     "description": "Custom section record type"
   }

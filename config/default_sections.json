@@ -11,7 +11,7 @@
     "name": "Records",
     "type": "records",
     "record_type_id": "default",
-    "visible": true,
+    "visible": false,
     "order": 1
   },
   {
@@ -19,7 +19,7 @@
     "name": "Archive",
     "type": "archive",
     "record_type_id": "default",
-    "visible": true,
+    "visible": false,
     "order": 10
   },
   {

@@ -8,6 +8,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 0,
     "default": ""
   },
@@ -20,6 +22,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 1,
     "default": ""
   },
@@ -32,6 +36,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 2,
     "default": "",
     "options": [
@@ -58,6 +64,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 3,
     "default": ""
   },
@@ -70,6 +78,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 4,
     "default": ""
   },
@@ -82,6 +92,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 5,
     "default": "",
     "options": [
@@ -108,6 +120,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 6,
     "default": ""
   },
@@ -120,6 +134,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 7,
     "default": ""
   },
@@ -132,6 +148,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 8,
     "default": ""
   },
@@ -144,6 +162,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 9,
     "default": ""
   },
@@ -156,6 +176,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 10,
     "default": ""
   },
@@ -168,6 +190,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 11,
     "default": ""
   },
@@ -180,6 +204,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 12,
     "default": ""
   },
@@ -192,6 +218,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 13,
     "default": ""
   },
@@ -204,6 +232,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 14,
     "default": ""
   },
@@ -216,6 +246,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 40,
     "default": "",
     "options": [
@@ -242,6 +274,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 50,
     "default": ""
   },
@@ -254,6 +288,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 10,
     "default": ""
   },
@@ -266,6 +302,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 20,
     "default": ""
   },
@@ -278,6 +316,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 30,
     "default": ""
   },
@@ -290,6 +330,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 40,
     "default": ""
   },
@@ -302,6 +344,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 10,
     "default": ""
   },
@@ -314,6 +358,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 20,
     "default": ""
   },
@@ -326,6 +372,8 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 30,
     "default": ""
   },
@@ -338,7 +386,65 @@
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
     "order": 40,
+    "default": ""
+  },
+  {
+    "name": "suma",
+    "label": "suma",
+    "group_name": "Dane podstawowe",
+    "field_type": "text",
+    "required": false,
+    "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "summarize": true,
+    "formula": "",
+    "order": 50,
+    "default": ""
+  },
+  {
+    "name": "a",
+    "label": "m",
+    "group_name": "Dane podstawowe",
+    "field_type": "text",
+    "required": false,
+    "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "summarize": true,
+    "formula": "",
+    "order": 50,
+    "default": ""
+  },
+  {
+    "name": "Wpływ",
+    "label": "Wpływ 1000zł",
+    "group_name": "Spełnienie warunków",
+    "field_type": "boolean",
+    "required": false,
+    "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
+    "order": 50,
+    "default": ""
+  },
+  {
+    "name": "Płatność",
+    "label": "5 płatności",
+    "group_name": "Spełnienie warunków",
+    "field_type": "boolean",
+    "required": false,
+    "visible": true,
+    "visible_in_form": true,
+    "visible_in_table": true,
+    "summarize": false,
+    "formula": "",
+    "order": 60,
     "default": ""
   }
 ]

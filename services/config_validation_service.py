@@ -62,6 +62,10 @@ class ConfigValidationService:
                 errors.append(f"field_definitions[{index}].visible_in_form must be boolean.")
             if not isinstance(field_definition.visible_in_table, bool):
                 errors.append(f"field_definitions[{index}].visible_in_table must be boolean.")
+            if not isinstance(field_definition.summarize, bool):
+                errors.append(f"field_definitions[{index}].summarize must be boolean.")
+            if not isinstance(field_definition.formula, str):
+                errors.append(f"field_definitions[{index}].formula must be string.")
             if not isinstance(field_definition.order, int):
                 errors.append(f"field_definitions[{index}].order must be integer.")
             if not isinstance(field_definition.options, list):

@@ -33,6 +33,8 @@ class FieldConfigService:
             visible=legacy_visible,
             visible_in_form=bool(raw_field.get("visible_in_form", legacy_visible)),
             visible_in_table=bool(raw_field.get("visible_in_table", legacy_visible)),
+            summarize=bool(raw_field.get("summarize", False)),
+            formula=str(raw_field.get("formula", "")),
             order=order,
             default=raw_field.get("default"),
             options=options,

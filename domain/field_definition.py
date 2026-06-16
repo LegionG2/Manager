@@ -7,6 +7,7 @@ class FieldType(str, Enum):
     TEXT = "text"
     LONG_TEXT = "long_text"
     NUMBER = "number"
+    CALCULATED = "calculated"
     DATE = "date"
     BOOLEAN = "boolean"
     SELECT = "select"
@@ -28,6 +29,8 @@ class FieldDefinition:
     visible: bool = True
     visible_in_form: bool = True
     visible_in_table: bool = True
+    summarize: bool = False
+    formula: str = ""
     order: int = 0
     default: Any = None
     options: list[FieldOption] = field(default_factory=list)
