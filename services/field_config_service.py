@@ -35,6 +35,8 @@ class FieldConfigService:
             visible_in_table=bool(raw_field.get("visible_in_table", legacy_visible)),
             summarize=bool(raw_field.get("summarize", False)),
             formula=str(raw_field.get("formula", "")),
+            module_type=str(raw_field.get("module_type", "")),
+            module_label=str(raw_field.get("module_label", "")),
             order=order,
             default=raw_field.get("default"),
             options=options,

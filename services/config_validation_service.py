@@ -66,6 +66,12 @@ class ConfigValidationService:
                 errors.append(f"field_definitions[{index}].summarize must be boolean.")
             if not isinstance(field_definition.formula, str):
                 errors.append(f"field_definitions[{index}].formula must be string.")
+            if not isinstance(field_definition.module_type, str):
+                errors.append(f"field_definitions[{index}].module_type must be string.")
+            elif field_definition.module_type and field_definition.module_type != "checklist":
+                errors.append(f"field_definitions[{index}].module_type is invalid.")
+            if not isinstance(field_definition.module_label, str):
+                errors.append(f"field_definitions[{index}].module_label must be string.")
             if not isinstance(field_definition.order, int):
                 errors.append(f"field_definitions[{index}].order must be integer.")
             if not isinstance(field_definition.options, list):

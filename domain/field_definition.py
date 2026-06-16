@@ -31,6 +31,8 @@ class FieldDefinition:
     visible_in_table: bool = True
     summarize: bool = False
     formula: str = ""
+    module_type: str = ""
+    module_label: str = ""
     order: int = 0
     default: Any = None
     options: list[FieldOption] = field(default_factory=list)

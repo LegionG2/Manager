@@ -405,14 +405,25 @@ class WorkshopApp(tk.Tk):
         form.grid(row=1, column=0, sticky="ew")
         form.columnconfigure(0, weight=1)
         field_widgets = {}
+        module_checklists = {}
+        checklist_module_frames = {}
+        checklist_add_frames = {}
+        checklist_text_vars = {}
         grouped_fields = self.group_custom_fields(form_fields)
         current_row = 0
         for group_name, group_fields in grouped_fields:
             group_frame = ttk.LabelFrame(form, text=group_name, style="Group.TLabelframe", padding=8)
             group_frame.grid(row=current_row, column=0, sticky="ew", pady=(0, 8))
             group_frame.columnconfigure(1, weight=1)
-            for field_row, field_definition in enumerate(group_fields):
-                ttk.Label(group_frame, text=field_definition.label, style="Panel.TLabel").grid(
+            field_row = 0
+            for field_definition in group_fields:
+                field_label = field_definition.label
+                if (
+                    field_definition.field_type == FieldType.LONG_TEXT
+                    and group_name.strip().lower() == field_definition.label.strip().lower()
+                ):
+                    field_label = ""
+                ttk.Label(group_frame, text=field_label, style="Panel.TLabel").grid(
                     row=field_row,
                     column=0,
                     sticky="w",
@@ -420,6 +431,45 @@ class WorkshopApp(tk.Tk):
                     pady=3,
                 )
                 field_widgets[field_definition.name] = self.build_custom_field_widget(group_frame, field_row, field_definition)
+                field_row += 1
+                if field_definition.module_type == "checklist":
+                    module_label = field_definition.module_label.strip() or "Checklist"
+                    if module_label.strip().lower() == field_definition.label.strip().lower():
+                        module_label = "Checklist"
+                    module_frame = ttk.LabelFrame(group_frame, text=module_label, style="Group.TLabelframe", padding=6)
+                    module_frame.grid(row=field_row, column=1, sticky="ew", pady=(0, 8))
+                    module_frame.columnconfigure(0, weight=1)
+                    items_frame = ttk.Frame(module_frame)
+                    items_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
+                    items_frame.columnconfigure(0, weight=1)
+                    add_actions = ttk.Frame(module_frame)
+                    add_actions.grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 0))
+                    ttk.Button(
+                        add_actions,
+                        text="+ Dodaj",
+                        command=lambda field_id=field_definition.name: show_checklist_add_form(field_id),
+                    ).pack(side="left")
+                    add_frame = ttk.Frame(module_frame)
+                    add_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(6, 0))
+                    add_frame.columnconfigure(0, weight=1)
+                    text_var = tk.StringVar()
+                    ttk.Entry(add_frame, textvariable=text_var).grid(row=0, column=0, sticky="ew", padx=(0, 8))
+                    ttk.Button(
+                        add_frame,
+                        text="Dodaj",
+                        command=lambda field_id=field_definition.name: add_checklist_module_item(field_id),
+                    ).grid(row=0, column=1, sticky="e", padx=(0, 6))
+                    ttk.Button(
+                        add_frame,
+                        text="Anuluj",
+                        command=lambda field_id=field_definition.name: hide_checklist_add_form(field_id),
+                    ).grid(row=0, column=2, sticky="e")
+                    add_frame.grid_remove()
+                    module_checklists[field_definition.name] = []
+                    checklist_module_frames[field_definition.name] = items_frame
+                    checklist_add_frames[field_definition.name] = add_frame
+                    checklist_text_vars[field_definition.name] = text_var
+                    field_row += 1
             current_row += 1
 
         def refresh_calculated_fields(*_args):
@@ -453,7 +503,6 @@ class WorkshopApp(tk.Tk):
         columns = ("id", *[field_definition.name for field_definition in table_fields], "created_at")
         tree = ttk.Treeview(table_wrap, columns=columns, show="headings", selectmode="browse")
         editing_record = {"id": None}
-        checklist_items = []
         sort_state = {"column": None, "descending": False}
         table_fields_by_name = {field_definition.name: field_definition for field_definition in table_fields}
         headings = {"id": "ID", "created_at": "Dodano"}
@@ -565,14 +614,14 @@ class WorkshopApp(tk.Tk):
                 filter_var.set("Wszystkie")
             refresh_custom_records()
 
-        def save_current_checklist():
+        def save_current_field_modules():
             record_id = editing_record["id"]
             if record_id is None:
                 return True
             try:
                 row = self.generic_record_service.fetch_record(record_id)
                 data = self.generic_record_service.decode_data(row)
-                data["_checklist"] = self.normalize_custom_checklist(checklist_items)
+                data["_field_modules"] = self.build_custom_field_modules_data(module_checklists)
                 self.generic_record_service.update_record(record_id, data, record_type_id=record_type_id)
             except Exception as exc:
                 messagebox.showerror(section.name, f"Nie udało się zapisać checklisty.\n\n{exc}")
@@ -580,52 +629,72 @@ class WorkshopApp(tk.Tk):
             refresh_custom_records()
             return True
 
-        def render_checklist():
-            for child in checklist_items_frame.winfo_children():
-                child.destroy()
-            if not checklist_items:
-                ttk.Label(checklist_items_frame, text="Brak wymagań", style="Sub.TLabel").grid(row=0, column=0, sticky="w", pady=2)
+        def render_checklist_module(field_id: str):
+            items_frame = checklist_module_frames.get(field_id)
+            if items_frame is None:
                 return
-            for index, item in enumerate(checklist_items):
+            for child in items_frame.winfo_children():
+                child.destroy()
+            items = module_checklists.setdefault(field_id, [])
+            if not items:
+                ttk.Label(items_frame, text="Brak wymagań", style="Sub.TLabel").grid(row=0, column=0, sticky="w", pady=2)
+                return
+            for index, item in enumerate(items):
                 done_var = tk.BooleanVar(value=bool(item.get("done")))
 
                 def toggle_item(item_index=index, variable=done_var):
-                    checklist_items[item_index]["done"] = bool(variable.get())
-                    save_current_checklist()
+                    module_checklists[field_id][item_index]["done"] = bool(variable.get())
+                    save_current_field_modules()
 
                 def remove_item(item_index=index):
-                    checklist_items.pop(item_index)
-                    render_checklist()
-                    save_current_checklist()
+                    module_checklists[field_id].pop(item_index)
+                    render_checklist_module(field_id)
+                    save_current_field_modules()
 
                 ttk.Checkbutton(
-                    checklist_items_frame,
+                    items_frame,
                     text=str(item.get("text", "")),
                     variable=done_var,
                     command=toggle_item,
                 ).grid(row=index, column=0, sticky="w", pady=2)
                 ttk.Button(
-                    checklist_items_frame,
-                    text="Usuń",
+                    items_frame,
+                    text="🗑",
+                    width=3,
                     command=remove_item,
                 ).grid(row=index, column=1, sticky="e", padx=(8, 0), pady=2)
 
-        def add_checklist_item():
-            text = checklist_text_var.get().strip()
+        def render_all_checklist_modules():
+            for field_id in checklist_module_frames:
+                render_checklist_module(field_id)
+
+        def show_checklist_add_form(field_id: str):
+            checklist_add_frames[field_id].grid()
+            checklist_text_vars[field_id].set("")
+
+        def hide_checklist_add_form(field_id: str):
+            checklist_text_vars[field_id].set("")
+            checklist_add_frames[field_id].grid_remove()
+
+        def add_checklist_module_item(field_id: str):
+            text_var = checklist_text_vars[field_id]
+            text = text_var.get().strip()
             if not text:
                 return
-            checklist_items.append({"text": text, "done": False})
-            checklist_text_var.set("")
-            render_checklist()
-            save_current_checklist()
+            module_checklists.setdefault(field_id, []).append({"text": text, "done": False})
+            render_checklist_module(field_id)
+            hide_checklist_add_form(field_id)
+            save_current_field_modules()
 
         def clear_custom_form():
             editing_record["id"] = None
             for field_definition in form_fields:
                 self.reset_custom_field_value(field_definition, field_widgets[field_definition.name])
             refresh_calculated_fields()
-            checklist_items.clear()
-            render_checklist()
+            for field_id in module_checklists:
+                module_checklists[field_id] = []
+                hide_checklist_add_form(field_id)
+            render_all_checklist_modules()
             submit_button.configure(text="Dodaj rekord")
             archive_button.configure(state="disabled")
             for item in tree.selection():
@@ -654,8 +723,11 @@ class WorkshopApp(tk.Tk):
             for field_definition in form_fields:
                 self.set_custom_field_value(field_definition, field_widgets[field_definition.name], data.get(field_definition.name))
             refresh_calculated_fields()
-            checklist_items[:] = self.normalize_custom_checklist(data.get("_checklist"))
-            render_checklist()
+            loaded_modules = self.load_custom_field_modules_data(data, checklist_module_frames)
+            for field_id in module_checklists:
+                module_checklists[field_id] = loaded_modules.get(field_id, [])
+                hide_checklist_add_form(field_id)
+            render_all_checklist_modules()
             editing_record["id"] = record_id
             submit_button.configure(text="Zapisz zmiany")
             archive_button.configure(state="normal")
@@ -671,7 +743,7 @@ class WorkshopApp(tk.Tk):
                     messagebox.showerror(section.name, str(exc))
                     return
                 data[field_definition.name] = value
-            data["_checklist"] = self.normalize_custom_checklist(checklist_items)
+            data["_field_modules"] = self.build_custom_field_modules_data(module_checklists)
             calculated_data = self.apply_custom_calculated_fields(data, field_definitions)
             for field_definition in form_fields:
                 if field_definition.field_type == FieldType.CALCULATED:
@@ -724,16 +796,7 @@ class WorkshopApp(tk.Tk):
         ttk.Button(actions, text="Anuluj edycję", command=clear_custom_form).pack(side="left", padx=(8, 0))
         archive_button = ttk.Button(actions, text="Archiwizuj rekord", command=archive_custom_record, state="disabled")
         archive_button.pack(side="left", padx=(8, 0))
-        checklist_frame = ttk.LabelFrame(form, text="Wymagania", style="Group.TLabelframe", padding=8)
-        checklist_frame.grid(row=current_row + 1, column=0, sticky="ew", pady=(10, 0))
-        checklist_frame.columnconfigure(0, weight=1)
-        checklist_items_frame = ttk.Frame(checklist_frame)
-        checklist_items_frame.grid(row=0, column=0, columnspan=2, sticky="ew")
-        checklist_items_frame.columnconfigure(0, weight=1)
-        checklist_text_var = tk.StringVar()
-        ttk.Entry(checklist_frame, textvariable=checklist_text_var).grid(row=1, column=0, sticky="ew", pady=(8, 0), padx=(0, 8))
-        ttk.Button(checklist_frame, text="Dodaj", command=add_checklist_item).grid(row=1, column=1, sticky="e", pady=(8, 0))
-        render_checklist()
+        render_all_checklist_modules()
         ttk.Button(search_bar, text="Wyczyść", command=clear_custom_search).grid(row=0, column=2, sticky="e")
         if filter_fields:
             ttk.Button(filters_frame, text="Wyczyść filtry", command=clear_custom_filters).pack(side="left")
@@ -1121,6 +1184,32 @@ class WorkshopApp(tk.Tk):
                 items.append({"text": text, "done": done})
         return items
 
+    def build_custom_field_modules_data(self, module_checklists: dict[str, list[dict]]) -> dict:
+        modules = {}
+        for field_id, checklist in module_checklists.items():
+            normalized_checklist = self.normalize_custom_checklist(checklist)
+            if normalized_checklist:
+                modules[field_id] = {"checklist": normalized_checklist}
+        return modules
+
+    def load_custom_field_modules_data(self, data: dict, checklist_modules: dict) -> dict[str, list[dict]]:
+        raw_modules = data.get("_field_modules")
+        loaded = {}
+        if isinstance(raw_modules, dict):
+            for field_id in checklist_modules:
+                field_module = raw_modules.get(field_id, {})
+                if isinstance(field_module, dict):
+                    loaded[field_id] = self.normalize_custom_checklist(field_module.get("checklist"))
+                else:
+                    loaded[field_id] = []
+        else:
+            loaded = {field_id: [] for field_id in checklist_modules}
+
+        if data.get("_checklist") and checklist_modules and not any(loaded.values()):
+            first_field_id = next(iter(checklist_modules))
+            loaded[first_field_id] = self.normalize_custom_checklist(data.get("_checklist"))
+        return loaded
+
     def custom_number_value(self, value) -> float:
         if value is None or value == "":
             return 0.0
@@ -1163,7 +1252,7 @@ class WorkshopApp(tk.Tk):
         list[tuple[str, str]],
         list[tuple[str, str, str, str, str]],
         list[tuple[str, str]],
-        list[tuple[str, str, str, str, str, str, str, str, str, str, str]],
+        list[tuple[str, str, str, str, str, str, str, str, str, str, str, str, str]],
         str | None,
     ]:
         try:
@@ -1203,6 +1292,8 @@ class WorkshopApp(tk.Tk):
                 "Tak" if field.visible_in_table else "Nie",
                 "Tak" if field.summarize else "Nie",
                 field.formula,
+                field.module_type,
+                field.module_label,
                 ", ".join(option.label for option in field.options),
             )
             for field in self.sort_custom_fields(config.field_definitions)
@@ -1239,6 +1330,8 @@ class WorkshopApp(tk.Tk):
                 "Tak" if field.visible_in_table else "Nie",
                 "Tak" if field.summarize else "Nie",
                 field.formula,
+                field.module_type,
+                field.module_label,
                 ", ".join(option.label for option in field.options),
             )
             for field in fields
@@ -1393,7 +1486,7 @@ class WorkshopApp(tk.Tk):
 
         fields_frame = ttk.LabelFrame(container, text="Pola", style="Group.TLabelframe", padding=8)
         fields_frame.grid(row=4, column=0, sticky="ew", pady=(0, 10))
-        for column, weight in [(0, 0), (1, 1), (2, 1), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 1), (9, 1), (10, 0), (11, 0)]:
+        for column, weight in [(0, 0), (1, 1), (2, 1), (3, 0), (4, 0), (5, 0), (6, 0), (7, 0), (8, 1), (9, 1), (10, 0), (11, 0), (12, 1), (13, 0)]:
             fields_frame.columnconfigure(column, weight=weight)
         selected_record_type_var = tk.StringVar(value=selected_record_type_id)
         ttk.Label(fields_frame, text="Pola dla sekcji danych:", style="Panel.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=(0, 6))
@@ -1415,11 +1508,14 @@ class WorkshopApp(tk.Tk):
             ttk.Label(fields_frame, text=heading, style="Panel.TLabel").grid(row=1, column=column, sticky="w", padx=(0, 8), pady=(0, 4))
         ttk.Label(fields_frame, text="Formuła", style="Panel.TLabel").grid(row=1, column=9, sticky="w", padx=(0, 8), pady=(0, 4))
         ttk.Label(fields_frame, text="Suma", style="Panel.TLabel").grid(row=1, column=10, sticky="w", padx=(0, 8), pady=(0, 4))
-        ttk.Label(fields_frame, text="Akcje", style="Panel.TLabel").grid(row=1, column=11, sticky="w", padx=(0, 8), pady=(0, 4))
+        ttk.Label(fields_frame, text="Moduł", style="Panel.TLabel").grid(row=1, column=11, sticky="w", padx=(0, 8), pady=(0, 4))
+        ttk.Label(fields_frame, text="Nazwa modułu", style="Panel.TLabel").grid(row=1, column=12, sticky="w", padx=(0, 8), pady=(0, 4))
+        ttk.Label(fields_frame, text="Akcje", style="Panel.TLabel").grid(row=1, column=13, sticky="w", padx=(0, 8), pady=(0, 4))
         field_editors = []
         field_type_values = [field_type.value for field_type in FieldType]
+        module_type_values = ["", "checklist"]
         if fields:
-            for row_index, (field_id, label, group_name, order, field_type, required, visible_in_form, visible_in_table, summarize, formula, options) in enumerate(fields, start=2):
+            for row_index, (field_id, label, group_name, order, field_type, required, visible_in_form, visible_in_table, summarize, formula, module_type, module_label, options) in enumerate(fields, start=2):
                 label_var = tk.StringVar(value=label)
                 group_var = tk.StringVar(value=group_name or DEFAULT_FIELD_GROUP_NAME)
                 order_var = tk.StringVar(value=order)
@@ -1429,6 +1525,8 @@ class WorkshopApp(tk.Tk):
                 visible_in_table_var = tk.BooleanVar(value=visible_in_table == "Tak")
                 summarize_var = tk.BooleanVar(value=summarize == "Tak")
                 formula_var = tk.StringVar(value=formula)
+                module_type_var = tk.StringVar(value=module_type)
+                module_label_var = tk.StringVar(value=module_label)
                 options_var = tk.StringVar(value=options)
                 ttk.Label(fields_frame, text=field_id, style="TLabel").grid(row=row_index, column=0, sticky="w", padx=(0, 8), pady=2)
                 ttk.Entry(fields_frame, textvariable=label_var, width=20).grid(row=row_index, column=1, sticky="ew", padx=(0, 8), pady=2)
@@ -1441,6 +1539,8 @@ class WorkshopApp(tk.Tk):
                 ttk.Entry(fields_frame, textvariable=options_var, width=24).grid(row=row_index, column=8, sticky="ew", pady=2)
                 ttk.Entry(fields_frame, textvariable=formula_var, width=24).grid(row=row_index, column=9, sticky="ew", padx=(0, 8), pady=2)
                 ttk.Checkbutton(fields_frame, variable=summarize_var).grid(row=row_index, column=10, sticky="w", padx=(0, 8), pady=2)
+                ttk.Combobox(fields_frame, textvariable=module_type_var, values=module_type_values, state="readonly", width=10).grid(row=row_index, column=11, sticky="w", padx=(0, 8), pady=2)
+                ttk.Entry(fields_frame, textvariable=module_label_var, width=18).grid(row=row_index, column=12, sticky="ew", padx=(0, 8), pady=2)
                 ttk.Button(
                     fields_frame,
                     text="Usuń",
@@ -1449,7 +1549,7 @@ class WorkshopApp(tk.Tk):
                         selected_record_type_var.get(),
                         window,
                     ),
-                ).grid(row=row_index, column=11, sticky="w", padx=(8, 0), pady=2)
+                ).grid(row=row_index, column=13, sticky="w", padx=(8, 0), pady=2)
                 field_editors.append({
                     "id": field_id,
                     "label_var": label_var,
@@ -1461,10 +1561,12 @@ class WorkshopApp(tk.Tk):
                     "visible_in_table_var": visible_in_table_var,
                     "summarize_var": summarize_var,
                     "formula_var": formula_var,
+                    "module_type_var": module_type_var,
+                    "module_label_var": module_label_var,
                     "options_var": options_var,
                 })
         else:
-            ttk.Label(fields_frame, text="Brak danych", style="TLabel").grid(row=2, column=0, columnspan=12, sticky="w", pady=2)
+            ttk.Label(fields_frame, text="Brak danych", style="TLabel").grid(row=2, column=0, columnspan=14, sticky="w", pady=2)
 
         add_field_row = len(fields) + 2 if fields else 3
         new_field_vars = {
@@ -1478,6 +1580,8 @@ class WorkshopApp(tk.Tk):
             "visible_in_table_var": tk.BooleanVar(value=True),
             "summarize_var": tk.BooleanVar(value=False),
             "formula_var": tk.StringVar(),
+            "module_type_var": tk.StringVar(value=""),
+            "module_label_var": tk.StringVar(),
             "options_var": tk.StringVar(),
         }
         ttk.Entry(fields_frame, textvariable=new_field_vars["id_var"], width=14).grid(row=add_field_row, column=0, sticky="w", padx=(0, 8), pady=(8, 2))
@@ -1491,6 +1595,8 @@ class WorkshopApp(tk.Tk):
         ttk.Entry(fields_frame, textvariable=new_field_vars["options_var"], width=24).grid(row=add_field_row, column=8, sticky="ew", pady=(8, 2))
         ttk.Entry(fields_frame, textvariable=new_field_vars["formula_var"], width=24).grid(row=add_field_row, column=9, sticky="ew", padx=(0, 8), pady=(8, 2))
         ttk.Checkbutton(fields_frame, variable=new_field_vars["summarize_var"]).grid(row=add_field_row, column=10, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Combobox(fields_frame, textvariable=new_field_vars["module_type_var"], values=module_type_values, state="readonly", width=10).grid(row=add_field_row, column=11, sticky="w", padx=(0, 8), pady=(8, 2))
+        ttk.Entry(fields_frame, textvariable=new_field_vars["module_label_var"], width=18).grid(row=add_field_row, column=12, sticky="ew", padx=(0, 8), pady=(8, 2))
         ttk.Button(
             fields_frame,
             text="Dodaj pole",
@@ -1696,6 +1802,8 @@ class WorkshopApp(tk.Tk):
                         visible_in_table=visible_in_table,
                         summarize=bool(editor["summarize_var"].get()),
                         formula=editor["formula_var"].get().strip(),
+                        module_type=editor["module_type_var"].get().strip(),
+                        module_label=editor["module_label_var"].get().strip(),
                         order=order,
                         default="",
                         options=self.parse_field_options(editor["options_var"].get()),
@@ -1712,12 +1820,16 @@ class WorkshopApp(tk.Tk):
         group_name = new_field_vars["group_var"].get().strip()
         options = new_field_vars["options_var"].get().strip()
         formula = new_field_vars["formula_var"].get().strip()
+        module_type = new_field_vars["module_type_var"].get().strip()
+        module_label = new_field_vars["module_label_var"].get().strip()
         field_type = new_field_vars["type_var"].get().strip()
         has_non_default_value = any([
             label,
             group_name and group_name != DEFAULT_FIELD_GROUP_NAME,
             options,
             formula,
+            module_type,
+            module_label,
             field_type != FieldType.TEXT.value,
             bool(new_field_vars["required_var"].get()),
             not bool(new_field_vars["visible_in_form_var"].get()),
@@ -1754,6 +1866,8 @@ class WorkshopApp(tk.Tk):
                 visible_in_table=visible_in_table,
                 summarize=bool(new_field_vars["summarize_var"].get()),
                 formula=formula,
+                module_type=module_type,
+                module_label=module_label,
                 order=order,
                 default="",
                 options=self.parse_field_options(options),
@@ -1865,6 +1979,8 @@ class WorkshopApp(tk.Tk):
                         visible_in_table=visible_in_table,
                         summarize=bool(editor["summarize_var"].get()),
                         formula=editor["formula_var"].get().strip(),
+                        module_type=editor["module_type_var"].get().strip(),
+                        module_label=editor["module_label_var"].get().strip(),
                         order=order,
                         default="",
                         options=self.parse_field_options(editor["options_var"].get()),
@@ -1901,6 +2017,8 @@ class WorkshopApp(tk.Tk):
         group_name = new_field_vars["group_var"].get().strip() or DEFAULT_FIELD_GROUP_NAME
         field_type = new_field_vars["type_var"].get().strip()
         formula = new_field_vars["formula_var"].get().strip()
+        module_type = new_field_vars["module_type_var"].get().strip()
+        module_label = new_field_vars["module_label_var"].get().strip()
         visible_in_form = bool(new_field_vars["visible_in_form_var"].get())
         visible_in_table = bool(new_field_vars["visible_in_table_var"].get())
         if not field_id:
@@ -1933,6 +2051,8 @@ class WorkshopApp(tk.Tk):
                 visible_in_table=visible_in_table,
                 summarize=bool(new_field_vars["summarize_var"].get()),
                 formula=formula,
+                module_type=module_type,
+                module_label=module_label,
                 order=order,
                 default="",
                 options=self.parse_field_options(new_field_vars["options_var"].get()),

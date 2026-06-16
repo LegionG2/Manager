@@ -124,6 +124,8 @@ class ConfigService:
                 "visible_in_table": value.visible_in_table,
                 "summarize": value.summarize,
                 "formula": value.formula,
+                "module_type": value.module_type,
+                "module_label": value.module_label,
                 "order": value.order,
                 "default": self._to_json_value(value.default),
             }

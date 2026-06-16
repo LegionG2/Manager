@@ -10,6 +10,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 0,
     "default": ""
   },
@@ -24,6 +26,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 1,
     "default": ""
   },
@@ -38,6 +42,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 2,
     "default": "",
     "options": [
@@ -66,6 +72,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 3,
     "default": ""
   },
@@ -80,6 +88,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 4,
     "default": ""
   },
@@ -94,6 +104,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 5,
     "default": "",
     "options": [
@@ -122,6 +134,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 6,
     "default": ""
   },
@@ -136,6 +150,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 7,
     "default": ""
   },
@@ -150,6 +166,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 8,
     "default": ""
   },
@@ -164,6 +182,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 9,
     "default": ""
   },
@@ -178,6 +198,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 10,
     "default": ""
   },
@@ -192,6 +214,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 11,
     "default": ""
   },
@@ -206,6 +230,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 12,
     "default": ""
   },
@@ -220,6 +246,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 13,
     "default": ""
   },
@@ -234,6 +262,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 14,
     "default": ""
   },
@@ -248,6 +278,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 40,
     "default": "",
     "options": [
@@ -276,6 +308,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 50,
     "default": ""
   },
@@ -284,12 +318,14 @@
     "label": "Organizator",
     "group_name": "Dane podstawowe",
     "field_type": "text",
-    "required": true,
+    "required": false,
     "visible": true,
     "visible_in_form": true,
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 10,
     "default": ""
   },
@@ -304,6 +340,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 20,
     "default": ""
   },
@@ -318,6 +356,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 30,
     "default": ""
   },
@@ -332,6 +372,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "checklist",
+    "module_label": "Wymagania",
     "order": 40,
     "default": ""
   },
@@ -346,6 +388,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 10,
     "default": ""
   },
@@ -360,6 +404,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 20,
     "default": ""
   },
@@ -374,6 +420,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 30,
     "default": ""
   },
@@ -388,6 +436,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 40,
     "default": ""
   },
@@ -402,6 +452,8 @@
     "visible_in_table": true,
     "summarize": true,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 50,
     "default": ""
   },
@@ -416,6 +468,8 @@
     "visible_in_table": true,
     "summarize": true,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 50,
     "default": ""
   },
@@ -430,6 +484,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 50,
     "default": ""
   },
@@ -444,6 +500,8 @@
     "visible_in_table": true,
     "summarize": false,
     "formula": "",
+    "module_type": "",
+    "module_label": "",
     "order": 60,
     "default": ""
   }
